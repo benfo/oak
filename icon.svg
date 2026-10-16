@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4c8dff" />
+      <stop offset="1" stop-color="#8a5cf6" />
+    </linearGradient>
+  </defs>
+  <!-- Oak: a tree whose branches are a commit graph -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)" />
+  <g fill="none" stroke="#fff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M256 416 V176" />
+    <path d="M256 338 C256 290 172 292 172 236" />
+    <path d="M256 290 C256 246 340 252 340 204" />
+  </g>
+  <g fill="#fff">
+    <circle cx="256" cy="140" r="40" />
+    <circle cx="172" cy="214" r="34" />
+    <circle cx="340" cy="182" r="34" />
+  </g>
+  <path d="M196 416 H316" stroke="#fff" stroke-width="30" stroke-linecap="round" opacity="0.55" />
+</svg>
