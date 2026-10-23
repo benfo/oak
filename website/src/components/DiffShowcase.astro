@@ -1,0 +1,16 @@
+---
+import AppScreenshot from './AppScreenshot.astro'
+const layouts = [
+  { id: 'split', title: 'Side by side', detail: 'Before and after, aligned. Follow a replacement across both columns.' },
+  { id: 'inline', title: 'Inline', detail: 'One continuous diff. Follow additions and deletions in a single column.' }
+]
+---
+<div class="tabs tabs-border diff-showcase" role="group" aria-label="Preview diff layout">
+  {layouts.map((layout, index) => <>
+    <input id={`diff-tab-${layout.id}`} type="radio" name="diff-preview" class="tab" aria-label={layout.title} aria-controls={`diff-preview-${layout.id}`} checked={index === 0} autocomplete="off" />
+    <div id={`diff-preview-${layout.id}`} class="tab-content pt-5" role="region" aria-labelledby={`diff-tab-${layout.id}`}>
+      <AppScreenshot image={`oak-diff-${layout.id}`} title={layout.detail} frameClass="aspect-[2160/760] rounded-md shadow-none" />
+      <p class="mt-4 text-sm text-base-content/60">{layout.detail}</p>
+    </div>
+  </>)}
+</div>

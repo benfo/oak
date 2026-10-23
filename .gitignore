@@ -1,0 +1,8 @@
+node_modules
+out
+dist
+*.log
+website/.astro
+.github/agents/
+.github/skills/
+.impeccable/config.local.json

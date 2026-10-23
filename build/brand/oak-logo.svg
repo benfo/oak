@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-labelledby="title desc">
+  <title id="title">oak Git client</title>
+  <desc id="desc">A flat oak tree formed from green, teal and orange Git paths, circular commit nodes, three parallel trunks and two open ring roots.</desc>
+  <rect width="1024" height="1024" fill="#242424"/>
+  <g transform="translate(282 55)">
+  <g fill="none" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="#49BE45" d="M135 90C125 142 97 175 40 200"/>
+    <path stroke="#00C4BA" d="M135 90L230 136M135 90V295"/>
+    <path stroke="#49BE45" d="M230 36V264"/>
+    <path stroke="#249A84" d="M325 90C339 146 372 182 420 200V228C420 271 400 295 363 295H298"/>
+    <path stroke="#FF961C" d="M325 90V200"/>
+    <path stroke="#80CC4E" d="M40 200V231C40 279 76 295 135 295C135 344 147 365 175 368C188 370 192 377 192 391V466C192 491 175 496 145 496"/>
+    <path stroke="#80CC4E" d="M325 200C263 200 230 236 230 290V468C230 510 209 524 169 524"/>
+    <path stroke="#249A84" d="M325 200V235C325 275 268 278 268 319V462C268 489 287 496 320 496"/>
+    <path stroke="#249A84" d="M246 507C260 519 279 524 296 524"/>
+    <circle fill="#242424" stroke="#80CC4E" cx="143" cy="520" r="25"/>
+    <circle fill="#242424" stroke="#249A84" cx="318" cy="520" r="25"/>
+  </g>
+  <g fill="#49BE45"><circle cx="230" cy="36" r="34"/><circle cx="230" cy="136" r="34"/></g>
+  <g fill="#00C4BA"><circle cx="135" cy="90" r="34"/><circle cx="135" cy="200" r="34"/></g>
+  <g fill="#80CC4E"><circle cx="40" cy="200" r="34"/><circle cx="135" cy="295" r="34"/></g>
+  <g fill="#FF961C"><circle cx="325" cy="90" r="34"/><circle cx="325" cy="200" r="34"/></g>
+  <circle fill="#249A84" cx="420" cy="200" r="34"/>
+  </g>
+  <!-- Thin rounded lowercase lettering is outlined for consistent rendering. -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="15" stroke-linejoin="round">
+    <ellipse cx="373" cy="752" rx="60" ry="61"/>
+    <path d="M472 698C496 683 534 686 551 707C559 718 559 730 559 750V813M559 757C534 735 479 735 467 763C453 798 493 828 528 809C543 802 553 793 559 781"/>
+    <path d="M604 640V813M695 691L606 770M635 745L704 813"/>
+  </g>
+  <path fill="#80CC4E" d="M439 687C438 655 447 645 477 643C477 672 464 689 439 687Z"/>
+  <text x="512" y="889" text-anchor="middle" fill="#929292" font-family="Segoe UI,Arial,sans-serif" font-size="35" font-weight="300" letter-spacing="5">GIT CLIENT</text>
+</svg>

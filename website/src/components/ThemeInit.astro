@@ -1,0 +1,34 @@
+<!-- Run before the first paint so a saved theme does not flash the system theme. -->
+<script is:inline>
+  (() => {
+    const key = 'oak-website-theme'
+    const system = window.matchMedia('(prefers-color-scheme: dark)')
+    const choices = ['light', 'dark', 'system']
+    const read = () => {
+      try {
+        const saved = localStorage.getItem(key)
+        return choices.includes(saved) ? saved : 'system'
+      } catch { return 'system' }
+    }
+    let preference = read()
+    const apply = () => {
+      const theme = preference === 'system' ? (system.matches ? 'dark' : 'light') : preference
+      document.documentElement.dataset.theme = theme
+      const control = document.getElementById('site-theme')
+      if (control) control.checked = theme === 'dark'
+    }
+    apply()
+    document.addEventListener('DOMContentLoaded', apply, { once: true })
+    document.addEventListener('change', (event) => {
+      const control = event.target
+      if (!(control instanceof HTMLInputElement) || control.id !== 'site-theme') return
+      preference = control.checked ? 'dark' : 'light'
+      try { localStorage.setItem(key, preference) } catch { /* Keep the choice for this page when storage is unavailable. */ }
+      apply()
+    })
+    system.addEventListener('change', () => { if (preference === 'system') apply() })
+    window.addEventListener('storage', (event) => {
+      if (event.key === key || event.key === null) { preference = read(); apply() }
+    })
+  })()
+</script>

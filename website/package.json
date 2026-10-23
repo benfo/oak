@@ -1,0 +1,23 @@
+{
+  "name": "oak-website",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "check": "astro check",
+    "dev": "astro dev --host 127.0.0.1",
+    "build": "astro build",
+    "preview": "astro preview --host 127.0.0.1"
+  },
+  "engines": {
+    "node": ">=24.21.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "7.4.0",
+    "daisyui": "^5.7.50",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "plugins": [
+    "stylelint-declaration-strict-value"
+  ],
+  "ignoreFiles": [
+    "src/renderer/src/tokens.css",
+    "out/**",
+    "dist/**"
+  ],
+  "rules": {
+    "scale-unlimited/declaration-strict-value": [
+      [
+        "/color$/",
+        "background",
+        "fill",
+        "stroke",
+        "font-size",
+        "font-weight",
+        "/^border(-[a-z]+)*-radius$/",
+        "/^(padding|margin)(-[a-z]+)*$/",
+        "gap",
+        "row-gap",
+        "column-gap"
+      ],
+      {
+        "expandShorthand": true,
+        "ignoreValues": [
+          "0",
+          "1px",
+          "-1px",
+          "auto",
+          "transparent",
+          "currentColor",
+          "currentcolor",
+          "inherit",
+          "none",
+          "unset",
+          "Highlight",
+          "HighlightText",
+          "Canvas",
+          "CanvasText",
+          "ButtonText",
+          "/^-?\\d+(\\.\\d+)?(vh|vw|%)$/"
+        ],
+        "disableFix": true,
+        "message": "Use a design token from tokens.css for \"${property}\" (got \"${value}\"). Add a token if none fits."
+      }
+    ]
+  }
+}
