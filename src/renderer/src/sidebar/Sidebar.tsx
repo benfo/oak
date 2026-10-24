@@ -16,7 +16,8 @@ import { registerListCopy, type CopyItem } from '../lib/listCopy'
 import { PaneFrame, PaneSearch } from '../components/Pane'
 import { useSearchMatches } from '../lib/useSearchMatches'
 import { SearchFeedback } from '../components/SearchFeedback'
-import { DEFAULT_BRANCH_OPTIONS, readBranchOptions, sidebarBranches, type SidebarBranchOptions } from './sidebarBranches'
+import { hiddenBranchRefs, sidebarBranches } from './sidebarBranches'
+import { openPreferences } from '../components/Preferences'
 
 async function tagMenu(r: RepoCtx, b: Branch) {
   const cur = r.status?.branch ?? 'HEAD'
@@ -138,36 +139,43 @@ interface Props {
  */
 export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Props) {
   const [filter, setFilter] = useState('')
-  const optionsKey = `sidebarBranches:${r.path}`
-  const [branchOptions, setBranchOptions] = useState<SidebarBranchOptions>(() => {
-    try {
-      return readBranchOptions(localStorage.getItem(optionsKey))
-    } catch {
-      return DEFAULT_BRANCH_OPTIONS
-    }
-  })
+  const branchOptions = r.branchOptions
   const branchOptionsRef = useRef(branchOptions)
   branchOptionsRef.current = branchOptions
+  const saveBranchOptions = r.setBranchOptions
+  const hidePattern = (pattern: string) => {
+    const options = branchOptionsRef.current
+    const patterns = options.hiddenPatterns
+    if (!patterns.includes(pattern)) saveBranchOptions({ ...options, hiddenPatterns: [...patterns, pattern], showHidden: false })
+  }
   const branchMenu = async (anchor?: Element) => {
     const options = branchOptionsRef.current
+    const hidden = hiddenBranchRefs(live.current.r.branches, live.current.r.status?.branch, options, live.current.r.remoteHead).size
     const id = await showMenu(
       [
         { id: 'name', label: 'Sort by name', checked: options.sort === 'name' },
         { id: 'latest', label: 'Sort by latest commit', checked: options.sort === 'latest' },
         { type: 'separator' },
-        { id: 'hide', label: 'Hide branches with a gone upstream', checked: options.hideGone }
+        { id: 'hide-gone', label: 'Hide branches with a gone upstream', checked: options.hideGone },
+        { id: 'hide-remote-only', label: 'Hide remote branches without a local copy', checked: options.hideRemoteOnly },
+        { id: 'hidden-branches', label: hidden ? `More branch options… (${hidden} hidden)` : 'More branch options…' },
+        ...(options.hiddenPatterns.length || options.hideRemoteOnly
+          ? [{ id: 'show-hidden', label: 'Show hidden branches', checked: options.showHidden }]
+          : [])
       ],
       anchor
     )
     if (!id) return
-    const next: SidebarBranchOptions =
-      id === 'hide' ? { ...options, hideGone: !options.hideGone } : { ...options, sort: id === 'latest' ? 'latest' : 'name' }
-    try {
-      localStorage.setItem(optionsKey, JSON.stringify(next))
-    } catch {
-      /* Session only. */
-    }
-    setBranchOptions(next)
+    if (id === 'hidden-branches') return openPreferences('repository')
+    saveBranchOptions(
+      id === 'hide-gone'
+        ? { ...options, hideGone: !options.hideGone }
+        : id === 'hide-remote-only'
+          ? { ...options, hideRemoteOnly: !options.hideRemoteOnly, showHidden: false }
+          : id === 'show-hidden'
+            ? { ...options, showHidden: !options.showHidden }
+            : { ...options, sort: id === 'latest' ? 'latest' : 'name' }
+    )
   }
   const sections = useOpenSections()
   const filterRef = useRef<HTMLInputElement>(null)
@@ -186,6 +194,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
     onCompareBranch,
     setView,
     branchMenu,
+    hidePattern,
     toggle: (_key: string) => {},
     setExpanded: (_keys: Set<Key>) => {}
   })
@@ -194,6 +203,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
   live.current.onCompareBranch = onCompareBranch
   live.current.setView = setView
   live.current.branchMenu = branchMenu
+  live.current.hidePattern = hidePattern
 
   // Refs only change on fetch/commit/checkout etc., not on every status refresh, so this list (and
   // with it every row) stays the same object most of the time.
@@ -210,7 +220,8 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
     })
 
     const locals = r.branches.filter((b) => b.type === 'local')
-    const visible = sidebarBranches(r.branches, st?.branch, branchOptions)
+    const hiddenRefs = hiddenBranchRefs(r.branches, st?.branch, branchOptions, r.remoteHead)
+    const visible = sidebarBranches(r.branches, st?.branch, branchOptions, r.remoteHead)
     const localNode = (b: Branch, key = b.fullName): TreeNode => ({
       key,
       kind: 'item',
@@ -226,11 +237,13 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
       activate: () => live.current.onFocusCommit(b.hash),
       secondary: () => b.name !== live.current.r.status?.branch && act.checkout(live.current.r, b.name, 'local'),
       copy: branchCopy(b, 'branch name'),
-      menu: () => showBranchMenu(live.current.r, b, live.current.onCompareBranch)
+      menu: () => showBranchMenu(live.current.r, b, live.current.onCompareBranch, live.current.hidePattern)
     })
     const local = visible.filter((b) => b.type === 'local' && match(b.name)).map((b) => localNode(b))
     const total = locals.filter((b) => match(b.name)).length
     const hidden = total - local.length
+    const remoteMatches = (list: Branch[]) => list.filter((b) => b.type === 'remote' && match(b.name)).length
+    const hiddenAll = hidden + remoteMatches(r.branches) - remoteMatches(visible)
     const currentBranch = locals.find((b) => b.name === st?.branch)
     const current: TreeNode[] = currentBranch
       ? [localNode(currentBranch, 'quick:current')]
@@ -254,7 +267,12 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
     const recent = r.recentBranches
       .flatMap((name) => {
         const b = byName.get(name)
-        return b && b.name !== st?.branch && (!branchOptions.hideGone || !b.gone) ? [b] : []
+        return b &&
+          b.name !== st?.branch &&
+          (!branchOptions.hideGone || !b.gone) &&
+          (branchOptions.showHidden || !hiddenRefs.has(b.fullName))
+          ? [b]
+          : []
       })
       .slice(0, RECENT_LIMIT)
       .filter((b) => match(b.name))
@@ -289,7 +307,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
             activate: () => live.current.onFocusCommit(b.hash),
             secondary: () => act.checkout(live.current.r, b.name, 'remote'),
             copy: branchCopy(b, 'branch name'),
-            menu: () => showBranchMenu(live.current.r, b, live.current.onCompareBranch)
+            menu: () => showBranchMenu(live.current.r, b, live.current.onCompareBranch, live.current.hidePattern)
           })),
           'globe'
         )
@@ -333,10 +351,10 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
     const branches: TreeNode = {
       ...section('local', 'Branches', local),
       countLabel: hidden ? `${local.length} / ${total}` : undefined,
-      title: hidden
-        ? `${hidden} ${hidden === 1 ? 'branch hidden' : 'branches hidden'} (gone upstream). Use Branch options to show them.`
+      title: hiddenAll
+        ? `${hiddenAll} ${hiddenAll === 1 ? 'branch hidden' : 'branches hidden'}. Use Branch options to show them.`
         : undefined,
-      optionsLabel: hidden ? `Branch options (${hidden} hidden)` : 'Branch options',
+      optionsLabel: hiddenAll ? `Branch options (${hiddenAll} hidden)` : 'Branch options',
       menu: (anchor) => {
         void live.current.branchMenu(anchor)
       }
@@ -348,7 +366,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
       section('tags', 'Tags', tags, undefined, allTags.length),
       section('stashes', 'Stashes', stashes)
     ]
-  }, [r.branches, r.stashes, r.recentBranches, st?.branch, st?.head, filter, branchOptions])
+  }, [r.branches, r.stashes, r.recentBranches, r.remoteHead, st?.branch, st?.head, filter, branchOptions])
 
   const navNodes: TreeNode[] = [
     {
