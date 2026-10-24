@@ -38,9 +38,10 @@ export async function showBranchMenu(r: RepoCtx, b: Branch, onCompare: CompareBr
   const isCurrent = !remote && b.name === cur
   const id = await showMenu([
     { id: 'checkout', label: remote ? 'Checkout as local branch' : 'Checkout', enabled: !isCurrent },
+    { id: 'new', label: 'New branch from here…' },
+    ...(remote ? [] : [{ id: 'pr', label: 'Open pull request' }]),
     { type: 'separator' },
     ...(compares.length ? [{ label: 'Compare', submenu: compares }] : []),
-    ...(remote ? [] : [{ id: 'pr', label: 'Open pull request' }]),
     {
       label: 'Merge / Rebase',
       enabled: !isCurrent,
@@ -49,7 +50,6 @@ export async function showBranchMenu(r: RepoCtx, b: Branch, onCompare: CompareBr
         { id: 'rebase', label: `Rebase ${cur ?? 'HEAD'} onto ${b.name}` }
       ]
     },
-    { id: 'new', label: 'New branch from here…' },
     {
       label: 'Manage',
       submenu: [

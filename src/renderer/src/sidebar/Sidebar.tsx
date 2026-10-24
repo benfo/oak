@@ -23,6 +23,8 @@ async function tagMenu(r: RepoCtx, b: Branch) {
   const cur = r.status?.branch ?? 'HEAD'
   const id = await showMenu([
     { id: 'checkout', label: 'Checkout (detached)' },
+    { id: 'new', label: 'New branch from here…' },
+    { type: 'separator' },
     {
       label: 'Merge / Rebase',
       submenu: [
@@ -30,7 +32,6 @@ async function tagMenu(r: RepoCtx, b: Branch) {
         { id: 'rebase', label: `Rebase ${cur} onto ${b.name}` }
       ]
     },
-    { id: 'new', label: 'New branch from here…' },
     {
       label: 'Manage',
       submenu: [
