@@ -86,9 +86,14 @@ async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch, onCom
       submenu: [
         { id: 'revert', label: 'Revert commit…' },
         { type: 'separator' },
-        { id: 'reset:soft', label: `Reset ${cur} here, keep changes staged`, enabled: !isHead },
-        { id: 'reset:mixed', label: `Reset ${cur} here, keep changes unstaged`, enabled: !isHead },
-        { id: 'reset:hard', label: `Reset ${cur} here, discard all changes…`, enabled: !isHead }
+        ...(isHead
+          ? [{ label: 'Reset: already at this commit', enabled: false }]
+          : [
+              { id: 'reset:soft', label: 'Reset to here, keep changes staged' },
+              { id: 'reset:mixed', label: 'Reset to here, keep changes unstaged' },
+              { type: 'separator' as const },
+              { id: 'reset:hard', label: 'Reset to here, discard changes…' }
+            ])
       ]
     },
     {
