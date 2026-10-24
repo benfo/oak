@@ -35,6 +35,13 @@ npm test
 
 `npm run lint` enforces design tokens: CSS must use the values in `src/renderer/src/tokens.css` rather than raw colours, spacing or sizes. Tests use a real `git` in a temporary repository.
 
+## Branches and pull requests
+
+- Never commit to `main`. Branch from an up-to-date `main`, named with a type prefix and a short slug: `feature/`, `fix/`, `docs/`, `chore/` or `website/`, for example `fix/graph-scroll`.
+- There are no release or `develop` branches. A fix for a released bug is a normal `fix/` branch, released as the next version. If a branch depends on another unmerged branch, stack it on that branch and say so in the pull request.
+- Every change goes through a pull request. Pull requests are squash-merged, so the title becomes the one-line commit on `main`, and the branch is deleted after the merge.
+- Pushes to `main` that touch `website/` deploy the site, so website work always goes through a `website/` branch.
+
 ## Guidelines
 
 - Read [AGENTS.md](AGENTS.md). It describes the architecture, the design rules (no layout shift, one focus system, tokens only) and the keyboard model. It applies to people and coding agents alike.
