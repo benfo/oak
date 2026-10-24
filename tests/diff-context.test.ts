@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { FULL_CONTEXT, lessContext, moreContext } from '../src/renderer/src/lib/diffContext.ts'
+import { FULL_CONTEXT, lessContext, moreContext } from '../src/renderer/src/diff/diffContext.ts'
 
 test('more context steps up and ends at the whole file', () => {
   assert.equal(moreContext(3), 6)

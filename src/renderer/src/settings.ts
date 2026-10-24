@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { PullMode } from '../../shared/types'
 import { api } from './api'
-import type { DiffLayout } from './lib/diffLayout'
+import type { DiffLayout } from './diff/diffLayout'
 
 /** User preferences (Preferences dialog, Ctrl+,). Stored in localStorage; read anywhere with getSettings(). */
 export interface Settings {

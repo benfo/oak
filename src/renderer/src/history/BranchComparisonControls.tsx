@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { Toolbar } from 'react-aria-components'
-import type { BranchComparison } from '../lib/commitPreview'
+import type { BranchComparison } from './commitPreview'
 import { toolbarHomeEnd } from '../lib/navigation'
-import { Icon } from './Icon'
-import { Tip } from './Tip'
+import { Icon } from '../components/Icon'
+import { Tip } from '../components/Tip'
 
 /** Contextual controls stay with the comparison results, including while a preview fails or loads. */
 export function BranchComparisonControls({

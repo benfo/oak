@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { lineKey, linesPatch, parseDiff } from '../src/renderer/src/lib/diff.ts'
+import { lineKey, linesPatch, parseDiff } from '../src/renderer/src/diff/diff.ts'
 
 const repo = mkdtempSync(join(tmpdir(), 'oak-lines-'))
 after(() => rmSync(repo, { recursive: true, force: true }))

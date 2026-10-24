@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { AUTO_SPLIT_WIDTH, resolveDiffLayout, toggleDiffLayout } from '../src/renderer/src/lib/diffLayout.ts'
+import { AUTO_SPLIT_WIDTH, resolveDiffLayout, toggleDiffLayout } from '../src/renderer/src/diff/diffLayout.ts'
 
 test('automatic responds to the available diff pane width', () => {
   assert.equal(resolveDiffLayout('auto', 0), 'unified')

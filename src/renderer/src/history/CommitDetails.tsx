@@ -1,39 +1,41 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useVirtualRows } from '../lib/useVirtualRows'
 import { Button, ProgressBar } from 'react-aria-components'
 import { api, errorMessage } from '../api'
-import { useContextLines } from '../lib/useDiffContext'
+import { useContextLines } from '../diff/useDiffContext'
 import { fullDate, splitPath, STATUS_LABEL } from '../lib/format'
-import { Avatar } from './Avatar'
+import { Avatar } from '../components/Avatar'
 import type { ChangedFile, Commit } from '../../../shared/types'
-import { createCommitPreviewLoader, type BranchComparison, type CommitPreview } from '../lib/commitPreview'
-import { DiffView } from './DiffView'
+import { createCommitPreviewLoader, type BranchComparison, type CommitPreview } from './commitPreview'
+import { DiffView } from '../diff/DiffView'
 import { BranchComparisonControls } from './BranchComparisonControls'
-import { Icon } from './Icon'
-import { Tip } from './Tip'
-import { Split } from './Split'
-import { focusPane, handleListNav, handleNavigation, revealActive } from '../lib/navigation'
+import { Icon } from '../components/Icon'
+import { Tip } from '../components/Tip'
+import { Split } from '../components/Split'
+import { focusPane, handleListNav, handleNavigation } from '../lib/navigation'
 import { usePane } from '../lib/usePane'
 import { fileMenuItems, runFileMenu } from '../lib/fileMenu'
 import { toast } from '../ui'
 import { useSettings } from '../settings'
 import { buildChangeRows, changeTreeOrder, CHANGE_TREE_INDENT, expandTo, toggled, type ChangeRow } from '../lib/changeTree'
-import { ChevronSpacer, FolderLabel } from './ChangeTreeRow'
-import { TreeToggle, toggleChangesTree } from './TreeToggle'
-import { useCommitFilesMode, getCommitFilesMode, setCommitFilesMode, toggleCommitFilesMode } from '../lib/commitFilesMode'
-import { loadCommitFileContent } from '../lib/commitFileContent'
-import { useCommitTree } from '../lib/useCommitTree'
-import { ancestors, nearestExisting } from '../lib/fileTree'
+import { ChevronSpacer, FolderLabel } from '../components/ChangeTreeRow'
+import { TreeToggle, toggleChangesTree } from '../components/TreeToggle'
+import { useCommitFilesMode, getCommitFilesMode, setCommitFilesMode, toggleCommitFilesMode } from './commitFilesMode'
+import { loadCommitFileContent } from './commitFileContent'
+import { useCommitTree } from './useCommitTree'
+import { ancestors, nearestExisting } from './fileTreeModel'
 import { FileTree } from './FileTree'
 import { copyText } from '../lib/copy'
 import { fileListCopy, registerListCopy } from '../lib/listCopy'
 import { showMenu } from '../api'
-import { PaneFrame } from './Pane'
-import { openPalette } from './Palette'
+import { PaneFrame } from '../components/Pane'
+import { openPalette } from '../components/Palette'
 import { WORKING_HASH } from '../../../shared/working.ts'
-import { comparisonSummary, type ComparisonRelation } from '../lib/comparisonModes'
+import { comparisonSummary, type ComparisonRelation } from './comparisonModes'
 
 /** Matches --row-md (tokens.css). */
 const ROW_H = 28
+const OVERSCAN = 8
 const NONE_COLLAPSED: ReadonlySet<string> = new Set()
 
 export function CommitDetails({
@@ -175,8 +177,25 @@ export function CommitDetails({
     () => (treeMode && detailsCurrent ? changeTreeOrder(details.files) : detailsCurrent ? details.files : []),
     [treeMode, detailsCurrent, details]
   )
-  useEffect(() => revealActive(listRef.current), [file, cursorId, rows])
-
+  // Only the rows near the viewport are rendered, so a commit with thousands of files stays responsive.
+  const rowCount = shownRows ? shownRows.length : (details?.files.length ?? 0)
+  const activeIndex = shownRows
+    ? shownRows.findIndex((r) => r.id === (cursorId ?? activePath))
+    : (details?.files.findIndex((f) => f.path === activePath) ?? -1)
+  const {
+    virtual,
+    start: windowStart,
+    end: windowEnd,
+    spacer
+  } = useVirtualRows({
+    count: rowCount,
+    getScrollElement: () => listRef.current,
+    estimateSize: () => ROW_H,
+    overscan: OVERSCAN
+  })
+  useEffect(() => {
+    if (activeIndex >= 0) virtual.scrollToIndex(activeIndex, { align: 'auto' })
+  }, [file, cursorId, rows, activeIndex])
   // Switching to the tree keeps the viewed file visible.
   const wasTree = useRef(changesTree)
   useEffect(() => {
@@ -572,27 +591,29 @@ export function CommitDetails({
                 onKeyDown={onListKey}
                 onKeyDownCapture={(e) => pane.navigate(e, findFile)}
               >
-                {shownRows
-                  ? shownRows.map((row) => {
-                      const style = { '--indent': `${row.depth * CHANGE_TREE_INDENT}px` } as React.CSSProperties
-                      if (row.entry) return renderFile(row.entry, { style, spacer: true, selected: !cursorId && activePath === row.id })
-                      const closed = collapsed.has(row.id)
-                      return (
-                        <div
-                          key={row.id}
-                          className={`file-row folder-row ${cursorId === row.id ? 'selected' : ''}`}
-                          style={style}
-                          title={row.id}
-                          onClick={() => {
-                            selectRow(row)
-                            setCollapsed(toggled(collapsed, row.id))
-                          }}
-                        >
-                          <FolderLabel row={row} collapsed={closed} />
-                        </div>
-                      )
-                    })
-                  : details?.files.map((f) => renderFile(f, { selected: activePath === f.path }))}
+                <div className="file-rows" style={spacer}>
+                  {shownRows
+                    ? shownRows.slice(windowStart, windowEnd).map((row) => {
+                        const style = { '--indent': `${row.depth * CHANGE_TREE_INDENT}px` } as React.CSSProperties
+                        if (row.entry) return renderFile(row.entry, { style, spacer: true, selected: !cursorId && activePath === row.id })
+                        const closed = collapsed.has(row.id)
+                        return (
+                          <div
+                            key={row.id}
+                            className={`file-row folder-row ${cursorId === row.id ? 'selected' : ''}`}
+                            style={style}
+                            title={row.id}
+                            onClick={() => {
+                              selectRow(row)
+                              setCollapsed(toggled(collapsed, row.id))
+                            }}
+                          >
+                            <FolderLabel row={row} collapsed={closed} />
+                          </div>
+                        )
+                      })
+                    : details?.files.slice(windowStart, windowEnd).map((f) => renderFile(f, { selected: activePath === f.path }))}
+                </div>
               </div>
             </PaneFrame>
           )}

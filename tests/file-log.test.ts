@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { singleLane, splitFileLogChunk } from '../src/shared/fileLog.ts'
-import { buildGraph } from '../src/renderer/src/lib/graph.ts'
+import { buildGraph } from '../src/renderer/src/history/graph.ts'
 import type { Commit } from '../src/shared/types.ts'
 
 const commit = (hash: string, ...parents: string[]): Commit => ({ hash, parents, author: '', email: '', date: 0, subject: hash, refs: [] })

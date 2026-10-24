@@ -20,7 +20,7 @@ let waiting: Job | null = null
 let nextId = 0
 
 function send(job: Job) {
-  worker ??= new Worker(new URL('../highlight.worker.ts', import.meta.url), { type: 'module' })
+  worker ??= new Worker(new URL('./highlight.worker.ts', import.meta.url), { type: 'module' })
   busy = true
   const id = ++nextId
   worker.onmessage = (e: MessageEvent<{ id: number; tokens: Span[][][] | null; error?: string }>) => {

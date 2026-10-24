@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseDiff } from '../src/renderer/src/lib/diff.ts'
-import { wordChanges, wordSpans } from '../src/renderer/src/lib/wordDiff.ts'
+import { parseDiff } from '../src/renderer/src/diff/diff.ts'
+import { wordChanges, wordSpans } from '../src/renderer/src/diff/wordDiff.ts'
 
 const replacement = (before: string[], after: string[]) =>
   parseDiff(

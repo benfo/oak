@@ -1,5 +1,5 @@
-import { highlightBlocks, knownLanguage } from './lib/highlighter'
-import { languageFor } from './lib/syntax'
+import { highlightBlocks, knownLanguage } from './highlighter'
+import { languageFor } from './syntax'
 
 /** Request: { id, path, blocks }. Reply: { id, tokens } — tokens is null for files we don't highlight. */
 export interface HighlightRequest {

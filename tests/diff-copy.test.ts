@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseDiff } from '../src/renderer/src/lib/diff.ts'
-import { copiedLabel, copiedPatch, copiedText } from '../src/renderer/src/lib/diffCopy.ts'
+import { parseDiff } from '../src/renderer/src/diff/diff.ts'
+import { copiedLabel, copiedPatch, copiedText } from '../src/renderer/src/diff/diffCopy.ts'
 
 const diff = parseDiff(
   '--- a/f.ts\n+++ b/f.ts\n@@ -1,3 +1,3 @@\n keep\n-old\n+new\n@@ -10,2 +10,2 @@\n-gone\n+\n\\ No newline at end of file\n'
