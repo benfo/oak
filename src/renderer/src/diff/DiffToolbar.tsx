@@ -53,7 +53,7 @@ export function DiffToolbar({
       </span>
       {metadata}
       <Toolbar className="diff-controls" aria-label="Diff tools" ref={toolsRef}>
-        {files && (
+        {files && files.count > 1 && (
           <span className="diff-navigation-group">
             <Tip label="Previous file" keys="Alt+PageUp">
               <Button className="icon-btn" aria-label="Previous file" isDisabled={files.index <= 0} onPress={() => moveFile(-1)}>
