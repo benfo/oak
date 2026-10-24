@@ -2,6 +2,17 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.16
+
+### Added
+
+- Transit-map look. The Light and Dark themes are restyled as a transit map, and the commit graph draws stations as rings with filled dots for merges.
+
+### Fixed
+
+- The diff toolbar hides the file counter when only one file is shown.
+- Long lists in the graph, History files and diff are virtualized for smoother scrolling.
+
 ## 0.1.15
 
 ### Added

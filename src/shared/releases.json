@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.1.16",
+    "highlights": [
+      { "title": "Transit-map look", "text": "The Light and Dark themes are restyled as a transit map, and the commit graph draws stations as rings with filled dots for merges." }
+    ],
+    "fixes": [
+      "The diff toolbar hides the file counter when only one file is shown.",
+      "Long lists in the graph, History files and diff are virtualized for smoother scrolling."
+    ]
+  },
+  {
     "version": "0.1.15",
     "highlights": [
       { "title": "List or tree for changed files", "text": "Press V in a file list, or use the button in its header, to group changed files by folder in Changes and in a commit's files in History. Selecting a folder in Changes selects every file in it." }
