@@ -40,6 +40,7 @@ npm test
 - Never commit to `main`. Branch from an up-to-date `main`, named with a type prefix and a short slug: `feature/`, `fix/`, `docs/`, `chore/` or `website/`, for example `fix/graph-scroll`.
 - There are no release or `develop` branches. A fix for a released bug is a normal `fix/` branch, released as the next version. If a branch depends on another unmerged branch, stack it on that branch and say so in the pull request.
 - Every change goes through a pull request. Pull requests are squash-merged, so the title becomes the one-line commit on `main`, and the branch is deleted after the merge.
+- Documentation that belongs to a change (for example `ROADMAP.md`) goes in that change's branch. Use `docs/` only for documentation on its own.
 - Pushes to `main` that touch `website/` deploy the site, so website work always goes through a `website/` branch.
 
 ## Guidelines
