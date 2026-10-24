@@ -32,12 +32,13 @@ export async function runCompareItem(id: string | null, r: RepoCtx, source: Bran
 export async function showBranchMenu(r: RepoCtx, b: Branch, onCompare: CompareBranch) {
   const remote = b.type === 'remote'
   const cur = r.status?.branch
+  const compares = await compareMenuItems(r, b)
   const isCurrent = !remote && b.name === cur
   const id = await showMenu([
     { id: 'checkout', label: remote ? 'Checkout as local branch' : 'Checkout', enabled: !isCurrent },
-    ...(await compareMenuItems(r, b)),
-    ...(remote ? [] : [{ id: 'pr', label: 'Open pull request' }]),
     { type: 'separator' },
+    ...(compares.length ? [{ label: 'Compare', submenu: compares }] : []),
+    ...(remote ? [] : [{ id: 'pr', label: 'Open pull request' }]),
     {
       label: 'Merge / Rebase',
       enabled: !isCurrent,
