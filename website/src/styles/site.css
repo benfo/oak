@@ -1,0 +1,62 @@
+@import "tailwindcss";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+}
+
+@plugin "daisyui/theme" {
+  name: "light";
+  --color-primary: #2a8a3a;
+  --color-primary-content: #ffffff;
+}
+
+@plugin "daisyui/theme" {
+  name: "dark";
+  --color-primary: #6fd56a;
+  --color-primary-content: #0f2a12;
+}
+
+@layer base {
+  html { scroll-padding-top: --spacing(6); }
+  body { @apply min-h-dvh bg-base-100 text-base-content antialiased; }
+  :focus-visible { @apply outline-2 outline-offset-4 outline-primary; }
+  /* Feature accents reuse the app's graph-lane hues. */
+  :root {
+    --accent-blue: #345fe8; --accent-orange: #d9731a; --accent-green: #2a8a3a; --accent-violet: #7c4dd6; --accent-teal: #1c8f99;
+  }
+  [data-theme="dark"] {
+    --accent-blue: #9ab6ff; --accent-orange: #f0a35a; --accent-green: #6fd56a; --accent-violet: #b99bff; --accent-teal: #5fd0d8;
+  }
+  [data-accent="blue"] { --accent: var(--accent-blue); }
+  [data-accent="orange"] { --accent: var(--accent-orange); }
+  [data-accent="green"] { --accent: var(--accent-green); }
+  [data-accent="violet"] { --accent: var(--accent-violet); }
+  [data-accent="teal"] { --accent: var(--accent-teal); }
+}
+
+/* Flat product sections: framework spacing and semantic colours, no decorative motion. */
+@layer components {
+  .site-shell { @apply mx-auto w-full max-w-7xl px-5 sm:px-8; }
+  .oak-wordmark { @apply flex items-center gap-2 text-3xl font-semibold tracking-tight; }
+  .nav-link { @apply text-sm text-base-content/65 transition-colors hover:text-base-content; }
+  .screenshot-link:focus-visible { @apply outline-offset-[-4px]; }
+  .hero-section { @apply pt-14 pb-8 sm:pt-20 sm:pb-12; }
+  .hero-heading { @apply text-5xl leading-[1.02] font-semibold tracking-tight sm:text-7xl; }
+  .preview-caption { @apply flex items-center justify-between gap-4 border-t border-base-300 py-4; }
+  .preview-footer { @apply flex flex-wrap items-center justify-between gap-3 py-4; }
+  .section-block { @apply border-t border-base-300 py-16 sm:py-24; }
+  .section-heading { @apply text-4xl leading-[1.12] font-medium tracking-tight text-balance sm:text-5xl; }
+  .section-copy { @apply text-base leading-relaxed text-pretty text-base-content/65; }
+  .section-heading-row { @apply flex flex-col justify-between gap-6 lg:flex-row lg:items-end lg:gap-16; }
+  .section-band { @apply border-y border-base-300; background: color-mix(in oklab, var(--accent, var(--color-base-content)) 7%, transparent); }
+  .workflow-steps { @apply mt-12 grid gap-8 sm:grid-cols-3 sm:gap-10; }
+  [data-accent] .section-heading::after { content: ""; display: block; width: --spacing(10); height: --spacing(1); margin-top: --spacing(4); border-radius: 9999px; background: var(--accent); }
+  [data-accent] a.link-primary { color: var(--accent); }
+  [data-accent] .badge-ghost { background: color-mix(in oklab, var(--accent) 15%, transparent); color: var(--accent); border-color: transparent; }
+  .workflow-steps h3 { @apply mb-2 text-base font-medium; }
+  .workflow-steps p { @apply max-w-sm text-sm leading-relaxed text-base-content/60; }
+  .support-heading { @apply text-2xl font-medium tracking-tight sm:text-3xl; }
+  .shortcut-strip { @apply mt-7 flex flex-wrap gap-6 border-t border-base-300 pt-5; }
+  .shortcut-strip > div { @apply flex flex-col gap-2; }
+  .shortcut-strip dt { @apply text-xs text-base-content/70; }
+}

@@ -1,0 +1,16 @@
+name: Feature request
+description: Suggest a change for everyday Git work
+labels: [enhancement]
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: What are you trying to do?
+      description: Describe the everyday task and where Oak gets in the way. Oak favours a few good controls over many, so a concrete workflow helps.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Suggested approach
+      description: Optional. How you think it could work.

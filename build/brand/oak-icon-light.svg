@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="title desc">
+  <title id="title">Oak app icon, light</title>
+  <desc id="desc">A flat oak tree formed from green, teal and orange Git paths, circular commit nodes, three parallel trunks and two open ring roots.</desc>
+  <rect x="16" y="16" width="480" height="480" rx="104" fill="#FFFFFF"/>
+  <g transform="translate(90.4 59.08) scale(.72)">
+  <g fill="none" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="#49BE45" d="M135 90C125 142 97 175 40 200"/>
+    <path stroke="#00C4BA" d="M135 90L230 136M135 90V295"/>
+    <path stroke="#49BE45" d="M230 36V264"/>
+    <path stroke="#249A84" d="M325 90C339 146 372 182 420 200V228C420 271 400 295 363 295H298"/>
+    <path stroke="#FF961C" d="M325 90V200"/>
+    <path stroke="#80CC4E" d="M40 200V231C40 279 76 295 135 295C135 344 147 365 175 368C188 370 192 377 192 391V466C192 491 175 496 145 496"/>
+    <path stroke="#80CC4E" d="M325 200C263 200 230 236 230 290V468C230 510 209 524 169 524"/>
+    <path stroke="#249A84" d="M325 200V235C325 275 268 278 268 319V462C268 489 287 496 320 496"/>
+    <path stroke="#249A84" d="M246 507C260 519 279 524 296 524"/>
+    <circle fill="#FFFFFF" stroke="#80CC4E" cx="143" cy="520" r="25"/>
+    <circle fill="#FFFFFF" stroke="#249A84" cx="318" cy="520" r="25"/>
+  </g>
+  <g fill="#49BE45"><circle cx="230" cy="36" r="34"/><circle cx="230" cy="136" r="34"/></g>
+  <g fill="#00C4BA"><circle cx="135" cy="90" r="34"/><circle cx="135" cy="200" r="34"/></g>
+  <g fill="#80CC4E"><circle cx="40" cy="200" r="34"/><circle cx="135" cy="295" r="34"/></g>
+  <g fill="#FF961C"><circle cx="325" cy="90" r="34"/><circle cx="325" cy="200" r="34"/></g>
+  <circle fill="#249A84" cx="420" cy="200" r="34"/>
+  </g>
+</svg>

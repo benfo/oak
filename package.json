@@ -1,0 +1,156 @@
+{
+  "name": "oak",
+  "productName": "Oak",
+  "version": "0.1.15",
+  "description": "A keyboard-friendly Git GUI for Windows and Linux, built on your installed Git",
+  "homepage": "https://www.benfourie.com/oak/",
+  "license": "MIT",
+  "keywords": [
+    "git",
+    "git-gui",
+    "git-client",
+    "electron",
+    "react",
+    "typescript"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benfo/oak.git"
+  },
+  "bugs": "https://github.com/benfo/oak/issues",
+  "desktopName": "oak.desktop",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"tests/**/*.test.ts\"",
+    "icon": "electron scripts/make-icon.cjs",
+    "dist": "electron-vite build && electron-builder --win",
+    "dist:linux": "electron-vite build && electron-builder --linux --x64 --publish never",
+    "test:linux-package": "node scripts/smoke-linux.cjs",
+    "lint": "stylelint \"src/renderer/src/**/*.css\"",
+  "format": "prettier --write \"{src,tests,scripts}/**/*.{ts,tsx,cjs}\" electron.vite.config.ts",
+  "format:check": "prettier --check \"{src,tests,scripts}/**/*.{ts,tsx,cjs}\" electron.vite.config.ts",
+    "release": "node scripts/release.cjs",
+    "site:dev": "npm --prefix website run dev",
+    "site:build": "npm --prefix website run build",
+    "site:check": "npm --prefix website run check",
+    "site:preview": "npm --prefix website run preview"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^6.0.0",
+    "prettier": "^3.9.10",
+    "react": "^19.3.1",
+    "react-aria-components": "^1.22.1",
+    "react-dom": "^19.3.1",
+    "react-resizable-panels": "^4.14.5",
+    "react-stately": "^3.51.0",
+    "shiki": "^4.5.0",
+    "stylelint": "^17.16.0",
+    "stylelint-declaration-strict-value": "^1.12.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  },
+  "author": "Ben Fourie (https://github.com/benfo)",
+  "build": {
+    "appId": "dev.oak.app",
+    "productName": "Oak",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/main/**/*",
+      "out/preload/**/*",
+      "out/renderer/**/*"
+    ],
+    "win": {
+      "artifactName": "Oak-Setup-${version}.${ext}",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "executableName": "Oak"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Oak",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "executableName": "oak",
+      "syncDesktopName": true,
+      "category": "Development",
+      "artifactName": "Oak-${version}-linux-${arch}.${ext}"
+    },
+    "deb": {
+      "depends": [
+        "git",
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0",
+        "libasound2 (>= 1.0.17) | libasound2t64"
+      ]
+    },
+    "toolsets": {
+      "appimage": "1.0.3"
+    },
+    "electronLanguages": [
+      "en-US"
+    ],
+    "compression": "maximum",
+    "publish": {
+      "provider": "github",
+      "owner": "benfo",
+      "repo": "oak",
+      "releaseType": "release"
+    }
+  },
+  "dependencies": {
+    "diff": "^9.0.0",
+    "electron-updater": "^6.8.9",
+    "fuzzysort": "^4.0.2"
+  }
+}

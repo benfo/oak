@@ -1,0 +1,21 @@
+---
+interface Props {
+  image: string
+  title: string
+  priority?: boolean
+  frameClass?: string
+  imageClass?: string
+  width?: number
+  height?: number
+}
+const { image, title, priority = false, frameClass = '', imageClass = 'h-auto w-full', width = 2160, height = 1383 } = Astro.props
+const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+---
+<div class:list={['overflow-hidden rounded-md border border-base-300 bg-base-200', frameClass]}>
+  <a href={`${base}/${image}.png`} data-screenshot class="screenshot-link block h-full cursor-zoom-in dark:hidden" aria-label={`Enlarge screenshot: ${title}, light theme`}>
+    <img src={`${base}/${image}.png`} width={width} height={height} class:list={[imageClass, 'block']} alt={`${title}, in Oak's light theme.`} loading={priority ? 'eager' : 'lazy'} fetchpriority={priority ? 'high' : 'low'} />
+  </a>
+  <a href={`${base}/${image}-dark.png`} data-screenshot class="screenshot-link hidden h-full cursor-zoom-in dark:block" aria-label={`Enlarge screenshot: ${title}, dark theme`}>
+    <img src={`${base}/${image}-dark.png`} width={width} height={height} class:list={[imageClass, 'block']} alt={`${title}, in Oak's dark theme.`} loading={priority ? 'eager' : 'lazy'} fetchpriority={priority ? 'high' : 'low'} />
+  </a>
+</div>
