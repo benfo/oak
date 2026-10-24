@@ -72,6 +72,22 @@ test.describe('history', () => {
     await expect(page.locator('.commit-list')).toContainText('Initial commit')
   })
 
+  test('the commit menu groups rare actions into submenus', async ({ open, small }) => {
+    const page = await open(small, 'history')
+    await page
+      .locator('.commit-list')
+      .getByRole('option', { name: /Initial commit/ })
+      .click({ button: 'right' })
+    const menu = page.getByRole('menu')
+    await expect(menu.getByRole('menuitem', { name: /New branch from here/ })).toBeVisible()
+    for (const group of ['Compare', 'Merge / Rebase', 'Undo', 'More', 'Copy']) {
+      await expect(menu.getByRole('menuitem', { name: group })).toBeVisible()
+    }
+    await expect(menu.getByRole('menuitem', { name: /Revert commit/ })).toHaveCount(0)
+    await menu.getByRole('menuitem', { name: 'Undo' }).click()
+    await expect(page.getByRole('menuitem', { name: /Revert commit/ })).toBeVisible()
+  })
+
   test('hides branches matching a pattern in the sidebar and the graph, and reveals them again', async ({ open, small }) => {
     git(small, 'stash', '-u', '-q')
     git(small, 'checkout', '-q', '-b', 'dependabot/npm/lodash')
