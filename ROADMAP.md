@@ -18,7 +18,7 @@ Lessons for any future history rewrite or tag move:
 - Remove branch protection before a force push and restore it afterwards. GitHub may keep old SHAs reachable until Support garbage-collects them.
 - This clone excludes `gh-pages` from fetch so it does not clutter History: `git config --add remote.origin.fetch "^refs/heads/gh-pages"` then `git branch -dr origin/gh-pages`. A fresh clone needs the same two commands.
 
-**Release state.** Oak 0.1.15 is released (notes in `src/shared/releases.json`) and the website is pinned to it in `website/src/data/release.json`. The next version needs a `package.json` bump, release notes, a push to `main` and a matching `vX.Y.Z` tag. Unreleased on `main`:
+**Release state.** Oak 0.1.17 is prepared (notes in `src/shared/releases.json`); once its `v0.1.17` tag has published, `website/src/data/release.json` is pinned to it. The next version needs a `package.json` bump, release notes, a push to `main` and a matching `vX.Y.Z` tag. Details still worth knowing from the unreleased work:
 
 - "Merge into" a branch that is already contained in the current branch now says "Nothing to merge: <branch> already contains <ref>" (`merge` returns Git's output). A disabled "(already merged)" menu item was tried and reverted because the check delayed the menu. If wanted later, compute it in the background when a repo opens or refreshes, like the compare-target cache, so menus never wait on Git.
 - V switches the changed-files List/Tree view from the diff as well as the file lists (`switchView` has the `diff` role in `lib/keymap.ts`). It does nothing in the graph, sidebar or toolbar, in the expanded Code layout or in History's All files mode.

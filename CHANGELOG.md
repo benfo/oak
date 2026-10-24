@@ -2,6 +2,19 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.17
+
+### Added
+
+- Hide noisy branches. Hide branches by pattern (for example `dependabot/*`) or hide remote-only branches, per repository, in the sidebar and the History graph. Set them in the new Repository tab in Preferences, which previews the matches. The checked-out branch is never hidden and History shows how many are hidden.
+
+### Fixed
+
+- The History commit menu keeps everyday actions flat and groups the rest under Compare, Merge / Rebase, Undo and More. Branch and tag menus use the same order.
+- Merging a branch that the current branch already contains says there is nothing to merge.
+- V switches the changed-files list or tree view from the diff as well as from the file lists.
+- Opening Oak with flags before the folder now opens the right folder.
+
 ## 0.1.16
 
 ### Added
