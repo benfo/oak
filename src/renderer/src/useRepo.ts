@@ -4,6 +4,7 @@ import { toast } from './ui'
 import type { Branch, Commit, HistoryScope, RepoStatus, Stash } from '../../shared/types'
 import { loadHistoryToCommit } from './lib/historyNavigation'
 import {
+  cachedRemoteHead,
   defaultCompareName,
   loadHistoryScope,
   prefetchRemoteHead,
@@ -11,6 +12,13 @@ import {
   saveHistoryScope,
   type HistoryScopeKind
 } from './lib/compareTarget'
+import {
+  hiddenRefGlobs,
+  loadBranchOptions,
+  saveBranchOptions,
+  visibleRemoteRefs,
+  type SidebarBranchOptions
+} from './sidebar/sidebarBranches'
 
 const PAGE = 2000
 const MAX_OUTPUT = 200_000
@@ -73,6 +81,11 @@ export interface RepoCtx {
   refresh(): Promise<void>
   refreshStatus(): Promise<void>
   loadMore(): void
+  /** Sidebar branch display options for this repository; hidden branches also drop out of the graph. */
+  branchOptions: SidebarBranchOptions
+  /** The remote's default branch (for example origin/main), which remote-only hiding keeps. */
+  remoteHead: string | null
+  setBranchOptions(options: SidebarBranchOptions): void
   /** Runs an operation with a busy indicator, refreshes afterwards, and rethrows errors. */
   withBusy<T>(label: string, fn: () => Promise<T>): Promise<T>
   /** Like withBusy, but reports errors as a toast instead of throwing. */
@@ -99,6 +112,9 @@ export function useRepo(path: string): RepoCtx {
   const scopeRef = useRef<HistoryScope>({ kind: 'all' })
   const rangeRef = useRef<HistoryRange | null>(null)
   const [historyFile, setHistoryFileState] = useState<string | null>(null)
+  const [branchOptions, setBranchOptionsState] = useState(() => loadBranchOptions(path))
+  const branchOptionsRef = useRef(branchOptions)
+  const [remoteHead, setRemoteHead] = useState<string | null>(null)
   const fileRef = useRef<string | null>(null)
   // A comparison and a file's history never combine; the comparison wins.
   const fileFor = (range: HistoryRange | null) => (range ? null : fileRef.current)
@@ -166,12 +182,18 @@ export function useRepo(path: string): RepoCtx {
           return target ? { kind: 'target', target: target.fullName } : { kind: 'head' }
         })()
         const scope = await scopeRequest
+        const loadedBranches = await branchesRequest
+        const head = await Promise.resolve(cachedRemoteHead(path)).catch(() => null)
+        const options = branchOptionsRef.current
+        const hiddenRefs = hiddenRefGlobs(loadedBranches, options)
+        const keepRemotes = visibleRemoteRefs(loadedBranches, options, head)
         const [b, s, c, recent] = await Promise.all([
           branchesRequest,
           api.stashes(path),
-          api.log(path, requestedLimit, anchor, scope, file ?? undefined),
+          api.log(path, requestedLimit, anchor, scope, file ?? undefined, hiddenRefs, keepRemotes),
           api.recentBranches(path)
         ])
+        if (changed('remoteHead', head)) setRemoteHead(head)
         if (changed('branches', b)) setBranches(b)
         if (changed('stashes', s)) setStashes(s)
         // Ordinary paging may finish after a click; keep it unless a larger navigation or a scope change has won.
@@ -349,6 +371,21 @@ export function useRepo(path: string): RepoCtx {
     refreshRefs()
   }, [refreshRefs])
 
+  const setBranchOptions = useCallback(
+    (next: SidebarBranchOptions) => {
+      const before = branchOptionsRef.current
+      branchOptionsRef.current = next
+      saveBranchOptions(path, next)
+      setBranchOptionsState(next)
+      const hiddenChanged =
+        before.showHidden !== next.showHidden ||
+        before.hideRemoteOnly !== next.hideRemoteOnly ||
+        before.hiddenPatterns.join('\n') !== next.hiddenPatterns.join('\n')
+      if (hiddenChanged) void refreshRefs(true)
+    },
+    [path, refreshRefs]
+  )
+
   return {
     path,
     name: repoName(path),
@@ -374,6 +411,9 @@ export function useRepo(path: string): RepoCtx {
     refresh,
     refreshStatus,
     loadMore,
+    branchOptions,
+    remoteHead,
+    setBranchOptions,
     withBusy,
     run
   }
