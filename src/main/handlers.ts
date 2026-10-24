@@ -35,7 +35,7 @@ let detectedGit: string | null = null
 
 /** The first existing folder among command-line arguments (skipping the exe/script and flags), resolved against `cwd`. */
 export function folderArg(argv: string[], cwd: string): string | null {
-  const args = argv.slice(process.defaultApp ? 2 : 1).filter((a) => !a.startsWith('-'))
+  const args = argv.filter((a) => !a.startsWith('-')).slice(process.defaultApp ? 2 : 1)
   const dir = args.map((a) => path.resolve(cwd, a)).find((a) => existsSync(a))
   return dir ?? null
 }
