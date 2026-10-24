@@ -5,10 +5,7 @@ A modern Git GUI. Electron + React 19 + TypeScript (electron-vite). It runs the 
 If `AGENTS.local.md` exists (a gitignored, per-clone file), read it too.
 
 ## Goals
-- Everyday Git, done simply and dependably. Judge features by how easily people finish common tasks, not by the number of controls.
-- The same action behaves the same everywhere (keyboard, mouse, selection, focus, feedback). Navigation preferences add alternatives, never different semantics.
-- Frequent actions are quick and visible; occasional ones are contextual (menus, command palette). Fetch/Pull/Push stay on the toolbar. No new permanent UI or commands without a concrete workflow benefit.
-- Visual direction: flat, original, uncluttered. Be honest in docs about platform support.
+Who Oak is for and its product principles live in [PRODUCT.md](PRODUCT.md); the visual system is in [DESIGN.md](DESIGN.md). In short: everyday Git done simply and dependably, the same action behaving the same everywhere, frequent actions quick and visible (Fetch/Pull/Push stay on the toolbar), and no new permanent UI or commands without a concrete workflow benefit. Be honest in docs about platform support.
 
 ## Commands
 - `npm run dev` (hot reload; restart for main-process changes), `npm run build`, `npm run typecheck`, `npm run lint`, `npm run format` (Prettier; `format:check` in CI), `npm test`. Run typecheck, lint, format and tests before proposing a change.

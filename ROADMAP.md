@@ -1,12 +1,6 @@
 # Roadmap
 
-Done, in progress and backlog. [AGENTS.md](AGENTS.md) holds the conventions and design rules; this file records status, decisions and ideas. Keep it short: when something ships, fold it into the shipped list below.
-
-## Project goals
-- Build a modern, simple Git client that feels dependable and a pleasure to use. Consistency and user joy are product goals, alongside correctness.
-- Keep keyboard, mouse, focus, selection and feedback predictable across views. Optional navigation schemes add keys, not different rules for search or actions.
-- Make frequent workflows quick without clutter. Add contextual controls and commands only when they solve a demonstrated need; preserve position and selection, avoid layout shifts, and make state visible.
-- Judge changes by reduced confusion, fewer unnecessary steps and real use, not feature count.
+Done, in progress and backlog. [PRODUCT.md](PRODUCT.md) holds who Oak is for and its principles; [AGENTS.md](AGENTS.md) holds the conventions and design rules; this file records status, decisions and ideas. Keep it short: when something ships, fold it into the shipped list below.
 
 ## Current status (2026-10-24)
 
