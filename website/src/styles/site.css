@@ -4,59 +4,216 @@
   themes: light --default, dark --prefersdark;
 }
 
+/* Paper, ink and the line colours come from the app (DESIGN.md), so the site and Oak read as one product. */
 @plugin "daisyui/theme" {
   name: "light";
-  --color-primary: #2a8a3a;
+  default: true;
+  color-scheme: light;
+  --color-base-100: #fbfaf6;
+  --color-base-200: #edeae3;
+  --color-base-300: #d9d5ca;
+  --color-base-content: #141414;
+  --color-primary: #0039a6;
   --color-primary-content: #ffffff;
+  --color-neutral: #141414;
+  --color-neutral-content: #fbfaf6;
+  --radius-selector: 2px;
+  --radius-field: 2px;
+  --radius-box: 4px;
 }
 
 @plugin "daisyui/theme" {
   name: "dark";
-  --color-primary: #6fd56a;
-  --color-primary-content: #0f2a12;
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: #1a1b1e;
+  --color-base-200: #131416;
+  --color-base-300: #2c2d30;
+  --color-base-content: #f0eee8;
+  --color-primary: #5b8dff;
+  --color-primary-content: #0b0b0c;
+  --color-neutral: #f0eee8;
+  --color-neutral-content: #1a1b1e;
+  --radius-selector: 2px;
+  --radius-field: 2px;
+  --radius-box: 4px;
+}
+
+@theme {
+  --font-sans: "Hanken Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
 }
 
 @layer base {
-  html { scroll-padding-top: --spacing(6); }
-  body { @apply min-h-dvh bg-base-100 text-base-content antialiased; }
-  :focus-visible { @apply outline-2 outline-offset-4 outline-primary; }
-  /* Feature accents reuse the app's graph-lane hues. */
   :root {
-    --accent-blue: #345fe8; --accent-orange: #d9731a; --accent-green: #2a8a3a; --accent-violet: #7c4dd6; --accent-teal: #1c8f99;
+    --line-blue: #0039a6;
+    --line-red: #ee352e;
+    --line-green: #00933c;
+    --line-orange: #ff6319;
+    --on-blue: #ffffff;
+    --on-red: #ffffff;
+    --on-green: #ffffff;
+    --on-orange: #141414;
+    --muted: color-mix(in oklab, var(--color-base-content) 72%, transparent);
+    --subtle: color-mix(in oklab, var(--color-base-content) 62%, transparent);
+    --station: 1.25rem;
+    --bar: 0.25rem;
+    --line-gap: 1.75rem;
+    --stop-top: 0.5rem;
   }
   [data-theme="dark"] {
-    --accent-blue: #9ab6ff; --accent-orange: #f0a35a; --accent-green: #6fd56a; --accent-violet: #b99bff; --accent-teal: #5fd0d8;
+    --line-blue: #5b8dff;
+    --line-red: #ff5a52;
+    --line-green: #2fbf6a;
+    --line-orange: #ff8346;
+    --on-blue: #141414;
+    --on-red: #141414;
+    --on-green: #141414;
+    --on-orange: #141414;
   }
-  [data-accent="blue"] { --accent: var(--accent-blue); }
-  [data-accent="orange"] { --accent: var(--accent-orange); }
-  [data-accent="green"] { --accent: var(--accent-green); }
-  [data-accent="violet"] { --accent: var(--accent-violet); }
-  [data-accent="teal"] { --accent: var(--accent-teal); }
+  html {
+    scroll-padding-top: --spacing(6);
+    accent-color: var(--color-primary);
+    scrollbar-color: var(--color-base-300) var(--color-base-100);
+  }
+  body { @apply min-h-dvh bg-base-100 text-base-content antialiased; }
+  ::selection { background: color-mix(in oklab, var(--color-primary) 30%, transparent); }
+  :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+  [data-color="blue"] { --line: var(--line-blue); --on-line: var(--on-blue); }
+  [data-color="red"] { --line: var(--line-red); --on-line: var(--on-red); }
+  [data-color="green"] { --line: var(--line-green); --on-line: var(--on-green); }
+  [data-color="orange"] { --line: var(--line-orange); --on-line: var(--on-orange); }
 }
 
-/* Flat product sections: framework spacing and semantic colours, no decorative motion. */
 @layer components {
   .site-shell { @apply mx-auto w-full max-w-7xl px-5 sm:px-8; }
-  .oak-wordmark { @apply flex items-center gap-2 text-3xl font-semibold tracking-tight; }
-  .nav-link { @apply text-sm text-base-content/65 transition-colors hover:text-base-content; }
-  .screenshot-link:focus-visible { @apply outline-offset-[-4px]; }
-  .hero-section { @apply pt-14 pb-8 sm:pt-20 sm:pb-12; }
-  .hero-heading { @apply text-5xl leading-[1.02] font-semibold tracking-tight sm:text-7xl; }
-  .preview-caption { @apply flex items-center justify-between gap-4 border-t border-base-300 py-4; }
-  .preview-footer { @apply flex flex-wrap items-center justify-between gap-3 py-4; }
+  .oak-wordmark { @apply flex items-center gap-2 text-3xl font-bold tracking-tight; }
+  .nav-link { @apply text-sm font-medium; color: var(--muted); }
+  .nav-link:hover { color: var(--color-base-content); }
+  .screenshot-link:focus-visible { outline-offset: -4px; }
+  .hero-heading { @apply text-balance font-bold; font-size: clamp(3rem, 7.5vw, 6rem); line-height: 0.98; letter-spacing: -0.035em; }
+  .section-heading { @apply text-4xl leading-[1.08] font-bold tracking-tight text-balance sm:text-5xl; }
+  .section-copy { @apply text-base leading-relaxed text-pretty; color: var(--muted); }
   .section-block { @apply border-t border-base-300 py-16 sm:py-24; }
-  .section-heading { @apply text-4xl leading-[1.12] font-medium tracking-tight text-balance sm:text-5xl; }
-  .section-copy { @apply text-base leading-relaxed text-pretty text-base-content/65; }
-  .section-heading-row { @apply flex flex-col justify-between gap-6 lg:flex-row lg:items-end lg:gap-16; }
-  .section-band { @apply border-y border-base-300; background: color-mix(in oklab, var(--accent, var(--color-base-content)) 7%, transparent); }
-  .workflow-steps { @apply mt-12 grid gap-8 sm:grid-cols-3 sm:gap-10; }
-  [data-accent] .section-heading::after { content: ""; display: block; width: --spacing(10); height: --spacing(1); margin-top: --spacing(4); border-radius: 9999px; background: var(--accent); }
-  [data-accent] a.link-primary { color: var(--accent); }
-  [data-accent] .badge-ghost { background: color-mix(in oklab, var(--accent) 15%, transparent); color: var(--accent); border-color: transparent; }
-  .workflow-steps h3 { @apply mb-2 text-base font-medium; }
-  .workflow-steps p { @apply max-w-sm text-sm leading-relaxed text-base-content/60; }
-  .support-heading { @apply text-2xl font-medium tracking-tight sm:text-3xl; }
-  .shortcut-strip { @apply mt-7 flex flex-wrap gap-6 border-t border-base-300 pt-5; }
-  .shortcut-strip > div { @apply flex flex-col gap-2; }
-  .shortcut-strip dt { @apply text-xs text-base-content/70; }
+  .muted { color: var(--muted); }
+  .subtle { color: var(--subtle); }
+
+  /* The map: a line is a bar, a feature is a station, and the selected station is filled with a halo (the graph's HEAD marker).
+     Each stop draws its own bar segment, from its station to the next one. */
+  .map-board { display: grid; gap: --spacing(8); }
+  .map-lines { display: grid; gap: var(--line-gap); }
+  .line-end { display: none; }
+  .line { display: grid; gap: --spacing(3); }
+  .line-head { display: flex; align-items: flex-start; gap: --spacing(3); min-width: 0; }
+  .roundel {
+    display: grid; flex: none; place-items: center; width: --spacing(8); height: --spacing(8);
+    border-radius: 9999px; background: var(--line); color: var(--on-line); font-weight: 800; font-size: 1.0625rem; line-height: 1;
+  }
+  .line-name { display: block; font-weight: 700; font-size: 1.125rem; line-height: 1.2; }
+  .line-blurb { display: block; font-size: 0.8125rem; color: var(--subtle); }
+
+  .track { display: grid; grid-template-columns: 1fr; }
+  .stop { position: relative; display: block; min-width: 0; padding: var(--stop-top) --spacing(2) --spacing(3) calc(var(--station) + --spacing(3)); color: var(--muted); text-decoration: none; }
+  .stop::before {
+    content: ""; position: absolute; z-index: 0; background: var(--line);
+    left: calc((var(--station) - var(--bar)) / 2); width: var(--bar);
+    top: calc(var(--stop-top) + var(--station) / 2); bottom: calc(0px - var(--stop-top) - var(--station) / 2);
+    transform-origin: top center;
+  }
+  .track > :last-child::before { display: none; }
+  .station {
+    position: absolute; top: var(--stop-top); left: 0; z-index: 1; box-sizing: border-box; width: var(--station); height: var(--station);
+    border: 3px solid var(--line); border-radius: 9999px; background: var(--color-base-100);
+    transition: background-color 120ms, box-shadow 120ms;
+  }
+  .stop-name { display: block; font-size: 0.9375rem; font-weight: 600; line-height: 1.3; text-wrap: balance; }
+  a.stop:hover { color: var(--color-base-content); }
+  a.stop:hover .station { background: color-mix(in oklab, var(--line) 30%, var(--color-base-100)); }
+  .stop[aria-selected="true"] { color: var(--color-base-content); }
+  .stop[aria-selected="true"] .station { background: var(--line); box-shadow: 0 0 0 3px var(--color-base-100), 0 0 0 5px var(--line); }
+  .stop:focus-visible { outline-offset: 2px; }
+
+  .terminus {
+    display: flex; flex-direction: column; justify-content: center; gap: --spacing(1); padding: --spacing(4) --spacing(5);
+    border: 2px solid var(--color-base-content); border-radius: 2px; background: var(--color-base-100); color: var(--color-base-content); text-decoration: none;
+  }
+  .terminus:hover { background: var(--color-base-content); color: var(--color-base-100); }
+  .terminus-name { font-size: 1.5rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+  .terminus-meta { font-size: 0.8125rem; opacity: 0.8; }
+
+  .map-panels { margin-top: --spacing(10); }
+  .panel { display: grid; gap: --spacing(8); padding-block: --spacing(8); border-top: 1px solid var(--color-base-300); }
+  .map-panels:not([data-ready]) > .panel + .panel { margin-top: --spacing(4); }
+  .panel[data-active="false"] { display: none; }
+  .panel h3 { display: flex; align-items: center; gap: --spacing(3); font-size: 1.75rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; text-wrap: balance; }
+  .panel h3::before { content: ""; flex: none; width: --spacing(4); height: --spacing(4); border-radius: 9999px; background: var(--line); }
+  .panel-text { display: grid; align-content: start; gap: --spacing(4); min-width: 0; }
+  .panel-text p { max-width: 34rem; color: var(--muted); line-height: 1.6; text-wrap: pretty; }
+  .keys-list { display: grid; gap: --spacing(2); margin-top: --spacing(2); }
+  .keys-list li { display: flex; flex-wrap: wrap; align-items: center; gap: --spacing(3); font-size: 0.875rem; color: var(--muted); }
+  .keys { display: inline-flex; gap: --spacing(1); }
+  .panel-media { display: grid; gap: --spacing(6); min-width: 0; align-content: start; }
+  .panel-media figcaption { margin-top: --spacing(2); font-size: 0.8125rem; color: var(--subtle); }
+
+  .route { display: grid; gap: --spacing(4); margin: 0; padding: 0; list-style: none; }
+  .route li { position: relative; min-height: var(--station); padding-left: calc(var(--station) + --spacing(3)); line-height: 1.45; }
+  .route li::before {
+    content: ""; position: absolute; z-index: 1; left: 0; top: 0; box-sizing: border-box; width: var(--station); height: var(--station);
+    border: 3px solid var(--line); border-radius: 9999px; background: var(--color-base-100);
+  }
+  .route li:not(:last-child)::after {
+    content: ""; position: absolute; left: calc((var(--station) - var(--bar)) / 2); width: var(--bar); background: var(--line);
+    top: calc(var(--station) / 2); bottom: calc(0px - var(--station) / 2 - var(--spacing) * 4);
+  }
+  .panel-text .route { margin-top: --spacing(2); font-size: 0.9375rem; color: var(--muted); }
+  .panel-media .route { padding-block: --spacing(2); font-size: 1.125rem; font-weight: 500; }
+
+  /* Planned: the same grammar, with dashed bars and inert stations. */
+  .track-planned { --line: var(--subtle); }
+  .track-planned .stop::before { background: repeating-linear-gradient(to bottom, var(--subtle) 0 0.5rem, transparent 0.5rem 0.875rem); }
+  .track-planned .stop { color: var(--color-base-content); }
+  .stop-text { display: block; margin-top: --spacing(1); font-size: 0.875rem; line-height: 1.5; color: var(--muted); }
+
+  @media (min-width: 64rem) {
+    .map-board { grid-template-columns: minmax(0, 1fr) auto; gap: --spacing(3); align-items: center; }
+    .line { grid-template-columns: 12rem minmax(0, 1fr) var(--station); gap: 0; align-items: start; }
+    /* The interchange: a ring at the end of every line, joined by a vertical bar to the next line's ring. */
+    .line-end { display: block; position: relative; align-self: stretch; }
+    .line-end::before {
+      content: ""; position: absolute; z-index: 1; left: 0; top: var(--stop-top); box-sizing: border-box; width: var(--station); height: var(--station);
+      border: 3px solid var(--color-base-content); border-radius: 9999px; background: var(--color-base-100);
+    }
+    .line-end::after {
+      content: ""; position: absolute; background: var(--color-base-content); left: calc((var(--station) - var(--bar)) / 2); width: var(--bar);
+      top: calc(var(--stop-top) + var(--station) / 2); bottom: calc(0px - var(--line-gap) - var(--stop-top) - var(--station) / 2);
+    }
+    .line:last-child .line-end::after { display: none; }
+    .line-head { margin-top: calc(var(--stop-top) + (var(--station) - var(--spacing) * 8) / 2); }
+    .track { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .stop { padding: calc(var(--stop-top) + var(--station) + --spacing(3)) --spacing(4) --spacing(1) 0; }
+    .stop::before {
+      left: calc(var(--station) / 2); right: 0; bottom: auto; width: auto; height: var(--bar);
+      top: calc(var(--stop-top) + (var(--station) - var(--bar)) / 2); transform-origin: left center;
+    }
+    .track > :last-child::before { display: block; right: calc(var(--rest, 0) * -100%); }
+    .track-planned .stop::before { background: repeating-linear-gradient(to right, var(--subtle) 0 0.5rem, transparent 0.5rem 0.875rem); }
+    .panel { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: --spacing(12); padding-block: --spacing(10); }
+    .panel-text { grid-column: span 5; }
+    .panel-media { grid-column: span 7; }
+    .terminus { white-space: nowrap; position: relative; top: -0.875rem; }
+  }
+  @media (max-width: 63.999rem) {
+    .terminus { flex-direction: row; align-items: baseline; justify-content: space-between; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .track:not(.track-planned) .stop::before { animation: draw-y 500ms cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--i, 0) * 90ms + var(--n, 0) * 160ms); }
+    .track:not(.track-planned) .station { animation: appear 320ms ease-out both; animation-delay: calc(var(--i, 0) * 90ms + var(--n, 0) * 160ms); }
+    @media (min-width: 64rem) {
+      .track:not(.track-planned) .stop::before { animation-name: draw-x; animation-delay: calc(var(--i, 0) * 90ms + var(--n, 0) * 160ms + 120ms); }
+    }
+  }
+  @keyframes draw-x { from { transform: scaleX(0); } }
+  @keyframes draw-y { from { transform: scaleY(0); } }
+  @keyframes appear { from { opacity: 0; transform: scale(0.6); } }
 }

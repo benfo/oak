@@ -1,0 +1,142 @@
+---
+import AppScreenshot from './AppScreenshot.astro'
+import { lines } from '../data/lines'
+import { version } from '../data/release.json'
+---
+<section id="map" class="site-shell" aria-labelledby="map-title" data-system-map>
+  <h2 id="map-title" class="sr-only">Oak features, by line</h2>
+  <div class="map-board">
+    <div class="map-lines" data-map-lines aria-label="Oak features, by line">
+      {lines.map((line, i) => (
+        <div class="line" data-line data-color={line.color} style={`--i:${i}`}>
+          <div class="line-head" data-line-label>
+            <span class="roundel" aria-hidden="true">{line.number}</span>
+            <span><span class="line-name">{line.name}</span><span class="line-blurb">{line.blurb}</span></span>
+          </div>
+          <div class="track">
+            {line.stops.map((stop, n) => (
+              <a class="stop" href={`#${stop.id}`} data-stop={stop.id} style={`--n:${n};--rest:${4 - line.stops.length}`}>
+                <span class="station" aria-hidden="true"></span>
+                <span class="stop-name"><span class="sr-only">{line.name} line: </span>{stop.name}</span>
+              </a>
+            ))}
+          </div>
+          <span class="line-end" aria-hidden="true"></span>
+        </div>
+      ))}
+    </div>
+    <a class="terminus" href="#download">
+      <span class="terminus-name">Get Oak</span>
+      <span class="terminus-meta">Version {version}</span>
+    </a>
+  </div>
+
+  <div class="map-panels" data-map-panels>
+    {lines.flatMap((line) => line.stops.map((stop) => {
+      const [firstShot] = stop.shots ?? []
+      return (
+        <article class="panel" id={stop.id} data-panel={stop.id} data-color={line.color} aria-labelledby={`${stop.id}-title`}>
+          <div class="panel-text">
+            <h3 id={`${stop.id}-title`}>{stop.name}</h3>
+            {stop.text.map((paragraph) => <p>{paragraph}</p>)}
+            {stop.keys && (
+              <ul class="keys-list" aria-label="Keyboard shortcuts">
+                {stop.keys.map((hint) => (
+                  <li><span class="keys">{hint.keys.map((key) => <kbd class="kbd kbd-sm">{key}</kbd>)}</span><span>{hint.label}</span></li>
+                ))}
+              </ul>
+            )}
+            {firstShot && stop.points && (
+              <ol class="route">{stop.points.map((point) => <li>{point}</li>)}</ol>
+            )}
+          </div>
+          <div class="panel-media">
+            {stop.shots
+              ? stop.shots.map((shot) => (
+                  <figure>
+                    <AppScreenshot image={shot.image} title={shot.title} width={shot.width} height={shot.height} />
+                    {shot.caption && <figcaption>{shot.caption}</figcaption>}
+                  </figure>
+                ))
+              : stop.points && <ol class="route">{stop.points.map((point) => <li>{point}</li>)}</ol>}
+          </div>
+        </article>
+      )
+    }))}
+  </div>
+</section>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-system-map]')
+
+  if (root) {
+    const lineRows = [...root.querySelectorAll<HTMLElement>('[data-line]')]
+    const rows = lineRows.map((row) => [...row.querySelectorAll<HTMLAnchorElement>('[data-stop]')])
+    const tabs = rows.flat()
+    const panels = new Map([...root.querySelectorAll<HTMLElement>('[data-panel]')].map((panel) => [panel.dataset.panel!, panel]))
+    const panelWrap = root.querySelector<HTMLElement>('[data-map-panels]')!
+
+    root.querySelector('[data-map-lines]')!.setAttribute('role', 'tablist')
+    lineRows.forEach((row) => {
+      row.setAttribute('role', 'presentation')
+      row.querySelector('.track')!.setAttribute('role', 'presentation')
+      row.querySelector('[data-line-label]')!.setAttribute('aria-hidden', 'true')
+    })
+    for (const tab of tabs) {
+      const id = tab.dataset.stop!
+      tab.setAttribute('role', 'tab')
+      tab.id = `${id}-tab`
+      tab.setAttribute('aria-controls', id)
+      const panel = panels.get(id)!
+      panel.setAttribute('role', 'tabpanel')
+      panel.setAttribute('aria-labelledby', tab.id)
+      panel.removeAttribute('id')
+    }
+    panelWrap.dataset.ready = ''
+
+    const select = (tab: HTMLAnchorElement, focus = false) => {
+      for (const other of tabs) {
+        const on = other === tab
+        other.setAttribute('aria-selected', String(on))
+        other.tabIndex = on ? 0 : -1
+        panels.get(other.dataset.stop!)!.dataset.active = String(on)
+      }
+      if (focus) tab.focus()
+    }
+
+    const fromHash = () => tabs.find((tab) => `#${tab.dataset.stop}` === location.hash)
+    select(fromHash() ?? tabs[0])
+
+    root.addEventListener('click', (event) => {
+      const tab = (event.target as HTMLElement).closest<HTMLAnchorElement>('[data-stop]')
+      if (!tab || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return
+      event.preventDefault()
+      select(tab)
+      history.replaceState(null, '', `#${tab.dataset.stop}`)
+    })
+
+    root.addEventListener('keydown', (event) => {
+      const tab = (event.target as HTMLElement).closest<HTMLAnchorElement>('[data-stop]')
+      if (!tab || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return
+      const r = rows.findIndex((row) => row.includes(tab))
+      const c = rows[r].indexOf(tab)
+      const target = {
+        ArrowRight: rows[r][c + 1],
+        ArrowLeft: rows[r][c - 1],
+        ArrowDown: rows[r + 1]?.[Math.min(c, rows[r + 1].length - 1)],
+        ArrowUp: rows[r - 1]?.[Math.min(c, rows[r - 1].length - 1)],
+        Home: rows[r][0],
+        End: rows[r][rows[r].length - 1],
+      }[event.key]
+      if (event.key in { ArrowRight: 1, ArrowLeft: 1, ArrowDown: 1, ArrowUp: 1, Home: 1, End: 1 }) event.preventDefault()
+      if (!target) return
+      select(target, true)
+      history.replaceState(null, '', `#${target.dataset.stop}`)
+    })
+
+    window.addEventListener('hashchange', () => {
+      const tab = fromHash()
+      if (tab) select(tab)
+    })
+  }
+</script>
