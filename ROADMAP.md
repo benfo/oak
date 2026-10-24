@@ -70,6 +70,7 @@ Versions are approximate for the early work: everything before 0.1.8 is grouped.
 - Changed files as a List or Tree (V key) in Changes and History, with folder selection acting on all files inside.
 - Website screenshots regenerated from the real app in light and dark.
 - The History file list renders only the rows near the viewport (checked with a 5,000-file commit). The other long lists (commit graph, sidebar tree, palettes, All files tree, Changes) were already virtualized; the rest are small and bounded.
+- A Playwright smoke suite (`npm run test:ui`, `tests-ui/`) drives the real app: open, diff, staging, line selection, hunks, layouts, History, and the 5,000-commit and 60,000-line windows. Adding it to CI is a follow-up once it has proven stable.
 - The diff view (inline and side by side) renders only rows near the viewport once a diff has over 600 rows, using `@tanstack/react-virtual` (checked with a 60,000-line file). Native select-all and copy then cover only rendered rows; line-pick copy is unaffected.
 
 ## Decisions worth keeping
