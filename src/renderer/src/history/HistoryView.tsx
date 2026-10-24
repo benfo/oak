@@ -56,30 +56,24 @@ async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch, onCom
     (t) => t.type === 'local' || !allTips.some((o) => o.type === 'local' && o.name === t.name.slice(t.name.indexOf('/') + 1))
   )
   const compares: MenuItem[] = []
-  const compareItems = await Promise.all(tips.map((tip) => compareMenuItems(r, tip, tips.length === 1)))
+  const compareItems = await Promise.all(tips.map((tip) => compareMenuItems(r, tip, tips.length > 1)))
   tips.forEach((tip, i) => {
-    const items = compareItems[i].map((item) => ({ ...item, id: `${tip.fullName}|${item.id}` }))
-    if (tips.length === 1) compares.push(...items)
-    else if (items.length) compares.push({ label: `Compare ${tip.name}`, submenu: items })
+    compares.push(...compareItems[i].map((item) => ({ ...item, id: `${tip.fullName}|${item.id}` })))
   })
   // Only commits that are a local branch tip get it, like the sidebar's branch menu.
   const prBranches = c.refs.filter((x) => x.type === 'local')
-  const pullRequests: MenuItem[] =
-    prBranches.length > 1
-      ? [{ label: 'Open pull request', submenu: prBranches.map((x) => ({ id: `pr:${x.name}`, label: x.name })) }]
-      : prBranches.map((x) => ({ id: `pr:${x.name}`, label: 'Open pull request' }))
+  const pullRequests: MenuItem[] = prBranches.map((x) => ({
+    id: `pr:${x.name}`,
+    label: prBranches.length > 1 ? `Open pull request for ${x.name}` : 'Open pull request'
+  }))
   const items: MenuItem[] = [
     ...(checkouts.length > 1
       ? [{ label: 'Checkout branch', submenu: checkouts }]
       : checkouts.map((item) => ({ ...item, label: `Checkout ${item.label}` }))),
-    { id: 'detach', label: 'Checkout this commit (detached)' },
-    ...compares,
-    { id: 'compare-commit', label: 'Compare commit with…' },
-    ...pullRequests,
-    { type: 'separator' },
     { id: 'branch', label: 'New branch from here…' },
-    { id: 'tag', label: 'New tag from here…' },
+    { id: 'pick', label: `Cherry-pick onto ${cur}`, enabled: !isHead },
     { type: 'separator' },
+    { label: 'Compare', submenu: [...compares, { id: 'compare-commit', label: 'Compare commit with…' }] },
     {
       label: 'Merge / Rebase',
       enabled: !isHead,
@@ -88,16 +82,19 @@ async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch, onCom
         { id: 'rebase', label: `Rebase ${cur} onto this` }
       ]
     },
-    { id: 'pick', label: `Cherry-pick onto ${cur}`, enabled: !isHead },
-    { id: 'revert', label: 'Revert commit…' },
     {
-      label: `Reset ${cur} to here`,
-      enabled: !isHead,
+      label: 'Undo',
       submenu: [
-        { id: 'reset:soft', label: 'Soft: keep changes staged' },
-        { id: 'reset:mixed', label: 'Mixed: keep changes unstaged' },
-        { id: 'reset:hard', label: 'Hard: discard all changes…' }
+        { id: 'revert', label: 'Revert commit…' },
+        { type: 'separator' },
+        { id: 'reset:soft', label: `Reset ${cur} here, keep changes staged`, enabled: !isHead },
+        { id: 'reset:mixed', label: `Reset ${cur} here, keep changes unstaged`, enabled: !isHead },
+        { id: 'reset:hard', label: `Reset ${cur} here, discard all changes…`, enabled: !isHead }
       ]
+    },
+    {
+      label: 'More',
+      submenu: [{ id: 'detach', label: 'Checkout this commit (detached)' }, { id: 'tag', label: 'New tag from here…' }, ...pullRequests]
     },
     { type: 'separator' },
     {
