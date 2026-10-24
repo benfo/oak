@@ -16,6 +16,7 @@ import { rememberCompareTarget, resolveCompareTarget } from '../lib/compareTarge
 import { Icon } from '../components/Icon'
 import { Split } from '../components/Split'
 import { api, showMenu } from '../api'
+import { hiddenBranchRefs } from '../sidebar/sidebarBranches'
 import * as act from '../actions'
 import { focusPane, handleNavigation, handleToolNavigation } from '../lib/navigation'
 import type { Branch, Commit, MenuItem } from '../../../shared/types'
@@ -161,6 +162,23 @@ function HistoryScopeButton({ r, comparing }: { r: RepoCtx; comparing: boolean }
     >
       <span>{text}</span>
       <Icon name="chevronDown" size={12} />
+    </button>
+  )
+}
+
+/** Tells the graph is missing hidden branches, at the end of the toolbar so nothing moves when it appears. */
+function HiddenBranchesToggle({ r }: { r: RepoCtx }) {
+  const { showHidden } = r.branchOptions
+  const count = hiddenBranchRefs(r.branches, r.status?.branch, r.branchOptions, r.remoteHead).size
+  if (!count || r.historyScope !== 'all') return null
+  return (
+    <button
+      className="link small"
+      aria-pressed={showHidden}
+      title={showHidden ? 'Hide these branches again' : 'Show hidden branches in the graph'}
+      onClick={() => r.setBranchOptions({ ...r.branchOptions, showHidden: !showHidden })}
+    >
+      {showHidden ? `Showing ${count} hidden` : `${count} hidden`}
     </button>
   )
 }
@@ -492,6 +510,7 @@ export function HistoryView({
           <span className="muted small">
             {r.commits.length.toLocaleString()} commits{r.hasMore ? ' loaded' : ''}
           </span>
+          <HiddenBranchesToggle r={r} />
         </div>
         {pinned && (
           <div className="comparison-banner" role="status" data-pane-owner="graph" onKeyDown={handleToolNavigation}>
