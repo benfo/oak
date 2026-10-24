@@ -124,6 +124,7 @@
       "executableName": "oak",
       "syncDesktopName": true,
       "category": "Development",
+      "maintainer": "Ben Fourie <4430253+benfo@users.noreply.github.com>",
       "artifactName": "Oak-${version}-linux-${arch}.${ext}"
     },
     "deb": {
