@@ -56,8 +56,9 @@
     --on-orange: #141414;
     --muted: color-mix(in oklab, var(--color-base-content) 72%, transparent);
     --subtle: color-mix(in oklab, var(--color-base-content) 62%, transparent);
-    --station: 1.5rem;
-    --bar: 0.5rem;
+    --station: 1.25rem;
+    --bar: 0.25rem;
+    --line-gap: 1.75rem;
     --stop-top: 0.5rem;
   }
   [data-theme="dark"] {
@@ -100,7 +101,8 @@
   /* The map: a line is a bar, a feature is a station, and the selected station is filled with a halo (the graph's HEAD marker).
      Each stop draws its own bar segment, from its station to the next one. */
   .map-board { display: grid; gap: --spacing(8); }
-  .map-lines { display: grid; gap: --spacing(7); }
+  .map-lines { display: grid; gap: var(--line-gap); }
+  .line-end { display: none; }
   .line { display: grid; gap: --spacing(3); }
   .line-head { display: flex; align-items: flex-start; gap: --spacing(3); min-width: 0; }
   .roundel {
@@ -121,7 +123,7 @@
   .track > :last-child::before { display: none; }
   .station {
     position: absolute; top: var(--stop-top); left: 0; z-index: 1; box-sizing: border-box; width: var(--station); height: var(--station);
-    border: 4px solid var(--line); border-radius: 9999px; background: var(--color-base-100);
+    border: 3px solid var(--line); border-radius: 9999px; background: var(--color-base-100);
     transition: background-color 120ms, box-shadow 120ms;
   }
   .stop-name { display: block; font-size: 0.9375rem; font-weight: 600; line-height: 1.3; text-wrap: balance; }
@@ -133,7 +135,7 @@
 
   .terminus {
     display: flex; flex-direction: column; justify-content: center; gap: --spacing(1); padding: --spacing(4) --spacing(5);
-    border: 4px solid var(--color-base-content); border-radius: 2px; background: var(--color-base-100); color: var(--color-base-content); text-decoration: none;
+    border: 2px solid var(--color-base-content); border-radius: 2px; background: var(--color-base-100); color: var(--color-base-content); text-decoration: none;
   }
   .terminus:hover { background: var(--color-base-content); color: var(--color-base-100); }
   .terminus-name { font-size: 1.5rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
@@ -157,7 +159,7 @@
   .route li { position: relative; min-height: var(--station); padding-left: calc(var(--station) + --spacing(3)); line-height: 1.45; }
   .route li::before {
     content: ""; position: absolute; z-index: 1; left: 0; top: 0; box-sizing: border-box; width: var(--station); height: var(--station);
-    border: 4px solid var(--line); border-radius: 9999px; background: var(--color-base-100);
+    border: 3px solid var(--line); border-radius: 9999px; background: var(--color-base-100);
   }
   .route li:not(:last-child)::after {
     content: ""; position: absolute; left: calc((var(--station) - var(--bar)) / 2); width: var(--bar); background: var(--line);
@@ -173,8 +175,19 @@
   .stop-text { display: block; margin-top: --spacing(1); font-size: 0.875rem; line-height: 1.5; color: var(--muted); }
 
   @media (min-width: 64rem) {
-    .map-board { grid-template-columns: minmax(0, 1fr) 9.5rem; gap: 0; align-items: stretch; }
-    .line { grid-template-columns: 12rem minmax(0, 1fr); gap: 0; align-items: start; }
+    .map-board { grid-template-columns: minmax(0, 1fr) auto; gap: --spacing(3); align-items: center; }
+    .line { grid-template-columns: 12rem minmax(0, 1fr) var(--station); gap: 0; align-items: start; }
+    /* The interchange: a ring at the end of every line, joined by a vertical bar to the next line's ring. */
+    .line-end { display: block; position: relative; align-self: stretch; }
+    .line-end::before {
+      content: ""; position: absolute; z-index: 1; left: 0; top: var(--stop-top); box-sizing: border-box; width: var(--station); height: var(--station);
+      border: 3px solid var(--color-base-content); border-radius: 9999px; background: var(--color-base-100);
+    }
+    .line-end::after {
+      content: ""; position: absolute; background: var(--color-base-content); left: calc((var(--station) - var(--bar)) / 2); width: var(--bar);
+      top: calc(var(--stop-top) + var(--station) / 2); bottom: calc(0px - var(--line-gap) - var(--stop-top) - var(--station) / 2);
+    }
+    .line:last-child .line-end::after { display: none; }
     .line-head { margin-top: calc(var(--stop-top) + (var(--station) - var(--spacing) * 8) / 2); }
     .track { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .stop { padding: calc(var(--stop-top) + var(--station) + --spacing(3)) --spacing(4) --spacing(1) 0; }
@@ -187,7 +200,7 @@
     .panel { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: --spacing(12); padding-block: --spacing(10); }
     .panel-text { grid-column: span 5; }
     .panel-media { grid-column: span 7; }
-    .terminus { align-items: center; text-align: center; border-left-width: 0; border-radius: 0 2px 2px 0; }
+    .terminus { white-space: nowrap; position: relative; top: -0.875rem; }
   }
   @media (max-width: 63.999rem) {
     .terminus { flex-direction: row; align-items: baseline; justify-content: space-between; }
