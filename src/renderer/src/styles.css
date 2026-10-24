@@ -1476,6 +1476,52 @@ textarea {
   display: flex;
   gap: var(--space-2);
 }
+.input-row .input {
+  flex: 1;
+  min-width: 0;
+}
+/* The hint line keeps its height whichever message it shows, so typing never moves the list. */
+.field > .hidden-branches-hint {
+  min-height: calc(var(--text-sm) * 2.8);
+  font-weight: var(--weight-normal);
+}
+.hidden-branches-frame {
+  flex: none;
+  height: calc(var(--row-md) * 6);
+}
+.hidden-branches-list {
+  height: 100%;
+  margin: var(--space-1);
+  overflow-y: auto;
+  outline: none;
+}
+.hidden-pattern-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  height: var(--row-md);
+  padding: 0 var(--row-pad);
+  outline: none;
+}
+.hidden-pattern-row[data-selected] {
+  background: var(--selection);
+}
+.hidden-branches-list:focus-within .hidden-pattern-row[data-selected] {
+  background: var(--selection-strong);
+}
+.hidden-pattern-row[data-focus-visible] {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+.hidden-pattern-row[data-focus-visible]:not([data-selected]) {
+  background: var(--hover);
+}
+.hidden-branches-preview {
+  flex: none;
+  height: calc(var(--row-md) * 2);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
 .check {
   display: flex;
   align-items: center;

@@ -12,6 +12,7 @@ import { changeDiffLayout } from '../diff/changeDiffLayout'
 import { openWhatsNew } from './WhatsNew'
 import { openRepoOrGlobalConfig } from '../lib/useGitConfig'
 import { GitPage } from './GitPage'
+import { RepositoryPage } from './RepositoryPage'
 import { Field } from './prefsFields'
 
 const openStore = createStore(false)
@@ -20,6 +21,7 @@ const TABS = [
   // Everyday app behaviour first, then Git, diffs and looks.
   ['general', 'General'],
   ['git', 'Git'],
+  ['repository', 'Repository'],
   ['diffs', 'Diffs'],
   ['appearance', 'Appearance'],
   ['themes', 'Themes']
@@ -151,6 +153,10 @@ function Preferences({ repo, onClose }: { repo: string | null; onClose: () => vo
         </TabList>
         <Section id="git" title="Git">
           <GitPage repo={repo} />
+        </Section>
+
+        <Section id="repository" title="Repository">
+          <RepositoryPage />
         </Section>
 
         <Section id="diffs" title="Diffs">
