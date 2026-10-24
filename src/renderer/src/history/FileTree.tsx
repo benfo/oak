@@ -1,13 +1,13 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Tree, TreeItem, TreeItemContent, Virtualizer, type Key, type Selection } from 'react-aria-components'
-import { Icon } from './Icon'
-import { Tip } from './Tip'
-import { PaneFrame, PaneSearch } from './Pane'
-import { SearchFeedback } from './SearchFeedback'
+import { Icon } from '../components/Icon'
+import { Tip } from '../components/Tip'
+import { PaneFrame, PaneSearch } from '../components/Pane'
+import { SearchFeedback } from '../components/SearchFeedback'
 import { usePane } from '../lib/usePane'
 import { handleNavigation } from '../lib/navigation'
 import { useSearchMatches } from '../lib/useSearchMatches'
-import { ancestors, buildFileTree, filesInOrder, prepareSearch, searchPrepared, type TreeEntry } from '../lib/fileTree'
+import { ancestors, buildFileTree, filesInOrder, prepareSearch, searchPrepared, type TreeEntry } from './fileTreeModel'
 import { fileListCopy, registerListCopy } from '../lib/listCopy'
 
 /** Matches --row-md (tokens.css). */

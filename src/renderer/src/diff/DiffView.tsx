@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useVirtualRows } from '../lib/useVirtualRows'
 import { Button, Menu, MenuItem, MenuTrigger, Popover, Toolbar } from 'react-aria-components'
-import { hunkPatch, lineKey, linesPatch, parseDiff, type FileDiff } from '../lib/diff'
-import { useDiffTokens } from '../lib/highlight'
-import { wordChanges, wordSpans } from '../lib/wordDiff'
-import { alignDiffLines } from '../lib/sideDiff'
-import { DIFF_LAYOUTS, resolveDiffLayout, type DiffLayout } from '../lib/diffLayout'
+import { hunkPatch, lineKey, linesPatch, parseDiff, type FileDiff } from './diff'
+import { useDiffTokens } from './highlight'
+import { wordChanges, wordSpans } from './wordDiff'
+import { alignDiffLines } from './sideDiff'
+import { DIFF_LAYOUTS, resolveDiffLayout, type DiffLayout } from './diffLayout'
 import {
   canHandleNavigation,
   fileNavigationDirection,
@@ -17,20 +18,25 @@ import {
 import { widgetAction } from '../lib/keymap'
 import { shortcutPlatform } from '../lib/shortcuts'
 import { usePane } from '../lib/usePane'
-import { Tip } from './Tip'
-import { PaneFrame } from './Pane'
-import { MenuNavigation } from './MenuNavigation'
-import { changeDiffLayout } from '../lib/changeDiffLayout'
+import { Tip } from '../components/Tip'
+import { PaneFrame } from '../components/Pane'
+import { MenuNavigation } from '../components/MenuNavigation'
+import { changeDiffLayout } from './changeDiffLayout'
 import { useSettings } from '../settings'
-import { CONTEXT_STEPS, contextLabel, isFullContext } from '../lib/diffContext'
-import { showLessContext, showMoreContext, toggleFullContext, useContextLines } from '../lib/useDiffContext'
-import { Icon } from './Icon'
+import { CONTEXT_STEPS, contextLabel, isFullContext } from './diffContext'
+import { showLessContext, showMoreContext, toggleFullContext, useContextLines } from './useDiffContext'
+import { Icon } from '../components/Icon'
 import { api, showMenu } from '../api'
 import { toast } from '../ui'
 import { copyFocused, copyDiffAsPatch, hasTextSelection } from '../lib/copy'
-import { copiedLabel, copiedPatch, copiedText, noteDiffFocus, registerDiffCopy, type DiffCopySource } from '../lib/diffCopy'
+import { copiedLabel, copiedPatch, copiedText, noteDiffFocus, registerDiffCopy, type DiffCopySource } from './diffCopy'
 
 const LINE_LIMIT = 4000
+// Longer diffs render only the rows near the viewport (shorter ones stay fully in the page, so native select-all and copy keep working).
+const VIRTUALIZE_MIN = 600
+// First guesses only: rows are measured once rendered.
+const LINE_ESTIMATE = 20
+const HEADER_ESTIMATE = 36
 // Electron's Chromium supports container; the project's DOM types do not expose it yet.
 const REVEAL_LINE: ScrollIntoViewOptions & { container: 'nearest' } = { block: 'center', inline: 'nearest', container: 'nearest' }
 const KEEP_LINE_VISIBLE: ScrollIntoViewOptions & { container: 'nearest' } = { block: 'nearest', inline: 'nearest', container: 'nearest' }
@@ -71,6 +77,16 @@ interface Row {
   change: boolean
 }
 
+/** One entry of the flat list the pane renders: a hunk header, or a line (inline) or line pair (side by side). */
+interface Item {
+  key: string
+  hunk: number
+  header?: boolean
+  row?: number
+  pos?: number
+  change: boolean
+}
+
 export function DiffView({
   title,
   metadata,
@@ -90,7 +106,7 @@ export function DiffView({
   const [showAll, setShowAll] = useState(false)
   const [cursor, setCursor] = useState(0)
   const [paneWidth, setPaneWidth] = useState(0)
-  const [singleChangeVisible, setSingleChangeVisible] = useState(false)
+  const [observedVisible, setObservedVisible] = useState(false)
   const [side, setSide] = useState<'old' | 'new'>('new')
   const [anchor, setAnchor] = useState<number | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -124,16 +140,21 @@ export function DiffView({
   const split = !plain && resolveDiffLayout(diffLayout, paneWidth) === 'split'
   const lineType = rows[cursor] && diff?.hunks[rows[cursor].hunk].lines[rows[cursor].line].type
   const cursorSide = lineType === 'del' ? 'old' : lineType === 'add' ? 'new' : side
+  const hunkRows = useMemo(() => {
+    const groups: Row[][] = diff?.hunks.map(() => []) ?? []
+    for (const r of rows) groups[r.hunk].push(r)
+    return groups
+  }, [diff, rows])
   const sideHunks = useMemo(
     () =>
       diff?.hunks.map((h, hi) => {
-        const visible = rows.filter((r) => r.hunk === hi)
+        const visible = hunkRows[hi]
         return alignDiffLines(h.lines.slice(0, visible.length)).map((pair) => ({
           old: pair.old === null ? null : visible[pair.old].index,
           new: pair.new === null ? null : visible[pair.new].index
         }))
       }) ?? [],
-    [diff, rows]
+    [diff, hunkRows]
   )
   const sideRows = useMemo(() => sideHunks.flat(), [sideHunks])
   const positions = useMemo(() => {
@@ -144,29 +165,108 @@ export function DiffView({
     })
     return map
   }, [sideRows])
+  // The flat list the pane renders, plus where each row (inline) or row pair (side by side) sits in it.
+  const { items, rowItem, posItem } = useMemo(() => {
+    const items: Item[] = []
+    const rowItem: number[] = []
+    const posItem: number[] = []
+    let pos = 0
+    diff?.hunks.forEach((_, hi) => {
+      if (!hunkRows[hi].length) return
+      items.push({ key: `h${hi}`, hunk: hi, header: true, change: false })
+      if (split) {
+        for (const pair of sideHunks[hi]) {
+          posItem[pos] = items.length
+          const change = [pair.old, pair.new].some((i) => i !== null && rows[i].change)
+          items.push({ key: `p${pos}`, hunk: hi, pos, change })
+          pos++
+        }
+      } else {
+        for (const r of hunkRows[hi]) {
+          rowItem[r.index] = items.length
+          items.push({ key: r.key, hunk: hi, row: r.index, change: r.change })
+        }
+      }
+    })
+    return { items, rowItem, posItem }
+  }, [diff, rows, hunkRows, sideHunks, split])
+  const itemRow = (item: Item | undefined) =>
+    !item
+      ? 0
+      : item.row !== undefined
+        ? item.row
+        : item.pos !== undefined
+          ? (sideRows[item.pos].new ?? sideRows[item.pos].old ?? 0)
+          : (hunkRows[item.hunk][0]?.index ?? 0)
+
+  // Long diffs render only the items near the viewport; the scroller is the diff, or the Before column when side by side.
+  const virtualize = items.length > VIRTUALIZE_MIN
+  const {
+    virtual,
+    items: windowed,
+    spacer
+  } = useVirtualRows({
+    count: virtualize ? items.length : 0,
+    getScrollElement: () => (split ? ref.current?.querySelector<HTMLElement>('.side-column[data-side="old"]') : ref.current) ?? null,
+    estimateSize: (i) => (items[i]?.header ? HEADER_ESTIMATE : LINE_ESTIMATE),
+    overscan: 30,
+    getItemKey: (i) => items[i]?.key ?? i
+  })
+  const visibleRange = virtualize ? virtual.range : null
+  const rangeShowsChange = !!visibleRange && items.slice(visibleRange.startIndex, visibleRange.endIndex + 1).some((item) => item.change)
+  const singleChangeVisible = virtualize ? rangeShowsChange : observedVisible
+  /** Scrolls a row into view; rows outside the rendered window are not in the page, so a long diff scrolls by position. */
+  const revealRow = (index: number, block: 'center' | 'nearest') => {
+    if (virtualize) {
+      const item = split ? posItem[positions.get(index) ?? 0] : rowItem[index]
+      if (item !== undefined) virtual.scrollToIndex(item, { align: block === 'center' ? 'center' : 'auto' })
+      return
+    }
+    ref.current
+      ?.querySelector(`[data-idx="${index}"]${split ? `[data-side="${cursorSide}"]` : ''} .gutter`)
+      ?.scrollIntoView(block === 'center' ? REVEAL_LINE : KEEP_LINE_VISIBLE)
+  }
+  // The first visible row survives a layout change, which rebuilds the list from the top.
+  const topRow = useRef(0)
+  const wasSplit = useRef(split)
+  const layoutChanged = useRef(false)
+  useEffect(() => {
+    if (wasSplit.current === split) return
+    wasSplit.current = split
+    if (!virtualize) return
+    layoutChanged.current = true
+    const item = split ? posItem[positions.get(topRow.current) ?? 0] : rowItem[topRow.current]
+    if (item !== undefined) virtual.scrollToIndex(item, { align: 'start' })
+  }, [split])
+  useEffect(() => {
+    if (visibleRange) topRow.current = itemRow(items[visibleRange.startIndex])
+  })
   const hunkCount = rows.length ? rows[rows.length - 1].hunk + 1 : 0
   const tokens = useDiffTokens(diff, text, hunkCount, syntaxHighlighting)
   const words = useMemo(() => (diff ? wordChanges(diff, hunkCount) : []), [diff, hunkCount])
-  const code = useMemo(
-    (): ReactNode[][] =>
-      diff?.hunks.map((h, hi) =>
-        h.lines.map((l, li) => {
-          const spans = wordSpans(l.text, tokens?.[hi]?.[li], words[hi]?.[li] ?? [])
-          return (
-            <span className="code">
-              {/* An empty flex item is skipped by text selection, which would drop blank lines from a copy. */}
-              {l.text === '' && '\n'}
-              {spans.map((s, i) => (
-                <span key={i} className={s.changed ? 'word-change' : undefined} style={s.c ? { color: s.c } : undefined}>
-                  {s.t}
-                </span>
-              ))}
+  // Each line's code element is built when first rendered, once per diff/colours, so moving the cursor
+  // doesn't re-render every span and a long diff doesn't build elements it never shows.
+  const codeCache = useMemo(() => new Map<string, ReactNode>(), [diff, tokens, words])
+  const codeOf = (r: Row): ReactNode => {
+    let node = codeCache.get(r.key)
+    if (node === undefined) {
+      const l = diff!.hunks[r.hunk].lines[r.line]
+      const spans = wordSpans(l.text, tokens?.[r.hunk]?.[r.line], words[r.hunk]?.[r.line] ?? [])
+      node = (
+        <span className="code">
+          {/* An empty flex item is skipped by text selection, which would drop blank lines from a copy. */}
+          {l.text === '' && '\n'}
+          {spans.map((s, i) => (
+            <span key={i} className={s.changed ? 'word-change' : undefined} style={s.c ? { color: s.c } : undefined}>
+              {s.t}
             </span>
-          )
-        })
-      ) ?? [],
-    [diff, tokens, words]
-  )
+          ))}
+        </span>
+      )
+      codeCache.set(r.key, node)
+    }
+    return node
+  }
 
   // A new diff (e.g. after staging) clears the selection but keeps the cursor near where it was.
   // When the context changed instead, the cursor stays on the same file line.
@@ -193,15 +293,15 @@ export function DiffView({
     if (row) {
       pendingHunk.current = null
       setCursor(row.index)
-      ref.current?.querySelector(`[data-idx="${row.index}"] .gutter`)?.scrollIntoView(REVEAL_LINE)
+      revealRow(row.index, 'center')
     }
   }, [rows])
 
   useEffect(() => {
     if (split && ref.current) ref.current.scrollLeft = 0
-    ref.current
-      ?.querySelector(`[data-idx="${cursor}"]${split ? `[data-side="${cursorSide}"]` : ''} .gutter`)
-      ?.scrollIntoView(KEEP_LINE_VISIBLE)
+    // After a layout change the first visible row stays put (see above) rather than following the cursor.
+    if (layoutChanged.current) layoutChanged.current = false
+    else revealRow(cursor, 'nearest')
   }, [cursor, cursorSide, split])
 
   useEffect(() => {
@@ -214,9 +314,10 @@ export function DiffView({
 
   // A single change needs no cycling while any of its changed lines are visible. Observe both
   // sides' gutters, not just the first line, so scrolling within a long change keeps it disabled.
+  // (A virtualized diff derives this from the rendered range instead.)
   useEffect(() => {
-    setSingleChangeVisible(false)
-    if (diff?.hunks.length !== 1) return
+    setObservedVisible(false)
+    if (diff?.hunks.length !== 1 || virtualize) return
     const targets = ref.current?.querySelectorAll('.dl.add .gutter, .dl.del .gutter')
     if (!targets?.length) return
     const visible = new Set<Element>()
@@ -226,7 +327,7 @@ export function DiffView({
           if (entry.isIntersecting && entry.intersectionRatio >= 0.01) visible.add(entry.target)
           else visible.delete(entry.target)
         }
-        setSingleChangeVisible(visible.size > 0)
+        setObservedVisible(visible.size > 0)
       },
       {
         root: ref.current,
@@ -235,7 +336,7 @@ export function DiffView({
     )
     targets.forEach((target) => observer.observe(target))
     return () => observer.disconnect()
-  }, [diff, rows, split])
+  }, [diff, rows, split, virtualize])
 
   const rangeKeys = (a: number, b: number, targetSide = cursorSide) => {
     if (split) {
@@ -305,7 +406,7 @@ export function DiffView({
   useEffect(() => registerDiffCopy(copySource), [copySource])
 
   const showCopyMenu = async (viaKeyboard: boolean) => {
-    const anchor = viaKeyboard ? ref.current?.querySelector('.dl.cursor .gutter') : null
+    const anchor = viaKeyboard ? (ref.current?.querySelector('.dl.cursor .gutter') ?? ref.current) : null
     const lines = selected.size > 0
     const id = await showMenu(
       [
@@ -328,7 +429,7 @@ export function DiffView({
       return
     }
     setCursor(idx)
-    ref.current?.querySelector(`[data-idx="${idx}"] .gutter`)?.scrollIntoView(REVEAL_LINE)
+    revealRow(idx, 'center')
     // The reveal button becomes disabled once the only change is visible. Move focus to the
     // revealed code first so disabling the button doesn't drop keyboard focus onto the page.
     if (diff.hunks.length === 1) ref.current?.focus({ preventScroll: true })
@@ -685,16 +786,19 @@ export function DiffView({
     ? `Diff. ↑↓ move${split ? ', ←→ switch sides' : ''}, Shift+↑↓ or Space select lines, Enter to ${acts.primary.label.toLowerCase()}${acts.discard ? ', Delete to discard' : ''}, N/P next/previous hunk`
     : `Diff. ↑↓ move${split ? ', ←→ switch sides' : ''}, N/P next/previous hunk`
 
-  const renderLine = (i: number | null, targetSide?: 'old' | 'new', key?: number) => {
-    if (i === null) return <div key={key} className="dl side-blank" aria-hidden="true" />
+  // Rows of a long diff are measured once rendered (see the virtualizer above).
+  const slot = (i: number) => (virtualize ? { ref: virtual.measureElement, 'data-index': i } : {})
+  const renderLine = (i: number | null, index: number, key: string, targetSide?: 'old' | 'new', hunk?: number) => {
+    if (i === null) return <div key={key} {...slot(index)} className="dl side-blank" aria-hidden="true" />
     const r = rows[i]
     const l = diff.hunks[r.hunk].lines[r.line]
     return (
       <div
-        key={key ?? r.key}
+        key={key}
+        {...slot(index)}
         data-idx={i}
         data-side={targetSide}
-        className={`dl ${l.type} ${i === cursor && (!targetSide || targetSide === cursorSide) ? 'cursor' : ''} ${selected.has(r.key) ? 'picked' : ''}`}
+        className={`dl ${l.type} ${i === cursor && (!targetSide || targetSide === cursorSide) ? 'cursor' : ''} ${selected.has(r.key) ? 'picked' : ''} ${(hunk ?? r.hunk) === cursorHunk ? 'active-hunk' : ''}`}
         onMouseDown={(e) => onLineMouseDown(e, i, targetSide)}
         onMouseEnter={() => onLineMouseEnter(i)}
       >
@@ -709,18 +813,16 @@ export function DiffView({
           )}
           <span className="sign">{l.type === 'add' ? '+' : l.type === 'del' ? '-' : ''}</span>
         </span>
-        {code[r.hunk][r.line]}
+        {codeOf(r)}
       </div>
     )
   }
-  const renderHunk = (hi: number, targetSide?: 'old' | 'new') => {
+  const renderHeader = (hi: number, index: number, key: string, targetSide?: 'old' | 'new') => {
     const h = diff.hunks[hi]
-    const hunkRows = rows.filter((r) => r.hunk === hi)
-    if (!hunkRows.length) return null
     const patch = () => hunkPatch(diff, h)
     return (
-      <div className={`hunk ${hi === cursorHunk ? 'active-hunk' : ''}`} key={hi}>
-        <div className="hunk-header">
+      <div key={key} {...slot(index)} className={`hunk-slot ${hi > 0 ? 'gap' : ''}`}>
+        <div className={`hunk-header ${hi === cursorHunk ? 'active-hunk' : ''}`}>
           <span className="hunk-range" title={h.header}>
             {h.header}
           </span>
@@ -743,12 +845,22 @@ export function DiffView({
             </span>
           )}
         </div>
-        {targetSide
-          ? sideHunks[hi].map((pair, i) => renderLine(pair[targetSide], targetSide, i))
-          : hunkRows.map((r) => renderLine(r.index))}
       </div>
     )
   }
+  const renderItem = (index: number, targetSide?: 'old' | 'new') => {
+    const item = items[index]
+    if (!item) return null
+    if (item.header) return renderHeader(item.hunk, index, item.key, targetSide)
+    if (targetSide) return renderLine(sideRows[item.pos!][targetSide], index, item.key, targetSide, item.hunk)
+    return renderLine(item.row!, index, item.key)
+  }
+  // Only the items near the viewport are rendered when virtualizing; spacers stand in for the rest.
+  const itemList = (targetSide?: 'old' | 'new') => (
+    <div style={virtualize ? spacer : undefined}>
+      {(virtualize ? windowed : items.map((_, i) => ({ index: i }))).map((v) => renderItem(v.index, targetSide))}
+    </div>
+  )
   const truncation = truncated && (
     <div className="diff-truncated">
       Large diff truncated.{' '}
@@ -801,7 +913,7 @@ export function DiffView({
                   }}
                 >
                   <div className="side-inner">
-                    {diff.hunks.map((_, hi) => renderHunk(hi, targetSide))}
+                    {itemList(targetSide)}
                     {truncation}
                   </div>
                 </div>
@@ -809,7 +921,7 @@ export function DiffView({
             </div>
           ) : (
             <div className="diff-inner">
-              {diff.hunks.map((_, hi) => renderHunk(hi))}
+              {itemList()}
               {truncation}
             </div>
           )}

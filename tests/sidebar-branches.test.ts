@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { DEFAULT_BRANCH_OPTIONS, readBranchOptions, sidebarBranches } from '../src/renderer/src/lib/sidebarBranches.ts'
+import { DEFAULT_BRANCH_OPTIONS, readBranchOptions, sidebarBranches } from '../src/renderer/src/sidebar/sidebarBranches.ts'
 import type { Branch } from '../src/shared/types.ts'
 
 const branch = (name: string, date: number, gone = false, type: Branch['type'] = 'local'): Branch => ({

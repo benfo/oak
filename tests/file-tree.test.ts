@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { ancestors, buildFileTree, filesInOrder, nearestExisting, searchPaths } from '../src/renderer/src/lib/fileTree.ts'
+import { ancestors, buildFileTree, filesInOrder, nearestExisting, searchPaths } from '../src/renderer/src/history/fileTreeModel.ts'
 
 test('builds a tree with folders before files', () => {
   const tree = buildFileTree(['b.txt', 'src/z.ts', 'src/lib/a.ts', 'a.txt'])

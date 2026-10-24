@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createCommitPreviewLoader } from '../src/renderer/src/lib/commitPreview.ts'
-import { comparisonSummary } from '../src/renderer/src/lib/comparisonModes.ts'
+import { createCommitPreviewLoader } from '../src/renderer/src/history/commitPreview.ts'
+import { comparisonSummary } from '../src/renderer/src/history/comparisonModes.ts'
 import type { CommitDetails } from '../src/shared/types.ts'
 
 const info = (hash: string): CommitDetails => ({

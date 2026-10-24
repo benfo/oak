@@ -1,6 +1,6 @@
 import { api } from '../api'
 import { toast } from '../ui'
-import { activeDiffCopy } from './diffCopy'
+import { activeDiffCopy } from '../diff/diffCopy'
 import { activeListCopy } from './listCopy'
 
 const selectedText = () => window.getSelection()?.toString() ?? ''

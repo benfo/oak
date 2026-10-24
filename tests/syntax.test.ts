@@ -2,9 +2,9 @@
 // Shiki tokenizer (the same code the worker runs). Run with `npm test`.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseDiff } from '../src/renderer/src/lib/diff.ts'
-import { assignTokens, diffBlocks, diffPath, languageFor } from '../src/renderer/src/lib/syntax.ts'
-import { highlightBlocks, knownLanguage } from '../src/renderer/src/lib/highlighter.ts'
+import { parseDiff } from '../src/renderer/src/diff/diff.ts'
+import { assignTokens, diffBlocks, diffPath, languageFor } from '../src/renderer/src/diff/syntax.ts'
+import { highlightBlocks, knownLanguage } from '../src/renderer/src/diff/highlighter.ts'
 
 const languageForPath = (path: string) => languageFor(path, knownLanguage)
 

@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseDiff, linesPatch, lineKey } from '../src/renderer/src/lib/diff.ts'
-import { alignDiffLines } from '../src/renderer/src/lib/sideDiff.ts'
+import { parseDiff, linesPatch, lineKey } from '../src/renderer/src/diff/diff.ts'
+import { alignDiffLines } from '../src/renderer/src/diff/sideDiff.ts'
 
 const lines = (body: string) => parseDiff(`--- a/a\n+++ b/a\n@@ -1,4 +1,4 @@\n${body}\n`).hunks[0].lines
 

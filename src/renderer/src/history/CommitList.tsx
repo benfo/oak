@@ -1,14 +1,15 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Commit } from '../../../shared/types'
 import { WORKING_HASH } from '../../../shared/working.ts'
-import type { Graph, GraphRow } from '../lib/graph'
+import type { Graph, GraphRow } from './graph'
 import { relativeTime } from '../lib/format'
-import { Avatar } from './Avatar'
+import { Avatar } from '../components/Avatar'
 import { canHandleNavigation, handleListNav, handleNavigation, movementDelta } from '../lib/navigation'
 import { widgetAction } from '../lib/keymap'
 import { shortcutPlatform } from '../lib/shortcuts'
 import { usePane } from '../lib/usePane'
-import { PaneFrame } from './Pane'
+import { useVirtualRows } from '../lib/useVirtualRows'
+import { PaneFrame } from '../components/Pane'
 
 /** Matches --row-md (tokens.css). */
 export const ROW_H = 28
@@ -78,20 +79,18 @@ export function CommitList({
   const [cursor, setCursor] = useState(selected)
   useEffect(() => setCursor(selected), [selected, revealKey])
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [scrollTop, setScrollTop] = useState(0)
-  const [height, setHeight] = useState(600)
   const graphW = laneX(Math.min(graph.width, MAX_LANES) - 1) + 12
   const offset = working ? 1 : 0
   const keys = useMemo(() => (working ? [WORKING_HASH] : []).concat(commits.map((c) => c.hash)), [commits, !!working])
   const headIndex = commits.findIndex((c) => c.refs.some((r) => r.current || r.type === 'head'))
   const headCol = graph.rows[headIndex]?.col ?? 0
-
-  useLayoutEffect(() => {
-    const el = scrollRef.current!
-    const ro = new ResizeObserver(() => setHeight(el.clientHeight))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
+  const { virtual, start, end } = useVirtualRows({
+    count: keys.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ROW_H,
+    overscan: OVERSCAN
+  })
+  const height = virtual.scrollRect?.height ?? 600
 
   // The working row appearing or disappearing must not move the commits under the pointer.
   const hadWorking = useRef(!!working)
@@ -114,20 +113,11 @@ export function CommitList({
     else if (top + ROW_H > el.scrollTop + el.clientHeight) el.scrollTop = top - el.clientHeight / 2
   }, [revealKey, selectedIndex >= 0])
 
-  const start = Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN)
-  const end = Math.min(keys.length, Math.ceil((scrollTop + height) / ROW_H) + OVERSCAN)
-
   useEffect(() => {
     if (onNearEnd && commits.length && end >= keys.length - 20) onNearEnd()
   }, [end, keys.length])
 
-  const ensureVisible = (i: number) => {
-    const el = scrollRef.current
-    if (!el) return
-    const top = i * ROW_H
-    if (top < el.scrollTop) el.scrollTop = top
-    else if (top + ROW_H > el.scrollTop + el.clientHeight) el.scrollTop = top + ROW_H - el.clientHeight
-  }
+  const ensureVisible = (i: number) => virtual.scrollToIndex(i, { align: 'auto' })
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (!canHandleNavigation(e)) return
@@ -215,13 +205,7 @@ export function CommitList({
           <div>Commit</div>
         </div>
         {/* Clicks land on the scroller; hand focus to the pane so the graph stays a single Tab stop. */}
-        <div
-          ref={scrollRef}
-          className="commit-scroll"
-          tabIndex={-1}
-          onFocus={(e) => e.currentTarget.parentElement?.focus()}
-          onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-        >
+        <div ref={scrollRef} className="commit-scroll" tabIndex={-1} onFocus={(e) => e.currentTarget.parentElement?.focus()}>
           <div style={{ height: keys.length * ROW_H, position: 'relative' }}>
             {keys.slice(start, end).map((key, k) => {
               const i = start + k

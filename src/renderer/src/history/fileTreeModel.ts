@@ -1,4 +1,4 @@
-import { prepareFuzzy, rankFuzzy, type FuzzyTarget } from './fuzzy.ts'
+import { prepareFuzzy, rankFuzzy, type FuzzyTarget } from '../lib/fuzzy.ts'
 
 export interface TreeEntry {
   /** Full path; folders have no trailing slash. */

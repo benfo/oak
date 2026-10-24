@@ -15,7 +15,7 @@ import { UpdateNotice } from './components/UpdateNotice'
 import { WhatsNewHost } from './components/WhatsNew'
 import { useWheelZoom } from './lib/useWheelZoom'
 import { copyFocused, hasTextSelection } from './lib/copy'
-import { activeDiffCopy } from './lib/diffCopy'
+import { activeDiffCopy } from './diff/diffCopy'
 import { activeListCopy } from './lib/listCopy'
 
 const LAST_REPO = 'lastRepo'
