@@ -72,6 +72,55 @@ test.describe('history', () => {
     await expect(page.locator('.commit-list')).toContainText('Initial commit')
   })
 
+  test('hides branches matching a pattern in the sidebar and the graph, and reveals them again', async ({ open, small }) => {
+    git(small, 'stash', '-u', '-q')
+    git(small, 'checkout', '-q', '-b', 'dependabot/npm/lodash')
+    git(small, 'commit', '-q', '--allow-empty', '-m', 'Bump lodash')
+    git(small, 'checkout', '-q', 'main')
+    git(small, 'stash', 'pop', '-q')
+    const page = await open(small, 'history')
+    const list = page.locator('.commit-list')
+    await expect(list).toContainText('Bump lodash')
+
+    await page.getByRole('button', { name: 'Branch options' }).click()
+    await page.getByRole('menuitem', { name: /More branch options/ }).click()
+    await page.getByRole('textbox', { name: 'Branch name pattern' }).fill('dependabot/*')
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('region', { name: 'Branches the pattern hides' })).toBeVisible()
+    await page.getByRole('option', { name: /dependabot\/\*/ }).focus()
+    await expect(page.getByRole('region', { name: 'Branches the pattern hides' })).toContainText('dependabot/npm/lodash')
+    await page.keyboard.press('F2')
+    await page.keyboard.type('dependabot/npm/*')
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('option', { name: /dependabot\/npm\/\*/ })).toBeVisible()
+    await page.getByRole('button', { name: 'Close' }).click()
+    await expect(list).not.toContainText('Bump lodash')
+    await expect(page.getByRole('treeitem', { name: /dependabot/ })).toHaveCount(0)
+
+    await page.getByRole('button', { name: '1 hidden', exact: true }).click()
+    await expect(list).toContainText('Bump lodash')
+    await expect(page.getByRole('button', { name: 'Showing 1 hidden', exact: true })).toBeVisible()
+  })
+
+  test('hides remote branches without a local copy from the graph from the Branch options menu', async ({ open, small }) => {
+    git(small, 'stash', '-u', '-q')
+    git(small, 'checkout', '-q', '--detach', 'HEAD')
+    git(small, 'commit', '-q', '--allow-empty', '-m', 'Teammate work')
+    git(small, 'update-ref', 'refs/remotes/origin/teammate/wip', 'HEAD')
+    git(small, 'checkout', '-q', 'main')
+    git(small, 'stash', 'pop', '-q')
+    const page = await open(small, 'history')
+    const list = page.locator('.commit-list')
+    await expect(list).toContainText('Teammate work')
+
+    await page.getByRole('button', { name: 'Branch options' }).click()
+    await page.getByRole('menuitem', { name: /Hide remote branches without a local copy/ }).click()
+    await expect(list).not.toContainText('Teammate work')
+
+    await page.getByRole('button', { name: '1 hidden', exact: true }).click()
+    await expect(list).toContainText('Teammate work')
+  })
+
   // TODO: re-add the 5,000 commit scroll test once it is stable.
 })
 
