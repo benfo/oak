@@ -4,6 +4,11 @@ A keyboard-friendly Git GUI built with Electron, React and TypeScript. Oak runs 
 
 Windows 11 is the primary platform. Linux is experimental and macOS has not been tested.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="website/public/oak-comparison-dark.png">
+  <img src="website/public/oak-comparison.png" alt="Oak comparing a feature branch against main, with the changed file's diff open">
+</picture>
+
 ## Features
 
 - Review and stage changes by file, hunk or single line. A click selects exactly the line shown, and Oak never guesses at replacement pairs.
