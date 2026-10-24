@@ -31,7 +31,8 @@ Name is Oak; icon source is `build/icon.svg`. Visual direction so far: flat, ori
 Real app plus synthetic screenshots for the website. No testimonials or usage data exist; do not invent any.
 
 ## Product Principles
-- Everyday Git, done simply and dependably.
-- The same action behaves the same everywhere.
-- Frequent actions are quick and visible; occasional ones are contextual.
-- Nothing moves under the mouse.
+- Everyday Git, done simply and dependably. Judge changes by reduced confusion, fewer unnecessary steps and real use, not by the number of controls.
+- Consistency and user joy are product goals alongside correctness.
+- The same action behaves the same everywhere (keyboard, mouse, selection, focus, feedback). Navigation preferences add alternatives, never different semantics.
+- Frequent actions are quick and visible; occasional ones are contextual. Fetch, Pull and Push stay on the toolbar. Add permanent UI or commands only for a concrete workflow benefit.
+- Preserve position and selection, make state visible, and nothing moves under the mouse.
