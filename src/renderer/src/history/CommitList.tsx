@@ -13,14 +13,14 @@ import { PaneFrame } from '../components/Pane'
 
 /** Matches --row-md (tokens.css). */
 export const ROW_H = 28
-const LANE_W = 14
+const LANE_W = 18
 const MAX_LANES = 24
 const OVERSCAN = 12
 /** Graph lane colours come from the theme (`--graph-lane-0` … `--graph-lane-7`). */
 export const LANE_COUNT = 8
 
 // Leave roughly --row-pad before the HEAD ring's outside edge, clear of the focus bar.
-const laneX = (i: number) => 18 + i * LANE_W
+const laneX = (i: number) => 20 + i * LANE_W
 const laneColor = (c: number, muted = false) => {
   const color = `var(--graph-lane-${c % LANE_COUNT})`
   // Mix opaque colours instead of reducing element opacity: lines must not show through nodes.
@@ -339,15 +339,15 @@ function GraphCell({
           stroke={laneColor(e.color, emphasize && !e.current)}
         />
       ))}
-      {isHead && <circle cx={cx} cy={mid} r={7.5} fill="none" stroke={laneColor(row.color)} strokeWidth={1.5} />}
+      {isHead && <circle cx={cx} cy={mid} r={9} fill="none" stroke={laneColor(row.color)} strokeWidth={1.5} />}
       <circle
         className={`${emphasis(row.current) ?? ''}${isMerge ? ' graph-merge' : ''}`}
         cx={cx}
         cy={mid}
-        r={isMerge ? 3.5 : 4.5}
-        fill={isMerge ? 'var(--surface)' : laneColor(row.color, emphasize && !row.current)}
+        r={isMerge ? 5 : 4.5}
+        fill={isMerge ? laneColor(row.color, emphasize && !row.current) : 'var(--surface)'}
         stroke={laneColor(row.color, emphasize && !row.current)}
-        strokeWidth={isMerge ? 2 : 0}
+        strokeWidth={2}
       />
     </svg>
   )
