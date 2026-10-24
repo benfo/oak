@@ -28,7 +28,7 @@
   --space-20: 80px;
 
   /* Radius: one knob; every size derives from it, so a theme can make Oak sharper or rounder. */
-  --radius: 6px;
+  --radius: 2px;
   --radius-xs: max(0px, calc(var(--radius) - 4px));
   --radius-sm: max(0px, calc(var(--radius) - 2px));
   --radius-md: var(--radius);
@@ -46,6 +46,7 @@
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
+  --tracking: normal;
   --font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --mono: 'Cascadia Code', 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace;
 
@@ -63,9 +64,9 @@
   --diff-context-width: 76px;
   --diff-current-overlay: color-mix(in srgb, var(--primary) 6%, transparent);
   --disabled-opacity: 0.45;
-  --graph-line-width: 2px;
-  --graph-current-line-width: 3px;
-  --graph-muted-strength: 55%;
+  --graph-line-width: 3px;
+  --graph-current-line-width: 3.5px;
+  --graph-muted-strength: 80%;
   /* Every list row keeps this inner padding on both sides; nesting adds --indent per level. */
   --row-pad: var(--space-2-5);
 
@@ -85,19 +86,19 @@
   color-scheme: light;
 
   /* Surfaces and the text on them */
-  --background: #f6f7f9; /* window chrome, sidebar */
-  --foreground: #1f2328;
-  --surface: #ffffff; /* main panels: lists, diff */
-  --surface-sunken: #eef0f3; /* inputs, headers, wells */
+  --background: #edeae3; /* window chrome, sidebar */
+  --foreground: #141414;
+  --surface: #fbfaf6; /* main panels: lists, diff */
+  --surface-sunken: #e4e0d6; /* inputs, headers, wells */
   --overlay: var(--surface); /* menus, popovers, dialogs */
-  --muted-foreground: #59636e; /* secondary text */
-  --subtle-foreground: #8c959f; /* hints, placeholders, line numbers */
-  --border: #e1e4e8;
-  --border-strong: #d0d5db;
+  --muted-foreground: #47443e; /* secondary text */
+  --subtle-foreground: #57524b; /* hints, placeholders, line numbers */
+  --border: #d9d5ca;
+  --border-strong: #bdb8ab;
 
   /* Primary (main actions, links, selection), and tints of it so a theme that only changes
      --primary still looks coherent */
-  --primary: #2f6feb;
+  --primary: #0039a6;
   --primary-foreground: #ffffff;
   --primary-foreground-soft: rgba(255, 255, 255, 0.3);
   --primary-soft: color-mix(in srgb, var(--primary) 10%, transparent);
@@ -108,51 +109,51 @@
   --ring: var(--primary);
 
   /* Status */
-  --danger: #cf222e;
+  --danger: #d9261f;
   --danger-foreground: #ffffff;
-  --warning: #9a6700;
+  --warning: #724c00;
   --warning-soft: rgba(212, 167, 44, 0.16);
 
   /* Diffs */
   --diff-add: rgba(46, 160, 67, 0.12);
   --diff-add-gutter: rgba(46, 160, 67, 0.2);
-  --diff-add-foreground: #1a7f37;
+  --diff-add-foreground: #17692d;
   --diff-add-word: color-mix(in srgb, var(--diff-add-foreground) 14%, transparent);
   --diff-del-word: color-mix(in srgb, var(--diff-del-foreground) 14%, transparent);
   --diff-del: rgba(248, 81, 73, 0.11);
   --diff-del-gutter: rgba(248, 81, 73, 0.2);
-  --diff-del-foreground: #cf222e;
+  --diff-del-foreground: #b81d28;
 
   /* Syntax highlighting in diffs (diff/highlighter.ts maps TextMate scopes onto these; anything
      else uses --foreground) */
-  --syntax-comment: #585f67;
-  --syntax-keyword: #b81e29;
+  --syntax-comment: #4f4a43;
+  --syntax-keyword: #a3141f;
   --syntax-string: #0a3069;
   --syntax-number: #0550ae;
-  --syntax-function: #6f44be;
+  --syntax-function: #5e35a8;
   --syntax-type: #953800;
   --syntax-property: #0550ae;
   --syntax-tag: #116329;
 
   /* Commit graph lanes (cycled in order) */
-  --graph-lane-0: #4c8dff;
-  --graph-lane-1: #e5534b;
-  --graph-lane-2: #57ab5a;
-  --graph-lane-3: #d4a72c;
-  --graph-lane-4: #b083f0;
-  --graph-lane-5: #39c5cf;
-  --graph-lane-6: #e0823d;
-  --graph-lane-7: #d16ba5;
+  --graph-lane-0: #0039a6;
+  --graph-lane-1: #ee352e;
+  --graph-lane-2: #00933c;
+  --graph-lane-3: #f2b705;
+  --graph-lane-4: #b933ad;
+  --graph-lane-5: #00a1de;
+  --graph-lane-6: #ff6319;
+  --graph-lane-7: #8a5a2b;
 
   /* Author avatars: hue comes from the email; these set its saturation and lightness */
-  --avatar-sat: 55%;
+  --avatar-sat: 30%;
   --avatar-light: 45%;
   --avatar-fg: #ffffff;
 
   /* Brand mark (welcome screen) */
-  --brand-from: #4c8dff;
-  --brand-to: #8a5cf6;
-  --brand-glow: rgba(76, 141, 255, 0.35);
+  --brand-from: #ee352e;
+  --brand-to: #ff6319;
+  --brand-glow: rgba(238, 53, 46, 0.3);
   --brand-fg: #ffffff;
 
   /* Depth */
@@ -168,24 +169,35 @@
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --background: #1b1d21;
-  --foreground: #e1e3e6;
-  --surface: #212328;
-  --surface-sunken: #17191c;
+  --background: #131416;
+  --foreground: #f0eee8;
+  --surface: #1a1b1e;
+  --surface-sunken: #101113;
   /* Floating surfaces sit a touch lighter than the panel beneath, in any dark theme */
   --overlay: color-mix(in srgb, var(--surface) 94%, white);
-  --muted-foreground: #a1a7b0;
-  --subtle-foreground: #6c727b;
-  --border: #2d3036;
-  --border-strong: #3a3e45;
+  --muted-foreground: #d2cfc7;
+  --subtle-foreground: #b6b2aa;
+  --border: #2c2d30;
+  --border-strong: #3d3e42;
 
-  --primary: #4c8dff;
-  --primary-foreground: #ffffff;
+  --primary: #5b8dff;
+  --primary-foreground: #101113;
   --primary-soft: color-mix(in srgb, var(--primary) 14%, transparent);
   --selection: color-mix(in srgb, var(--primary) 16%, transparent);
   --selection-strong: color-mix(in srgb, var(--primary) 26%, transparent);
   --text-selection: color-mix(in srgb, var(--primary) 45%, transparent);
   --hover: rgba(255, 255, 255, 0.045);
+
+  --graph-lane-0: #5b8dff;
+  --graph-lane-1: #ff5a52;
+  --graph-lane-2: #2fbf6a;
+  --graph-lane-3: #ffc928;
+  --graph-lane-4: #d95fcd;
+  --graph-lane-5: #35bff0;
+  --graph-lane-6: #ff8346;
+  --graph-lane-7: #c28a54;
+  --brand-from: #ff5a52;
+  --brand-to: #ff8346;
 
   --danger: #f85149;
   --warning: #e3b341;
