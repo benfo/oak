@@ -279,7 +279,15 @@ epo`), if any. */
     return s
   },
 
-  async log(repo: string, limit: number, include?: string, scope: HistoryScope = { kind: 'all' }, file?: string): Promise<Commit[]> {
+  async log(
+    repo: string,
+    limit: number,
+    include?: string,
+    scope: HistoryScope = { kind: 'all' },
+    file?: string,
+    hiddenRefs: string[] = [],
+    keepRemoteRefs: string[] | null = null
+  ): Promise<Commit[]> {
     const roots =
       scope.kind === 'all'
         ? ['--all']
@@ -296,7 +304,16 @@ epo`), if any. */
         'core.quotepath=off',
         'log',
         '--exclude=refs/stash',
+        // Hidden branches drop out of the "all" scope and, everywhere, out of the labels on visible commits.
+        ...(scope.kind === 'all' ? hiddenRefs.map((g) => `--exclude=${g}`) : []),
+        ...hiddenRefs.map((g) => `--decorate-refs-exclude=${g}`),
+        // Hiding remote-only branches: skip every remote ref once, then name the few that stay (git cannot exempt a ref from a glob).
+        ...(keepRemoteRefs && scope.kind === 'all' ? ['--exclude=refs/remotes/*'] : []),
+        ...(keepRemoteRefs
+          ? ['HEAD', 'refs/heads/*', 'refs/tags/*', 'refs/stash', ...keepRemoteRefs].map((g) => `--decorate-refs=${g}`)
+          : []),
         ...roots,
+        ...(keepRemoteRefs && scope.kind === 'all' ? keepRemoteRefs : []),
         '--date-order',
         '--decorate=full',
         `--max-count=${limit}`,

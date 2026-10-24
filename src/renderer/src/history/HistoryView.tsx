@@ -16,6 +16,7 @@ import { rememberCompareTarget, resolveCompareTarget } from '../lib/compareTarge
 import { Icon } from '../components/Icon'
 import { Split } from '../components/Split'
 import { api, showMenu } from '../api'
+import { hiddenBranchRefs } from '../sidebar/sidebarBranches'
 import * as act from '../actions'
 import { focusPane, handleNavigation, handleToolNavigation } from '../lib/navigation'
 import type { Branch, Commit, MenuItem } from '../../../shared/types'
@@ -55,30 +56,24 @@ async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch, onCom
     (t) => t.type === 'local' || !allTips.some((o) => o.type === 'local' && o.name === t.name.slice(t.name.indexOf('/') + 1))
   )
   const compares: MenuItem[] = []
-  const compareItems = await Promise.all(tips.map((tip) => compareMenuItems(r, tip, tips.length === 1)))
+  const compareItems = await Promise.all(tips.map((tip) => compareMenuItems(r, tip, tips.length > 1)))
   tips.forEach((tip, i) => {
-    const items = compareItems[i].map((item) => ({ ...item, id: `${tip.fullName}|${item.id}` }))
-    if (tips.length === 1) compares.push(...items)
-    else if (items.length) compares.push({ label: `Compare ${tip.name}`, submenu: items })
+    compares.push(...compareItems[i].map((item) => ({ ...item, id: `${tip.fullName}|${item.id}` })))
   })
   // Only commits that are a local branch tip get it, like the sidebar's branch menu.
   const prBranches = c.refs.filter((x) => x.type === 'local')
-  const pullRequests: MenuItem[] =
-    prBranches.length > 1
-      ? [{ label: 'Open pull request', submenu: prBranches.map((x) => ({ id: `pr:${x.name}`, label: x.name })) }]
-      : prBranches.map((x) => ({ id: `pr:${x.name}`, label: 'Open pull request' }))
+  const pullRequests: MenuItem[] = prBranches.map((x) => ({
+    id: `pr:${x.name}`,
+    label: prBranches.length > 1 ? `Open pull request for ${x.name}` : 'Open pull request'
+  }))
   const items: MenuItem[] = [
     ...(checkouts.length > 1
       ? [{ label: 'Checkout branch', submenu: checkouts }]
       : checkouts.map((item) => ({ ...item, label: `Checkout ${item.label}` }))),
-    { id: 'detach', label: 'Checkout this commit (detached)' },
-    ...compares,
-    { id: 'compare-commit', label: 'Compare commit with…' },
-    ...pullRequests,
-    { type: 'separator' },
     { id: 'branch', label: 'New branch from here…' },
-    { id: 'tag', label: 'New tag from here…' },
+    { id: 'pick', label: `Cherry-pick onto ${cur}`, enabled: !isHead },
     { type: 'separator' },
+    { label: 'Compare', submenu: [...compares, { id: 'compare-commit', label: 'Compare commit with…' }] },
     {
       label: 'Merge / Rebase',
       enabled: !isHead,
@@ -87,16 +82,24 @@ async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch, onCom
         { id: 'rebase', label: `Rebase ${cur} onto this` }
       ]
     },
-    { id: 'pick', label: `Cherry-pick onto ${cur}`, enabled: !isHead },
-    { id: 'revert', label: 'Revert commit…' },
     {
-      label: `Reset ${cur} to here`,
-      enabled: !isHead,
+      label: 'Undo',
       submenu: [
-        { id: 'reset:soft', label: 'Soft: keep changes staged' },
-        { id: 'reset:mixed', label: 'Mixed: keep changes unstaged' },
-        { id: 'reset:hard', label: 'Hard: discard all changes…' }
+        { id: 'revert', label: 'Revert commit…' },
+        { type: 'separator' },
+        ...(isHead
+          ? [{ label: 'Reset: already at this commit', enabled: false }]
+          : [
+              { id: 'reset:soft', label: 'Reset to here, keep changes staged' },
+              { id: 'reset:mixed', label: 'Reset to here, keep changes unstaged' },
+              { type: 'separator' as const },
+              { id: 'reset:hard', label: 'Reset to here, discard changes…' }
+            ])
       ]
+    },
+    {
+      label: 'More',
+      submenu: [{ id: 'detach', label: 'Checkout this commit (detached)' }, { id: 'tag', label: 'New tag from here…' }, ...pullRequests]
     },
     { type: 'separator' },
     {
@@ -161,6 +164,23 @@ function HistoryScopeButton({ r, comparing }: { r: RepoCtx; comparing: boolean }
     >
       <span>{text}</span>
       <Icon name="chevronDown" size={12} />
+    </button>
+  )
+}
+
+/** Tells the graph is missing hidden branches, at the end of the toolbar so nothing moves when it appears. */
+function HiddenBranchesToggle({ r }: { r: RepoCtx }) {
+  const { showHidden } = r.branchOptions
+  const count = hiddenBranchRefs(r.branches, r.status?.branch, r.branchOptions, r.remoteHead).size
+  if (!count || r.historyScope !== 'all') return null
+  return (
+    <button
+      className="link small"
+      aria-pressed={showHidden}
+      title={showHidden ? 'Hide these branches again' : 'Show hidden branches in the graph'}
+      onClick={() => r.setBranchOptions({ ...r.branchOptions, showHidden: !showHidden })}
+    >
+      {showHidden ? `Showing ${count} hidden` : `${count} hidden`}
     </button>
   )
 }
@@ -492,6 +512,7 @@ export function HistoryView({
           <span className="muted small">
             {r.commits.length.toLocaleString()} commits{r.hasMore ? ' loaded' : ''}
           </span>
+          <HiddenBranchesToggle r={r} />
         </div>
         {pinned && (
           <div className="comparison-banner" role="status" data-pane-owner="graph" onKeyDown={handleToolNavigation}>

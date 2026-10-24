@@ -21,6 +21,7 @@ import { Split } from './Split'
 import { RESIZE_KEYS, resizeFocusedPane } from '../lib/paneResize'
 import { Toolbar } from './Toolbar'
 import { Sidebar } from '../sidebar/Sidebar'
+import { publishActiveRepo } from '../sidebar/activeRepo'
 import { HistoryView, type ComparisonRequest } from '../history/HistoryView'
 import { ChangesView } from '../changes/ChangesView'
 import { openPalette, openShortcuts } from './Palette'
@@ -43,6 +44,10 @@ const focusLater = (selector: string) => setTimeout(() => document.querySelector
 
 export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: string | null) => void }) {
   const r = useRepo(repo)
+  useEffect(() => {
+    publishActiveRepo(r)
+  })
+  useEffect(() => () => publishActiveRepo(null), [])
   const [view, setViewState] = useState<View>('history')
   const [layout, setLayout] = useState<WorkspaceLayout>('standard')
   const lastWorkFocus = useRef<HTMLElement | null>(null)
