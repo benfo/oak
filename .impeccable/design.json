@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-24T14:40:00+02:00",
+  "title": "Design System: Oak",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Line Blue", "canonical": "#0039a6", "tonalRamp": ["#001a4d", "#00297a", "#0039a6", "#2d5cc0", "#5b80d1", "#8fa8e0", "#c3d0ee", "#e8edf8"] },
+      "paper-chrome": { "role": "neutral", "displayName": "Paper Chrome", "canonical": "#edeae3", "tonalRamp": ["#2a2823", "#47443e", "#6b665d", "#9a9488", "#bdb8ab", "#d9d5ca", "#edeae3", "#fbfaf6"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#141414", "tonalRamp": ["#141414", "#2b2b2b", "#47443e", "#57524b", "#7d7870", "#a39e94", "#d9d5ca", "#fbfaf6"] },
+      "lane-1": { "role": "secondary", "displayName": "Signal Red", "canonical": "#ee352e", "tonalRamp": ["#5a0f0c", "#8a1713", "#bd221c", "#ee352e", "#f2635d", "#f68e8a", "#fabab8", "#fde6e5"] },
+      "lane-6": { "role": "secondary", "displayName": "Line Orange", "canonical": "#ff6319", "tonalRamp": ["#5c2000", "#8f3500", "#c74a0a", "#ff6319", "#ff8447", "#ffa578", "#ffc8ab", "#ffeadf"] },
+      "lane-2": { "role": "tertiary", "displayName": "Line Green", "canonical": "#00933c", "tonalRamp": ["#00331a", "#005a26", "#00762f", "#00933c", "#33ad63", "#66c78b", "#a3dfb9", "#dcf3e5"] },
+      "lane-3": { "role": "tertiary", "displayName": "Line Yellow", "canonical": "#f2b705", "tonalRamp": ["#4d3a00", "#7d5f00", "#b38b00", "#f2b705", "#f5c738", "#f8d76b", "#fbe8a6", "#fdf6dc"] },
+      "lane-4": { "role": "tertiary", "displayName": "Line Purple", "canonical": "#b933ad", "tonalRamp": ["#471442", "#701f69", "#982a8e", "#b933ad", "#cb62c1", "#da90d3", "#e9bde5", "#f7e5f5"] },
+      "lane-5": { "role": "tertiary", "displayName": "Line Cyan", "canonical": "#00a1de", "tonalRamp": ["#00324a", "#005a7f", "#0080b3", "#00a1de", "#33b4e5", "#66c7ec", "#a3dcf4", "#dcf1fb"] },
+      "lane-7": { "role": "tertiary", "displayName": "Line Brown", "canonical": "#8a5a2b", "tonalRamp": ["#2e1d0e", "#4d3217", "#6b4520", "#8a5a2b", "#a87b50", "#c29f7c", "#dcc5ac", "#f1e7dc"] }
+    },
+    "typographyMeta": {
+      "body": { "displayName": "Body", "purpose": "All interface text; Segoe UI chosen deliberately as the platform font." },
+      "code": { "displayName": "Code", "purpose": "Diffs, hashes and monospace values." },
+      "display": { "displayName": "Display", "purpose": "Welcome screen only." }
+    },
+    "shadows": [
+      { "name": "shadow-light", "value": "0 8px 30px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)", "purpose": "Floating layers (menus, popovers, dialogs) in Light." },
+      { "name": "shadow-dark", "value": "0 10px 40px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4)", "purpose": "Floating layers in Dark." },
+      { "name": "active-row-bar", "value": "inset 3px 0 0 var(--primary)", "purpose": "Active row marker in focused panes (2px in sidebar rows)." }
+    ],
+    "motion": [
+      { "name": "pop", "value": "0.1s ease-out", "purpose": "Menu popover entrance." },
+      { "name": "fade", "value": "0.15s opacity", "purpose": "Hover-revealed row actions." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Default Button",
+      "kind": "button",
+      "refersTo": "button-default",
+      "description": "Standard 28px action button.",
+      "html": "<button class=\"ds-btn\">Fetch</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; gap: var(--space-1-5); height: var(--control-md); padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: var(--surface); color: var(--foreground); font: inherit; cursor: pointer; } .ds-btn:hover { background: var(--hover); } .ds-btn:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action such as Commit.",
+      "html": "<button class=\"ds-btn-primary\">Commit</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; height: var(--control-md); padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--primary); background: var(--primary); color: var(--primary-foreground); font: inherit; cursor: pointer; } .ds-btn-primary:hover { filter: brightness(1.08); } .ds-btn-primary:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive confirmation.",
+      "html": "<button class=\"ds-btn-danger\">Discard</button>",
+      "css": ".ds-btn-danger { display: inline-flex; align-items: center; height: var(--control-md); padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--danger); background: var(--danger); color: var(--danger-foreground); font: inherit; cursor: pointer; } .ds-btn-danger:hover { filter: brightness(1.08); } .ds-btn-danger:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Sunken 28px text field.",
+      "html": "<input class=\"ds-input\" placeholder=\"Filter branches\" />",
+      "css": ".ds-input { width: 100%; height: var(--control-md); padding: 0 var(--space-2-5); border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: var(--surface-sunken); color: var(--foreground); font: inherit; outline: none; } .ds-input:focus { outline: var(--focus-ring); outline-offset: 2px; }"
+    },
+    {
+      "name": "Menu",
+      "kind": "custom",
+      "refersTo": "menu-popover",
+      "description": "Floating menu with a focused item.",
+      "html": "<div class=\"ds-menu\"><div class=\"ds-menu-item\">Checkout</div><div class=\"ds-menu-item ds-focused\">Merge into current</div></div>",
+      "css": ".ds-menu { min-width: 200px; padding: var(--space-1); background: var(--overlay); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow); } .ds-menu-item { padding: var(--space-1-5) var(--space-3); border-radius: var(--radius-md); color: var(--foreground); } .ds-focused { background: var(--selection-strong); }"
+    },
+    {
+      "name": "Transit Graph Stations",
+      "kind": "custom",
+      "refersTo": "lane-0",
+      "description": "Station grammar: hollow commit, filled merge, haloed HEAD, on 3px lines.",
+      "html": "<svg width=\"96\" height=\"84\" viewBox=\"0 0 96 84\"><path d=\"M20 0V84\" stroke=\"var(--graph-lane-0)\" stroke-width=\"3\" fill=\"none\"/><path d=\"M38 42V84\" stroke=\"var(--graph-lane-1)\" stroke-width=\"3\" fill=\"none\"/><circle cx=\"20\" cy=\"14\" r=\"9\" fill=\"none\" stroke=\"var(--graph-lane-0)\" stroke-width=\"1.5\"/><circle cx=\"20\" cy=\"14\" r=\"4.5\" fill=\"var(--surface)\" stroke=\"var(--graph-lane-0)\" stroke-width=\"2\"/><circle cx=\"20\" cy=\"42\" r=\"5\" fill=\"var(--graph-lane-0)\" stroke=\"var(--graph-lane-0)\" stroke-width=\"2\"/><circle cx=\"38\" cy=\"70\" r=\"4.5\" fill=\"var(--surface)\" stroke=\"var(--graph-lane-1)\" stroke-width=\"2\"/></svg>",
+      "css": "svg { display: block; background: var(--surface); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Transit Map",
+    "overview": "Oak draws a repository the way a city draws its network. Branches are coloured lines, commits are stations, merges are interchanges, and the rest of the app speaks the same signage language: warm paper ground, black ink type, crisp 2px corners and saturated line colours.\n\nThe shell is an operate-mode tool and stays quiet. Colour is rationed: neutrals carry the chrome, and the eight line colours live mainly in the commit graph, where they carry meaning. The platform font (Segoe UI) was kept deliberately.\n\nOnly the Light and Dark base themes were redesigned. One Dark, Dracula and Solarized Light keep their own palettes and plug into the same token names.",
+    "keyCharacteristics": [
+      "Warm paper (Light) or neutral ink ground (Dark), with ink-coloured type",
+      "2px corners everywhere, driven by one radius knob",
+      "Eight saturated line colours, lifted in Dark so they hold against the ground",
+      "3px graph lines, hollow ringed stations, filled interchange dots",
+      "Flat: borders and tone separate surfaces, shadows only on floating layers",
+      "Tokens only: no raw colours, spacing, radii, font sizes or control heights in components"
+    ],
+    "rules": [
+      { "name": "The Lines Are Signage Rule", "body": "Lane colours mean \"this line\". Do not borrow them as decoration on chrome; the interface accent is Line Blue only.", "section": "colors" },
+      { "name": "The Token Source Rule", "body": "Every colour is a variable from tokens.css. A theme may override any palette token; components never hold a literal.", "section": "colors" },
+      { "name": "The Scale Only Rule", "body": "Font sizes come from the five --text-* steps and weights from the four --weight-* steps; no component sets a literal size.", "section": "typography" },
+      { "name": "The Nothing Moves Rule", "body": "State changes use colour, tone, outline or inset bars only, never size, margin or position changes.", "section": "layout" },
+      { "name": "The Flat Until Floating Rule", "body": "Only layers that float over the app carry the shadow token; panels, rows and buttons never do.", "section": "elevation" },
+      { "name": "The One Focus Rule", "body": "There is one focus system: a 2px --focus-ring, outline-based so it survives Windows high-contrast mode.", "section": "components" },
+      { "name": "The Station Grammar Rule", "body": "Hollow means a commit, filled means a merge, a halo means HEAD. New graph marks extend this grammar; they do not invent a second one.", "section": "components" }
+    ],
+    "dos": [
+      "Do take every colour, space, radius, font size and control height from tokens.css variables.",
+      "Do use 2px corners (the radius knob) and 1px borders for controls and rows.",
+      "Do keep the graph at 3px lines and an 18px lane pitch, and cycle eight lane colours.",
+      "Do use the single 2px focus ring, and inset bars for active rows.",
+      "Do keep surfaces flat and the shadow token for floating layers only.",
+      "Do keep hover, focus and selection free of layout shift.",
+      "Do check new colours against the Light and Dark values, and remember the three other built-in themes carry their own palettes."
+    ],
+    "donts": [
+      "Don't use a neutral grey panel with a single blue accent as the look; warm paper and line colours are the identity.",
+      "Don't use lane colours as chrome decoration.",
+      "Don't add a second focus style, or replace outline rings with box-shadow rings.",
+      "Don't add raw hex, pixel or font-size values to component CSS.",
+      "Don't hold the redesign values as fixed for other themes; One Dark, Dracula and Solarized Light keep their own palettes."
+    ]
+  }
+}

@@ -1,12 +1,6 @@
 # Roadmap
 
-Done, in progress and backlog. [AGENTS.md](AGENTS.md) holds the conventions and design rules; this file records status, decisions and ideas. Keep it short: when something ships, fold it into the shipped list below.
-
-## Project goals
-- Build a modern, simple Git client that feels dependable and a pleasure to use. Consistency and user joy are product goals, alongside correctness.
-- Keep keyboard, mouse, focus, selection and feedback predictable across views. Optional navigation schemes add keys, not different rules for search or actions.
-- Make frequent workflows quick without clutter. Add contextual controls and commands only when they solve a demonstrated need; preserve position and selection, avoid layout shifts, and make state visible.
-- Judge changes by reduced confusion, fewer unnecessary steps and real use, not feature count.
+Done, in progress and backlog. [PRODUCT.md](PRODUCT.md) holds who Oak is for and its principles; [AGENTS.md](AGENTS.md) holds the conventions and design rules; this file records status, decisions and ideas. Keep it short: when something ships, fold it into the shipped list below.
 
 ## Current status (2026-10-24)
 
@@ -26,6 +20,7 @@ Lessons for any future history rewrite or tag move:
 - "Merge into" a branch that is already contained in the current branch now says "Nothing to merge: <branch> already contains <ref>" (`merge` returns Git's output). A disabled "(already merged)" menu item was tried and reverted because the check delayed the menu. If wanted later, compute it in the background when a repo opens or refreshes, like the compare-target cache, so menus never wait on Git.
 - V switches the changed-files List/Tree view from the diff as well as the file lists (`switchView` has the `diff` role in `lib/keymap.ts`). It does nothing in the graph, sidebar or toolbar, in the expanded Code layout or in History's All files mode.
 - Opening Oak with flags before the folder (as automation tools pass them) now opens the right folder.
+- Transit-map visual redesign of the Light and Dark base themes (tokens only; layout, behaviour and keyboard model unchanged): warm paper and ink Light, ink Dark, 2px radii, saturated line colours, a 3px graph with ringed stations, filled merge dots and a HEAD ring, WCAG AA text tiers, quieter avatars. Context is in `PRODUCT.md` and `DESIGN.md`. Still open from the finish review: `--radius-full` pills (branch button, chips) could use the signage radius, the Dark grounds could take an ink tint, the Light selection tint is cool on warm paper, and `.icon-btn` has a literal `24px` width. The `test:ui` test "scrolls a 5,000 commit history to the end" fails on a clean `main` too, so look at it before adding `test:ui` to CI.
 
 ## Resume next
 0. **Refactor follow-ups.** Add the `test:ui` job to `checks.yml` once the suite has been stable for a while (it needs a display on Linux, for example xvfb). Work down the 12 `max-lines` warnings (`npm run lint`) when touching those files; `DiffView.tsx` is still about 380 lines. The ESLint Babel parser needs `@babel/core` 8 declared explicitly so `npm ci` resolves its peers.
