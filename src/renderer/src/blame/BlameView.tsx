@@ -7,7 +7,6 @@ import { PaneFrame } from '../components/Pane'
 import { Tip } from '../components/Tip'
 import { useFileTokens } from '../diff/highlight'
 import { toggleWhitespace } from '../diff/toggleWhitespace'
-import { showWhitespace } from '../diff/whitespace'
 import { copyText } from '../lib/copy'
 import { fullDate, relativeTime } from '../lib/format'
 import { widgetAction } from '../lib/keymap'
@@ -19,13 +18,15 @@ import { useSettings } from '../settings'
 import { BlameVersion, type BlameStep } from './BlameVersion'
 import { CommitMessage } from './CommitMessage'
 import { CommitPopover } from './CommitPopover'
-import { adjacentBlockStart, blameBlockStarts, findLines, gotoLine, type BlameResult } from '../../../shared/blame'
+import { adjacentBlockStart, blameBlockStarts, findLines, findRanges, gotoLine, type BlameResult } from '../../../shared/blame'
+import { BlameCode } from './BlameCode'
 import { BlameFind } from './BlameFind'
 
 /** Keep in sync with --diff-line-height. */
 const ROW_H = 20
 const SLOW_MS = 300
 const NOTE_MS = 3500
+const NO_HITS: [number, number][] = []
 /** Pixels a plain Left or Right scrolls the code; Shift scrolls a quarter of the pane. */
 const H_STEP = 40
 
@@ -484,15 +485,12 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                       </span>
                     </span>
                     <span className="code">
-                      {tokens
-                        ? tokens[index].map((s, i) => (
-                            <span key={i} style={s.c ? { color: s.c } : undefined}>
-                              {whitespace ? showWhitespace(s.t) : s.t}
-                            </span>
-                          ))
-                        : whitespace
-                          ? showWhitespace(l.text)
-                          : l.text}
+                      <BlameCode
+                        text={l.text}
+                        tokens={tokens ? tokens[index] : null}
+                        whitespace={whitespace}
+                        hits={find && !goto && matchSet.has(index) ? findRanges(l.text, find) : NO_HITS}
+                      />
                     </span>
                   </div>
                 )

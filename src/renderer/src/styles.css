@@ -2319,6 +2319,16 @@ input[type='checkbox']:focus-visible,
   color: var(--muted-foreground);
   white-space: nowrap;
 }
+/* The found text itself, so it is clear which part of the line matched. */
+.find-hit {
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
+  box-shadow: 0 0 0 1px var(--warning);
+}
+.blame-row.cursor .find-hit {
+  background: var(--warning);
+  color: var(--background);
+}
 /* A line that contains the find text. The current match is the cursor row: ringed like the cursor and tinted twice as strongly, so it stands out from the rest. */
 .blame-row.found .code {
   background-image: linear-gradient(var(--warning-soft), var(--warning-soft));
