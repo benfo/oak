@@ -62,6 +62,18 @@ export const lines: Line[] = [
         text: ['Choose "Show file history" from a file\'s menu, or from the command palette, to filter the History graph to the commits that touched that file. Stepping through them shows only that file\'s diff.'],
         points: ["Open a file's menu, or the command palette", 'Choose Show file history', "Step through the commits that touched it, each showing only that file's diff"],
       },
+      {
+        id: 'blame',
+        name: 'Blame',
+        text: ["See who last changed each line. The gutter names each block's commit by subject and age, and a footer shows the commit for the line under the cursor."],
+        keys: [
+          { label: 'Open Blame', keys: ['Ctrl', '3'] },
+          { label: 'Step back to the version before a line\'s commit', keys: ['B'] },
+          { label: 'Find in the file', keys: ['/'] },
+        ],
+        points: ["Open Blame from a file's menu or the command palette", "Press B to see the file as it was before a line's commit, and Backspace to return", 'Press Enter to open that commit in History at the file and line it changed'],
+        shots: [{ image: 'oak-blame', title: "Oak's Blame view with each block's commit beside the code and the cursor line's commit in the footer", caption: 'A file in a synthetic project, blamed in the working tree.' }],
+      },
     ],
   },
   {
@@ -183,7 +195,6 @@ export const lines: Line[] = [
 export const planned: { name: string; text: string }[] = [
   { name: 'Smoother conflicts', text: 'Say which side is ours and theirs, handle modify and delete conflicts, and bring Pull and Rebase conflicts into the same flow.' },
   { name: 'Interactive rebase', text: 'Reorder, squash, edit and drop commits from the history graph.' },
-  { name: 'Blame', text: 'Find who last changed a line and jump to the commit that did.' },
   { name: 'Pull request review', text: "Fetch a pull request's branches and open the comparison in Oak. Comments and approvals would stay on the provider's website at first." },
   { name: 'Diff readability', text: 'Hide whitespace and line-ending differences, and fold long unchanged regions so substantive edits stand out.' },
   { name: 'Open and preview more files', text: 'Preview images, PDFs and other safe files, and open anything else in its default app or show it in its folder.' },
