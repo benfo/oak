@@ -54,7 +54,8 @@ interface Props {
   onClose: () => void
 }
 
-type Loaded = { base: string; result: BlameResult } | { base: string; error: string }
+/** `version` is the file and revision alone, so a setting change can keep showing the same file while it reloads. */
+type Loaded = { base: string; version: string; result: BlameResult } | { base: string; version: string; error: string }
 
 export function BlameView({ repo, request, status, contentRevision, active, onOpenCommit, onClose }: Props) {
   const { vimNavigation, syntaxHighlighting, showWhitespace: whitespace } = useSettings()
@@ -87,7 +88,8 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   const ref = useRef<HTMLDivElement>(null)
   const toolsRef = useRef<HTMLDivElement>(null)
   const pane = usePane('blame', { kind: 'diff' })
-  const base = JSON.stringify([repo, file, rev, ignoreWhitespace, useIgnoreRevs])
+  const version = JSON.stringify([repo, file, rev])
+  const base = JSON.stringify([version, ignoreWhitespace, useIgnoreRevs])
 
   useEffect(() => toolbarHomeEnd(toolsRef.current), [])
   useEffect(() => ref.current?.focus({ preventScroll: true }), [])
@@ -99,16 +101,16 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
       .then((result) => {
         if (cancelled) return
         if (result.hasIgnoreRevs) setHasIgnoreRevs(true)
-        setLoaded({ base, result })
+        setLoaded({ base, version, result })
       })
-      .catch((e) => !cancelled && setLoaded({ base, error: errorMessage(e) }))
+      .catch((e) => !cancelled && setLoaded({ base, version, error: errorMessage(e) }))
     return () => {
       cancelled = true
     }
   }, [base, rev === null ? status : null, rev === null ? contentRevision : 0])
 
-  // The previous lines stay up while a working-tree reload runs; a different file or setting shows the loading state.
-  const current = loaded?.base === base ? loaded : null
+  // The previous lines stay up while a working-tree reload or a setting change reloads the same file; only a different file or revision shows the loading state.
+  const current = loaded?.version === version ? loaded : null
   const result = current && 'result' in current ? current.result : null
   const error = current && 'error' in current ? current.error : null
   const lines = result?.lines ?? []
@@ -129,6 +131,13 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   const at = Math.max(0, Math.min(lines.length - 1, cursor))
   const line = lines[at]
   const commit = line && result ? result.commits[line.hash] : undefined
+
+  // The tint only says something while the commit is a minority of the file; a new file is one commit, and tinting all of it just lowers contrast.
+  const tintCommit = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const l of lines) counts.set(l.hash, (counts.get(l.hash) ?? 0) + 1)
+    return line && (counts.get(line.hash) ?? 0) * 2 <= lines.length ? line.hash : null
+  }, [result, line?.hash])
 
   const rows = useVirtualRows({ count: lines.length, getScrollElement: () => ref.current, estimateSize: () => ROW_H, overscan: 20 })
   // After a step the cursor row goes back to where it sat in the pane, so the eye keeps its place while the line numbers change.
@@ -387,7 +396,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                 return (
                   <div
                     key={index}
-                    className={`dl blame-row${first ? ' block-start' : ''}${index === at ? ' cursor' : ''}${l.hash === line?.hash ? ' same-commit' : ''}${l.ignored ? ' ignored' : ''}`}
+                    className={`dl blame-row${first ? ' block-start' : ''}${index === at ? ' cursor' : ''}${l.hash === tintCommit ? ' same-commit' : ''}${l.ignored ? ' ignored' : ''}`}
                     onClick={() => setCursor(index)}
                     onContextMenu={(e) => {
                       e.preventDefault()

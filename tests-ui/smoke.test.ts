@@ -207,6 +207,42 @@ test.describe('blame', () => {
     await expect(page.locator('.blame-row.cursor')).toBeVisible()
   })
 
+  test('the same-commit tint is left off when one commit owns most of the file', async ({ open, small }) => {
+    const page = await open(small)
+    await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Show blame' }).click()
+    await expect(page.locator('.blame-row').first()).toBeVisible()
+    await expect(page.locator('.blame-row.cursor')).toContainText('const value1 = 1')
+    await expect(page.locator('.blame-row.same-commit')).toHaveCount(0)
+    for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowDown')
+    await expect(page.locator('.blame-row.cursor')).toContainText("const changed5 = 'edited'")
+    await expect(page.locator('.blame-row.cursor')).toHaveClass(/same-commit/)
+  })
+
+  test('changing Ignore whitespace keeps the lines on screen while it reloads', async ({ open, small }) => {
+    const page = await open(small)
+    await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Show blame' }).click()
+    await expect(page.locator('.blame-row').first()).toBeVisible()
+    // Samples every frame, so a frame with no rows (the flash) would show up as a zero.
+    await page.evaluate(() => {
+      const w = window as unknown as { rowCounts: number[] }
+      w.rowCounts = []
+      const sample = () => {
+        w.rowCounts.push(document.querySelectorAll('.blame-row').length)
+        requestAnimationFrame(sample)
+      }
+      sample()
+    })
+    const toggle = page.getByRole('button', { name: 'Ignore whitespace' })
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    await page.waitForTimeout(500)
+    const counts = await page.evaluate(() => (window as unknown as { rowCounts: number[] }).rowCounts)
+    expect(counts.length).toBeGreaterThan(5)
+    expect(Math.min(...counts)).toBeGreaterThan(0)
+  })
+
   test('B blames the line as it was before its commit, Backspace returns, and Escape closes without stepping', async ({ open, small }) => {
     git(small, 'add', '-A')
     git(small, 'commit', '-q', '-m', 'Edit lines')
