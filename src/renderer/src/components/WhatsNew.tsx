@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { flushSync } from 'react-dom'
 import { Button } from 'react-aria-components'
 import { api } from '../api'
@@ -61,6 +61,12 @@ export function WhatsNewHost() {
     openWhatsNew(since)
   }
   const releases = notesForRelease(version, request?.since)
+  const notesRef = useRef<HTMLDivElement>(null)
+  const shown = !!request && !!version
+  // The dialog opens on the notes so arrow keys and PageDown scroll them.
+  useEffect(() => {
+    if (shown) notesRef.current?.focus()
+  }, [shown])
   return (
     <>
       {notice && update.state !== 'ready' && (
@@ -81,38 +87,40 @@ export function WhatsNewHost() {
       )}
       {request && version && (
         <Modal title="What’s new in Oak" onClose={() => open.set(null)} width={620}>
-          <div className="release-notes">
-            {releases.length ? (
-              releases.map((release) => (
-                <section key={release.version} className="release-section">
-                  <h3>Oak {release.version}</h3>
-                  {release.highlights.map((highlight) => (
-                    <div className="release-highlight" key={highlight.title}>
-                      <h4>{highlight.title}</h4>
-                      <p>{highlight.text}</p>
-                    </div>
-                  ))}
-                  {!!release.fixes.length && (
-                    <>
-                      <h4>Fixes</h4>
-                      <ul>
-                        {release.fixes.map((fix) => (
-                          <li key={fix}>{fix}</li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </section>
-              ))
-            ) : (
-              <p>Release notes for Oak {version} are available on GitHub.</p>
-            )}
+          <div className="pane-frame">
+            <div ref={notesRef} className="release-notes" tabIndex={0} data-pane="release-notes" aria-label="Release notes">
+              {releases.length ? (
+                releases.map((release) => (
+                  <section key={release.version} className="release-section" aria-label={`Oak ${release.version}`}>
+                    <h3>Oak {release.version}</h3>
+                    {release.highlights.map((highlight) => (
+                      <div className="release-highlight" key={highlight.title}>
+                        <h4>{highlight.title}</h4>
+                        <p>{highlight.text}</p>
+                      </div>
+                    ))}
+                    {!!release.fixes.length && (
+                      <>
+                        <h4 className="release-fixes">Fixes</h4>
+                        <ul>
+                          {release.fixes.map((fix) => (
+                            <li key={fix}>{fix}</li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </section>
+                ))
+              ) : (
+                <p>Release notes for Oak {version} are available on GitHub.</p>
+              )}
+            </div>
           </div>
           <div className="modal-actions">
             <Button className="btn" onPress={() => api.openReleaseNotes()}>
               All release notes on GitHub
             </Button>
-            <Button className="btn primary" onPress={() => open.set(null)} autoFocus>
+            <Button className="btn primary" onPress={() => open.set(null)}>
               Done
             </Button>
           </div>

@@ -268,11 +268,12 @@ function Preferences({ repo, onClose }: { repo: string | null; onClose: () => vo
           <label className="check">
             <input type="checkbox" checked={s.vimNavigation} onChange={(e) => updateSettings({ vimNavigation: e.target.checked })} />
             Vim-style navigation
+            <span className="prefs-hint">
+              Adds h/j/k/l alongside arrow keys in lists, diffs and menus. In lists and diffs, Ctrl+D/U moves half a page and gg/G goes to
+              the beginning/end. Both navigation styles use / or Ctrl+F to search a list. Text fields and searchable pickers keep normal
+              typing.
+            </span>
           </label>
-          <p className="prefs-note">
-            Adds h/j/k/l alongside arrow keys in lists, diffs and menus. In lists and diffs, Ctrl+D/U moves half a page and gg/G goes to the
-            beginning/end. Both navigation styles use / or Ctrl+F to search a list. Text fields and searchable pickers keep normal typing.
-          </p>
           <label className="check">
             <input type="checkbox" checked={s.reopenLastRepo} onChange={(e) => updateSettings({ reopenLastRepo: e.target.checked })} />
             Reopen the last repository on startup
