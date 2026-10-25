@@ -19,7 +19,8 @@ import { useSettings } from '../settings'
 import { BlameVersion, type BlameStep } from './BlameVersion'
 import { CommitMessage } from './CommitMessage'
 import { CommitPopover } from './CommitPopover'
-import { adjacentBlockStart, blameBlockStarts, type BlameResult } from '../../../shared/blame'
+import { adjacentBlockStart, blameBlockStarts, findLines, gotoLine, type BlameResult } from '../../../shared/blame'
+import { BlameFind } from './BlameFind'
 
 /** Keep in sync with --diff-line-height. */
 const ROW_H = 20
@@ -80,6 +81,9 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   const [slow, setSlow] = useState(false)
   const [cursor, setCursor] = useState(0)
   const [messageOpen, setMessageOpen] = useState(false)
+  /** The find bar's text; null while it is closed. A leading ":" makes it a go-to-line box. */
+  const [find, setFind] = useState<string | null>(null)
+  const findRef = useRef<HTMLInputElement>(null)
   /** Full messages by commit hash, read on demand; a commit never changes, so entries stay (null: could not be read). */
   const messages = useRef(new Map<string, string | null>())
   const [, messagesChanged] = useReducer((n: number) => n + 1, 0)
@@ -138,6 +142,44 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     for (const l of lines) counts.set(l.hash, (counts.get(l.hash) ?? 0) + 1)
     return line && (counts.get(line.hash) ?? 0) * 2 <= lines.length ? line.hash : null
   }, [result, line?.hash])
+
+  const goto = find?.startsWith(':') ?? false
+  const matches = useMemo(() => (find && !goto ? findLines(lines, find) : []), [result, find, goto])
+  const matchSet = useMemo(() => new Set(matches), [matches])
+  const target = find !== null && goto ? gotoLine(find, lines.length) : null
+  const here = matches.indexOf(at)
+  const findStatus = goto
+    ? target === null
+      ? 'Type a line number'
+      : `Go to line ${target + 1}`
+    : !find
+      ? ''
+      : !matches.length
+        ? 'No matches'
+        : here >= 0
+          ? `${here + 1} of ${matches.length}`
+          : `${matches.length} ${matches.length === 1 ? 'match' : 'matches'}`
+  const closeFind = () => {
+    setFind(null)
+    ref.current?.focus({ preventScroll: true })
+  }
+  // Typing moves the cursor to the first match from where it is, or to the line a ":120" names, so the view follows as you type.
+  const changeFind = (query: string) => {
+    setFind(query)
+    const found = findLines(lines, query)
+    const first = query.startsWith(':') ? gotoLine(query, lines.length) : (found.find((i) => i >= at) ?? found[0])
+    if (first !== undefined && first !== null) setCursor(first)
+  }
+  const enterFind = (backwards: boolean) => {
+    if (goto) {
+      if (target === null) return
+      setCursor(target)
+      return closeFind()
+    }
+    if (!matches.length) return
+    const next = backwards ? (matches.findLast((i) => i < at) ?? matches[matches.length - 1]) : (matches.find((i) => i > at) ?? matches[0])
+    setCursor(next)
+  }
 
   const rows = useVirtualRows({ count: lines.length, getScrollElement: () => ref.current, estimateSize: () => ROW_H, overscan: 20 })
   // After a step the cursor row goes back to where it sat in the pane, so the eye keeps its place while the line numbers change.
@@ -304,6 +346,11 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     } else if (widget === 'commitMessage') {
       e.preventDefault()
       setMessageOpen(!messageOpen)
+    } else if (widget === 'find') {
+      e.preventDefault()
+      if (find === null) setFind('')
+      else findRef.current?.select()
+      findRef.current?.focus()
     } else if (widget === 'blameBefore' || widget === 'blameNewer') {
       // A held key would skip through several versions; each step is a fresh press.
       e.preventDefault()
@@ -358,6 +405,9 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
           </Tip>
         </Toolbar>
       </div>
+      {find !== null && (
+        <BlameFind query={find} status={findStatus} inputRef={findRef} onChange={changeFind} onEnter={enterFind} onClose={closeFind} />
+      )}
       <PaneFrame>
         <div
           ref={ref}
@@ -396,7 +446,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                 return (
                   <div
                     key={index}
-                    className={`dl blame-row${first ? ' block-start' : ''}${index === at ? ' cursor' : ''}${l.hash === tintCommit ? ' same-commit' : ''}${l.ignored ? ' ignored' : ''}`}
+                    className={`dl blame-row${first ? ' block-start' : ''}${index === at ? ' cursor' : ''}${l.hash === tintCommit ? ' same-commit' : ''}${l.ignored ? ' ignored' : ''}${matchSet.has(index) ? ' found' : ''}`}
                     onClick={() => setCursor(index)}
                     onContextMenu={(e) => {
                       e.preventDefault()

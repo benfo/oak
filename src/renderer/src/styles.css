@@ -2282,7 +2282,42 @@ input[type='checkbox']:focus-visible,
 /* ---------- blame ---------- */
 
 .blame-view {
+  position: relative;
   height: 100%;
+}
+/* Find sits over the top right of the code, like an editor's, so opening it never moves a line. */
+.blame-find {
+  position: absolute;
+  top: calc(var(--control-lg) + var(--space-1));
+  right: var(--space-4);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-2);
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  font-size: var(--text-sm);
+}
+.blame-find-field input {
+  width: 200px;
+  height: var(--control-sm);
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  outline: none;
+}
+.blame-find-status {
+  min-width: 7ch;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+/* A line that contains the find text; the cursor's own row keeps its usual marker. */
+.blame-row.found .code {
+  background-image: linear-gradient(var(--warning-soft), var(--warning-soft));
 }
 .blame-info {
   display: flex;
