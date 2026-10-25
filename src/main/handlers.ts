@@ -495,11 +495,12 @@ epo`), if any. */
   },
 
   /** Who last changed each line of a file: at a commit, or (null) in the working tree. Binary files come back without lines. */
-  async blame(repo: string, file: string, rev: string | null, ignoreWhitespace: boolean): Promise<BlameResult> {
+  async blame(repo: string, file: string, rev: string | null, ignoreWhitespace: boolean, useIgnoreRevs = true): Promise<BlameResult> {
     const ignoreFile = '.git-blame-ignore-revs'
     const configured = (await git(repo, ['config', '--get', 'blame.ignoreRevsFile'], { okCodes: [1] })).trim()
-    const ignoreRevsFile = !configured && existsSync(path.join(repo, ignoreFile)) ? ignoreFile : undefined
-    const result = parseBlame(await git(repo, blameArgs(file, rev, { ignoreWhitespace, ignoreRevsFile })))
+    const conventional = !configured && existsSync(path.join(repo, ignoreFile))
+    const options = { ignoreWhitespace, ignoreRevsFile: conventional ? ignoreFile : undefined, skipIgnoreRevs: !useIgnoreRevs }
+    const result = { ...parseBlame(await git(repo, blameArgs(file, rev, options))), hasIgnoreRevs: Boolean(configured) || conventional }
     return result.binary ? { ...result, lines: [], commits: {} } : result
   },
 
