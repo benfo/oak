@@ -14,7 +14,7 @@ import { BlameVersion, type BlameStep } from './BlameVersion'
 import { CommitMessage } from './CommitMessage'
 import { CommitPopover } from './CommitPopover'
 import { adjacentBlockStart, blameBlockStarts, type BlameLine } from '../../../shared/blame'
-import { BlameFind } from './BlameFind'
+import { FindBar } from '../components/FindBar'
 import { BlameFooter } from './BlameFooter'
 import { BlameRow } from './BlameRow'
 import { BlameToolbar } from './BlameToolbar'
@@ -308,7 +308,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
         />
       </div>
       {findInFile.query !== null && (
-        <BlameFind
+        <FindBar
           query={findInFile.query}
           status={findInFile.status}
           inputRef={findInFile.inputRef}

@@ -2289,7 +2289,7 @@ input[type='checkbox']:focus-visible,
   height: 100%;
 }
 /* Find sits over the top right of the code, like an editor's, so opening it never moves a line. */
-.blame-find {
+.find-bar {
   position: absolute;
   top: calc(var(--control-lg) + var(--space-1));
   right: var(--space-4);
@@ -2305,7 +2305,7 @@ input[type='checkbox']:focus-visible,
   box-shadow: var(--shadow);
   font-size: var(--text-sm);
 }
-.blame-find-field input {
+.find-bar-field input {
   width: 200px;
   height: var(--control-sm);
   border: 0;
@@ -2314,7 +2314,7 @@ input[type='checkbox']:focus-visible,
   font: inherit;
   outline: none;
 }
-.blame-find-status {
+.find-bar-status {
   min-width: 7ch;
   color: var(--muted-foreground);
   white-space: nowrap;

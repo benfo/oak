@@ -1,6 +1,6 @@
 import { Button, Input, TextField } from 'react-aria-components'
-import { Icon } from '../components/Icon'
-import { Tip } from '../components/Tip'
+import { Icon } from './Icon'
+import { Tip } from './Tip'
 
 interface Props {
   query: string
@@ -13,11 +13,11 @@ interface Props {
   onClose: () => void
 }
 
-/** Find in the blamed file, drawn over the top right of the view so the code never moves. */
-export function BlameFind({ query, status, inputRef, onChange, onEnter, onClose }: Props) {
+/** The find bar for a code view (see useFindInFile): drawn over the top right of the nearest positioned ancestor, so the code never moves. */
+export function FindBar({ query, status, inputRef, onChange, onEnter, onClose }: Props) {
   return (
-    <div className="blame-find" role="search">
-      <TextField className="blame-find-field" aria-label="Find in file" value={query} onChange={onChange} autoFocus>
+    <div className="find-bar" role="search">
+      <TextField className="find-bar-field" aria-label="Find in file" value={query} onChange={onChange} autoFocus>
         <Input
           ref={inputRef}
           placeholder="Find, or :120 for a line"
@@ -33,7 +33,7 @@ export function BlameFind({ query, status, inputRef, onChange, onEnter, onClose 
           }}
         />
       </TextField>
-      <span className="blame-find-status" aria-live="polite">
+      <span className="find-bar-status" aria-live="polite">
         {status}
       </span>
       {!query.startsWith(':') && (

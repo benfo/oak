@@ -284,7 +284,7 @@ test.describe('blame', () => {
     await page.getByRole('menuitem', { name: 'Show blame' }).click()
     await expect(page.locator('.blame-row').first()).toBeVisible()
     const cursor = page.locator('.blame-row.cursor')
-    const bar = page.locator('.blame-find')
+    const bar = page.locator('.find-bar')
     const field = page.getByRole('textbox', { name: 'Find in file' })
 
     await page.keyboard.press('/')
