@@ -203,7 +203,10 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     else findRef.current?.select()
     findRef.current?.focus()
   }
-  const refocus = () => ref.current?.focus({ preventScroll: true })
+  // A click returns focus to the code so the keys work again; a key press on a button leaves focus there, so Enter can repeat.
+  const refocus = (pointer: string) => {
+    if (pointer === 'mouse' || pointer === 'touch') ref.current?.focus({ preventScroll: true })
+  }
   const enterFind = (backwards: boolean) => {
     if (goto) {
       if (target === null) return
@@ -441,9 +444,9 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                 className="icon-btn"
                 aria-label="Previous commit block"
                 isDisabled={prevStart === null}
-                onPress={() => {
+                onPress={(e) => {
                   moveBlock(-1)
-                  refocus()
+                  refocus(e.pointerType)
                 }}
               >
                 <Icon name="arrowUp" size={14} />
@@ -454,9 +457,9 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                 className="icon-btn"
                 aria-label="Next commit block"
                 isDisabled={nextStart === null}
-                onPress={() => {
+                onPress={(e) => {
                   moveBlock(1)
-                  refocus()
+                  refocus(e.pointerType)
                 }}
               >
                 <Icon name="arrowDown" size={14} />
@@ -467,9 +470,9 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                 className="icon-btn"
                 aria-label="Blame before this commit"
                 isDisabled={!commit || commit.boundary}
-                onPress={() => {
+                onPress={(e) => {
                   void stepBack()
-                  refocus()
+                  refocus(e.pointerType)
                 }}
               >
                 <Icon name="history" size={14} />

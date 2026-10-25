@@ -376,6 +376,16 @@ test.describe('blame', () => {
     await expect(page.getByRole('textbox', { name: 'Find in file' })).toBeFocused()
     await page.getByRole('button', { name: 'Previous match' }).click()
     await expect(cursor).toContainText('changed5')
+
+    // From the keyboard the button keeps focus, so Enter on it can be pressed again and again to search backwards.
+    await page.keyboard.press('Tab')
+    const previous = page.getByRole('button', { name: 'Previous match' })
+    await expect(previous).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(cursor).toContainText('changed110')
+    await page.keyboard.press('Enter')
+    await expect(cursor).toContainText('changed60')
+    await expect(previous).toBeFocused()
   })
 
   test('B blames the line as it was before its commit, Backspace returns, and Escape neither steps nor leaves', async ({ open, small }) => {

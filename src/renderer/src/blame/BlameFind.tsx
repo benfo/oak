@@ -42,9 +42,10 @@ export function BlameFind({ query, status, inputRef, onChange, onEnter, onClose 
             <Button
               className="icon-btn"
               aria-label="Previous match"
-              onPress={() => {
+              onPress={(e) => {
                 onEnter(true)
-                inputRef.current?.focus()
+                // A click hands focus back to the box so typing continues; from the keyboard the button keeps it, so Enter can repeat.
+                if (e.pointerType === 'mouse' || e.pointerType === 'touch') inputRef.current?.focus()
               }}
             >
               <Icon name="arrowUp" size={14} />
@@ -54,9 +55,9 @@ export function BlameFind({ query, status, inputRef, onChange, onEnter, onClose 
             <Button
               className="icon-btn"
               aria-label="Next match"
-              onPress={() => {
+              onPress={(e) => {
                 onEnter(false)
-                inputRef.current?.focus()
+                if (e.pointerType === 'mouse' || e.pointerType === 'touch') inputRef.current?.focus()
               }}
             >
               <Icon name="arrowDown" size={14} />
