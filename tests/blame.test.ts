@@ -10,6 +10,7 @@ import {
   blameBlockStarts,
   blockStartOf,
   findLines,
+  findHits,
   findRanges,
   gotoLine,
   mapLineToOlder,
@@ -167,6 +168,18 @@ test('find lists the lines containing the text in any case, and a ":N" query nam
     [0, 2],
     [2, 4]
   ])
+  // A line with the text twice counts twice, in reading order.
+  assert.deepEqual(
+    findHits(
+      ['a ed ed', 'none', 'ED'].map((text) => ({ text })),
+      'ed'
+    ),
+    [
+      { line: 0, start: 2, end: 4 },
+      { line: 0, start: 5, end: 7 },
+      { line: 2, start: 0, end: 2 }
+    ]
+  )
   assert.deepEqual(findRanges('abc', 'x'), [])
   assert.deepEqual(findRanges('abc', ''), [])
   assert.equal(gotoLine(':3', 4), 2)

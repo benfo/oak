@@ -146,6 +146,11 @@ export function findRanges(text: string, query: string): [number, number][] {
   return ranges
 }
 
+/** Every occurrence of the query in the file, in reading order: a line that contains it twice has two. */
+export function findHits(lines: readonly Pick<BlameLine, 'text'>[], query: string): { line: number; start: number; end: number }[] {
+  return lines.flatMap((l, line) => findRanges(l.text, query).map(([start, end]) => ({ line, start, end })))
+}
+
 /** The 0-based line a ":120" query names, kept within the file; null when the query is not a line number. */
 export function gotoLine(query: string, count: number): number | null {
   const match = /^:\s*(\d+)\s*$/.exec(query)
