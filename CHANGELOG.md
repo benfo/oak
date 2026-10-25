@@ -2,6 +2,13 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.18
+
+### Added
+
+- Blame. See who last changed each line, step back to the version before a line's commit, find text in the file, and open the commit in History at the file and line it changed. Open it from a file's menu or the palette (Blame file...); Ctrl+3 returns to it.
+- Optional markers for spaces and tabs in diffs and Blame, from Preferences, the diff toolbar or the palette.
+
 ## 0.1.17
 
 ### Added
