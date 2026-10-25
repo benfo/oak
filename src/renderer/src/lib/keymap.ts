@@ -12,7 +12,7 @@ import { matchesShortcut, shortcutSignature, type ShortcutBinding, type Shortcut
  * Overlaps between a command and a widget key are reported unless the command declares
  * `widgetFallback`.
  */
-export type WidgetRole = 'list' | 'graph' | 'diff'
+export type WidgetRole = 'list' | 'graph' | 'diff' | 'blame'
 
 export type WidgetAction =
   | 'activate'
@@ -30,6 +30,8 @@ export type WidgetAction =
   | 'switchView'
   | 'nextHunk'
   | 'prevHunk'
+  | 'nextBlock'
+  | 'prevBlock'
   | 'fileNext'
   | 'filePrev'
   | 'fileFirst'
@@ -55,7 +57,7 @@ export function isListSearchKey(e: Pick<ShortcutKey, 'key' | 'ctrlKey' | 'metaKe
   )
 }
 
-const ALL: readonly WidgetRole[] = ['list', 'graph', 'diff']
+const ALL: readonly WidgetRole[] = ['list', 'graph', 'diff', 'blame']
 const MOVE_FOCUS = ['Mod+ArrowUp', 'Mod+ArrowDown', 'Mod+Home', 'Mod+End', 'Mod+PageUp', 'Mod+PageDown']
 
 export const WIDGET_KEYMAP: readonly WidgetKey[] = [
@@ -108,6 +110,13 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
     help: { title: 'Next / previous hunk', keys: 'N / P', category: 'Diff' }
   },
   { action: 'prevHunk', roles: ['diff'], keys: ['p', 'Shift+p', 'Alt+ArrowUp'] },
+  {
+    action: 'nextBlock',
+    roles: ['blame'],
+    keys: ['n', 'Shift+n', 'Alt+ArrowDown'],
+    help: { title: 'Next / previous blame block', keys: 'N / P', category: 'Blame' }
+  },
+  { action: 'prevBlock', roles: ['blame'], keys: ['p', 'Shift+p', 'Alt+ArrowUp'] },
   {
     action: 'fileNext',
     roles: ['diff'],

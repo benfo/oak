@@ -154,6 +154,47 @@ test.describe('large diff', () => {
   })
 })
 
+test.describe('blame', () => {
+  test('opens from the file menu, keeps its place across views, and closes with Escape', async ({ open, small }) => {
+    const page = await open(small)
+    await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Show blame' }).click()
+    const blame = page.locator('.blame-view .diff')
+    await expect(blame).toBeFocused()
+    await expect(page.locator('.blame-row').first()).toBeVisible()
+    await expect(page.locator('.blame-preview')).toContainText('Initial commit')
+    await expect(page.locator('.blame-view')).toContainText('Not committed yet')
+
+    await page.keyboard.press('n')
+    await expect(page.locator('.blame-row.cursor.block-start')).toHaveCount(1)
+    await page.keyboard.press('End')
+    await expect(page.locator('.blame-row.cursor')).toBeVisible()
+
+    await page.keyboard.press('Control+1')
+    await expect(page.locator('.blame-view')).toBeHidden()
+    await expect(page.locator('[role=grid]:focus, [role=grid] :focus').first()).toBeAttached()
+    await page.keyboard.press('Control+3')
+    await expect(page.locator('.blame-view')).toBeVisible()
+    await expect(page.locator('.blame-row.cursor')).toBeVisible()
+
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.blame-view')).toHaveCount(0)
+  })
+
+  test('Enter on a committed line shows its commit in History', async ({ open, small }) => {
+    const page = await open(small)
+    await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Show blame' }).click()
+    await expect(page.locator('.blame-row').first()).toBeVisible()
+    await page.keyboard.press('Home')
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.blame-view')).toBeHidden()
+    await expect(page.locator('.commit-list')).toContainText('Initial commit')
+    await page.keyboard.press('Control+3')
+    await expect(page.locator('.blame-view')).toBeVisible()
+  })
+})
+
 test.describe('layout', () => {
   test('F11 expands the code area and restores it', async ({ open, small }) => {
     const page = await open(small)

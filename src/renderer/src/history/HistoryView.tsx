@@ -192,7 +192,8 @@ export function HistoryView({
   layout,
   onSelectedChange,
   onCompareBranch,
-  onOpenChanges
+  onOpenChanges,
+  onBlame
 }: {
   r: RepoCtx
   focus: { hash: string; n: number } | null
@@ -201,6 +202,7 @@ export function HistoryView({
   onSelectedChange?: (c: Commit | null) => void
   onCompareBranch: CompareBranch
   onOpenChanges: () => void
+  onBlame: (path: string, rev: string | null) => void
 }) {
   const { emphasizeCurrentBranch } = useSettings()
   const graph = useMemo(() => {
@@ -643,6 +645,7 @@ export function HistoryView({
         contentRevision={r.contentRevision}
         onOpenChanges={onOpenChanges}
         onFileHistory={startFileHistory}
+        onBlame={onBlame}
         filePath={historyPath}
         comparisonSource={`${pinned?.followHead ? `${pinned.source?.name ?? r.status?.branch ?? 'HEAD'} ` : ''}${activeHash?.slice(0, 8) ?? ''}`}
         onPickTarget={(anchor) => showComparisonBranchPicker(r, anchor, sourceBranch ?? null, (t) => pin(t, sourceBranch ?? null))}

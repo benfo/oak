@@ -11,6 +11,7 @@ import { checkForUpdates, installUpdate, updateStatus } from './updater'
 import { checkoutBranchNames } from '../shared/recentBranches'
 import { setsLineEndings } from '../shared/gitTools'
 import { splitFileLogChunk } from '../shared/fileLog'
+import { blameArgs, parseBlame, type BlameResult } from '../shared/blame'
 import { configFilePath, findExecutables, openConfigFile } from './gitConfigFiles'
 import type {
   Branch,
@@ -486,6 +487,15 @@ epo`), if any. */
   /** Every file path in the commit's snapshot. */
   async commitTree(repo: string, hash: string): Promise<string[]> {
     return splitZ(await git(repo, ['ls-tree', '-r', '-z', '--name-only', '--full-tree', hash]))
+  },
+
+  /** Who last changed each line of a file: at a commit, or (null) in the working tree. Binary files come back without lines. */
+  async blame(repo: string, file: string, rev: string | null, ignoreWhitespace: boolean): Promise<BlameResult> {
+    const ignoreFile = '.git-blame-ignore-revs'
+    const configured = (await git(repo, ['config', '--get', 'blame.ignoreRevsFile'], { okCodes: [1] })).trim()
+    const ignoreRevsFile = !configured && existsSync(path.join(repo, ignoreFile)) ? ignoreFile : undefined
+    const result = parseBlame(await git(repo, blameArgs(file, rev, { ignoreWhitespace, ignoreRevsFile })))
+    return result.binary ? { ...result, lines: [], commits: {} } : result
   },
 
   /** A file as it was at a commit, shaped as a new-file diff so the diff view can render and highlight it. */

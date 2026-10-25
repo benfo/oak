@@ -130,7 +130,8 @@ interface Props {
   setView: (v: View) => void
   onFocusCommit: (hash: string) => void
   onCompareBranch: CompareBranch
-  /** A branch row gained focus (null: a tag or stash did); debounced here. */
+  /** The file in the open Blame view, or null while none is open; the nav row shows only then. */
+  blameFile: string | null
 }
 
 /**
@@ -138,7 +139,7 @@ interface Props {
  * expand/collapse, Enter or click activates, double-click checks out, Shift+F10 / right-click
  * opens the item's menu, and typing a letter starts filtering.
  */
-export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Props) {
+export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blameFile }: Props) {
   const [filter, setFilter] = useState('')
   const branchOptions = r.branchOptions
   const branchOptionsRef = useRef(branchOptions)
@@ -386,7 +387,20 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
       icon: 'history',
       navActive: view === 'history',
       activate: () => live.current.setView('history')
-    }
+    },
+    ...(blameFile
+      ? [
+          {
+            key: 'nav:blame',
+            kind: 'nav' as const,
+            label: 'Blame',
+            icon: 'blame' as const,
+            title: blameFile,
+            navActive: view === 'blame',
+            activate: () => live.current.setView('blame')
+          }
+        ]
+      : [])
   ]
 
   const { refsByKey, parentKeys } = useMemo(() => {
@@ -585,7 +599,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
         </Tree>
       </Virtualizer>
     ),
-    [rowsId, refSections, view, changeCount, pane.targetProps]
+    [rowsId, refSections, view, changeCount, blameFile, pane.targetProps]
   )
 
   const matches = useMemo(() => [...refsByKey.values()].filter((n) => n.kind === 'item'), [refsByKey])

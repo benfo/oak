@@ -1,0 +1,95 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { git } from '../src/main/git.ts'
+import { adjacentBlockStart, blameArgs, blameBlockStarts, blockStartOf, parseBlame } from '../src/shared/blame.ts'
+
+async function repoWithHistory() {
+  const dir = mkdtempSync(path.join(tmpdir(), 'oak-blame-'))
+  const write = (text: string) => writeFileSync(path.join(dir, 'a.txt'), text)
+  const commit = async (message: string, name: string) => {
+    await git(dir, ['add', '-A'])
+    await git(dir, ['-c', `user.name=${name}`, '-c', `user.email=${name.toLowerCase()}@example.com`, 'commit', '-m', message])
+    return (await git(dir, ['rev-parse', 'HEAD'])).trim()
+  }
+  await git(dir, ['init', '-q'])
+  write('one\ntwo\nthree\n')
+  const first = await commit('first', 'Ann')
+  write('one\nTWO\nthree\nfour\n')
+  const second = await commit('second', 'Bob')
+  return { dir, write, first, second }
+}
+
+test('blame names the commit, author and subject of every line, and marks uncommitted lines', async () => {
+  const { dir, write, first, second } = await repoWithHistory()
+  write('one\nTWO\nthree\nfour\nfive\n')
+  const blame = parseBlame(await git(dir, blameArgs('a.txt', null, { ignoreWhitespace: false })))
+  assert.deepEqual(
+    blame.lines.map((l) => l.text),
+    ['one', 'TWO', 'three', 'four', 'five']
+  )
+  assert.deepEqual(
+    blame.lines.slice(0, 4).map((l) => blame.commits[l.hash].summary),
+    ['first', 'second', 'first', 'second']
+  )
+  assert.equal(blame.commits[first].author, 'Ann')
+  assert.equal(blame.commits[second].email, 'bob@example.com')
+  assert.equal(blame.commits[blame.lines[4].hash].uncommitted, true)
+  assert.equal(blame.commits[first].uncommitted, false)
+  assert.equal(blame.binary, false)
+})
+
+test('blame at a commit ignores later working-tree edits', async () => {
+  const { dir, write, first } = await repoWithHistory()
+  write('changed\n')
+  const blame = parseBlame(await git(dir, blameArgs('a.txt', first, { ignoreWhitespace: false })))
+  assert.deepEqual(
+    blame.lines.map((l) => l.text),
+    ['one', 'two', 'three']
+  )
+  assert.ok(blame.lines.every((l) => l.hash === first))
+})
+
+test('ignoring whitespace keeps authorship for re-indented lines', async () => {
+  const { dir, write, first } = await repoWithHistory()
+  write('one\n  TWO\nthree\nfour\n')
+  await git(dir, ['add', '-A'])
+  await git(dir, ['-c', 'user.name=Cy', '-c', 'user.email=cy@example.com', 'commit', '-m', 'indent'])
+  const plain = parseBlame(await git(dir, blameArgs('a.txt', null, { ignoreWhitespace: false })))
+  const ignored = parseBlame(await git(dir, blameArgs('a.txt', null, { ignoreWhitespace: true })))
+  assert.equal(plain.commits[plain.lines[1].hash].summary, 'indent')
+  assert.notEqual(ignored.lines[1].hash, plain.lines[1].hash)
+  assert.equal(ignored.lines[0].hash, first)
+})
+
+test('an ignore-revs file skips a bulk commit', async () => {
+  const { dir, write, second } = await repoWithHistory()
+  write('one\nTWO\nthree\nfour\n\n')
+  await git(dir, ['add', '-A'])
+  await git(dir, ['-c', 'user.name=Cy', '-c', 'user.email=cy@example.com', 'commit', '-m', 'format'])
+  const bulk = (await git(dir, ['rev-parse', 'HEAD'])).trim()
+  writeFileSync(path.join(dir, '.ignore-revs'), `${bulk}\n`)
+  const blame = parseBlame(await git(dir, blameArgs('a.txt', null, { ignoreWhitespace: false, ignoreRevsFile: '.ignore-revs' })))
+  assert.equal(blame.lines[3].hash, second)
+})
+
+test('binary content is reported instead of parsed as lines of text', () => {
+  const hash = 'a'.repeat(40)
+  const blame = parseBlame(`${hash} 1 1 1\nauthor Ann\nauthor-mail <ann@example.com>\nauthor-time 1\nsummary s\nfilename b.bin\n\tab\0cd\n`)
+  assert.equal(blame.binary, true)
+})
+
+test('runs of one commit form blocks that next and previous step through', () => {
+  const lines = ['a', 'a', 'b', 'a', 'a', 'a'].map((hash) => ({ hash }))
+  const starts = blameBlockStarts(lines)
+  assert.deepEqual(starts, [0, 2, 3])
+  assert.equal(blockStartOf(starts, 1), 0)
+  assert.equal(blockStartOf(starts, 5), 3)
+  assert.equal(adjacentBlockStart(starts, 1, 1), 2)
+  assert.equal(adjacentBlockStart(starts, 5, 1), null)
+  assert.equal(adjacentBlockStart(starts, 4, -1), 3)
+  assert.equal(adjacentBlockStart(starts, 3, -1), 2)
+  assert.equal(adjacentBlockStart(starts, 0, -1), null)
+})

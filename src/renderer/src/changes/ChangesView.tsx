@@ -62,12 +62,14 @@ export function ChangesView({
   r,
   onBackToSidebar,
   focusCode,
-  onFileHistory
+  onFileHistory,
+  onBlame
 }: {
   r: RepoCtx
   onBackToSidebar: () => void
   focusCode: boolean
   onFileHistory: (path: string) => void
+  onBlame: (path: string, rev: string | null) => void
 }) {
   const st = r.status
   // React Aria keeps the Shift+click anchor on its Selection (a Set subclass) and only honours it on an
@@ -350,7 +352,13 @@ export function ChangesView({
       { type: 'separator' },
       ...fileMenuItems(
         files.map((e) => e.path),
-        { workingTree: true, canOpen: one?.status !== 'D', history: true }
+        {
+          workingTree: true,
+          canOpen: one?.status !== 'D',
+          history: true,
+          blame: true,
+          canBlame: !!one && !['A', 'D', '?'].includes(one.status)
+        }
       )
     ])
     if (id === 'stage') stage(files)
@@ -363,7 +371,8 @@ export function ChangesView({
         id,
         r.path,
         files.map((e) => e.path),
-        onFileHistory
+        onFileHistory,
+        (path) => onBlame(path, null)
       )
   }
 

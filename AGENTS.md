@@ -2,12 +2,14 @@
 
 A modern Git GUI. Electron + React 19 + TypeScript (electron-vite). It runs the user's installed `git` CLI, never a Git library, so hooks, credentials, config and LFS behave like the command line. Windows 11 is the primary platform; Linux is experimental; macOS is untested.
 
-If `AGENTS.local.md` exists (a gitignored, per-clone file), read it too.
+At the start of every session, before any other work, read `AGENTS.local.md` at the repo root if it exists. It is a gitignored, per-clone file holding the maintainer's personal workflow rules, such as stopping for manual testing and commit style, and they apply to all work.
 
 ## Goals
+
 Who Oak is for and its product principles live in [PRODUCT.md](PRODUCT.md); the visual system is in [DESIGN.md](DESIGN.md). In short: everyday Git done simply and dependably, the same action behaving the same everywhere, frequent actions quick and visible (Fetch/Pull/Push stay on the toolbar), and no new permanent UI or commands without a concrete workflow benefit. Be honest in docs about platform support.
 
 ## Commands
+
 - `npm run dev` (hot reload; restart for main-process changes), `npm run build`, `npm run typecheck`, `npm run lint`, `npm run format` (Prettier; `format:check` in CI), `npm test`. Run typecheck, lint, format and tests before proposing a change.
 - `npm test` runs `tests/**/*.test.ts` directly with the Node runner, against real git in a temp repo. Modules tested by Node import siblings with `.ts` extensions.
 - `npm run test:ui` builds, then drives the real Electron app with Playwright (`tests-ui/`, serial, real git temp repos, real keystrokes). Not part of `npm test` and not in CI yet. Run it after changing views, diff or keyboard code.
@@ -17,6 +19,7 @@ Who Oak is for and its product principles live in [PRODUCT.md](PRODUCT.md); the 
 - Dev helper (after `npm run build`): env vars `OAK_SCREENSHOT=<png>`, `OAK_SCREENSHOT_DELAY`, `OAK_SCREENSHOT_KEYS` (real keystrokes and clicks), `OAK_SCREENSHOT_JS` are handled in `src/main/index.ts`. Verify UI behaviour by driving the app, not by guessing.
 
 ## Architecture
+
 - `src/main/git.ts` spawns git (`outputSink` streams long-op output). `handlers.ts` holds every git operation; its `Handlers` type is the IPC contract. `index.ts` registers IPC (`git:<name>`; `STREAMING` ops stream output), native menus, the file watcher and the dev helper.
 - `src/preload/index.ts` exposes `window.bridge`. Renderer calls go through the typed proxy `api.<handler>()` in `src/renderer/src/api.ts`.
 - `useRepo.ts` is repo state; `withBusy`/`run` wrap operations (busy label, live output, refresh). Refreshes set only state that changed (JSON compare) so selections stay stable. `actions.ts` has shared git flows with confirmations.
@@ -29,6 +32,7 @@ Who Oak is for and its product principles live in [PRODUCT.md](PRODUCT.md); the 
 - Keep `ROADMAP.md` current when work ships or ideas are agreed.
 
 ## Design rules
+
 - **No layout shift.** Transient UI (status, progress, selection bars, hints) uses reserved space or overlays and never moves content under the mouse. Delay progress UI about 300 ms. Keep button widths stable while busy.
 - **Tokens only.** No raw colours, spacing, radii, font sizes or control heights in CSS or components. Use `src/renderer/src/tokens.css` (spacing in 4px steps `--space-*`, `--radius-*`, `--text-*`, `--control-*`, `--row-*`, semantic colours that pair surfaces with `-foreground`). Add a token deliberately if none fits. `npm run lint` enforces it. Themes are a base (light or dark) plus token overrides.
 - **One focus system** (`styles.css`, "focus indicators"): controls and text fields get a 2px `--focus-ring` outline; panes sit inside `.pane-frame`, which draws the ring only when focus arrived by keyboard (`lib/focusRing.ts`); rows show focus with a tint and accent bar, never a ring hugging text. New scrolling panes go inside a `.pane-frame`.
@@ -41,6 +45,7 @@ Who Oak is for and its product principles live in [PRODUCT.md](PRODUCT.md); the 
 - **Immediate, accurate feedback:** refresh the working diff after content changes even when status codes are identical. Never leave a successful operation looking like nothing happened.
 
 ## Keyboard model
+
 - **Key ownership:** text fields own text editing; the focused widget owns moving and selecting inside itself; commands (anything changing the app, repo or layout) belong to the shortcut dispatcher, which only sees keys no widget consumed.
 - **Widget keys are data** in `lib/keymap.ts` (`WIDGET_KEYMAP`: action to keys per role `list`/`graph`/`diff`, with optional `help` shown in the shortcuts dialog). Components call `widgetAction(...)` or the `lib/navigation.ts` helpers and supply only what each action does. Never test `ctrlKey`/`altKey`/`key` combinations in a component. A new widget key needs a `WIDGET_KEYMAP` entry and a test in `tests/shortcuts-keymap.test.ts`.
 - **Shortcuts are bindings:** `lib/shortcuts.ts` is the only dispatcher (`useShortcutRoot` in `App.tsx`). Register through `useShortcutScope` and `commandBinding`; overlays call `useShortcutOverlay`. Never add `window` keydown listeners. A disabled binding keeps its key and shows its `disabledReason` as a toast. Global commands live in `RepoView.buildCommands`; Ctrl+/ shows the searchable cheat sheet.
@@ -56,6 +61,7 @@ Who Oak is for and its product principles live in [PRODUCT.md](PRODUCT.md); the 
 - **Splits:** `Split.tsx` wraps `react-resizable-panels`; keep pixel-size preservation, the `split:<id>` localStorage keys and a descriptive `label` per split. Shift+Alt+arrows move the nearest divider (`lib/paneResize.ts`). Dividers stay out of Tab order.
 
 ## React Aria lessons
+
 - Extra keys (Right, Delete, Shift+F10) go in a capture-phase handler on a wrapper so they run before React Aria.
 - Items have no `onFocus`; listen on a wrapper and read `[role=row]`'s `data-key`.
 - Pass React Aria's `Selection` object back unchanged (it carries the Shift+click anchor); build your own with the same class (`anchored()` in `ChangesView`). Cached item elements need `dependencies` or a ref for changing state, or handlers go stale.

@@ -2264,6 +2264,99 @@ input[type='checkbox']:focus-visible,
   box-shadow: inset 2px 0 0 var(--ring);
 }
 
+/* ---------- blame ---------- */
+
+.blame-view {
+  height: 100%;
+}
+.blame-info {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: var(--space-1-5);
+  width: var(--blame-info-width);
+  padding: 0 var(--space-2);
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+  user-select: none;
+}
+.blame-info .avatar {
+  flex: none;
+}
+.blame-hash {
+  flex: none;
+}
+.blame-date {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--subtle-foreground);
+  font-family: var(--font);
+}
+.blame-uncommitted {
+  color: var(--subtle-foreground);
+  font-family: var(--font);
+}
+/* A block's first line carries a rule; the gutter is opaque, so it repeats it. */
+.blame-row.block-start,
+.blame-row.block-start .gutter {
+  box-shadow: inset 0 1px 0 var(--border);
+}
+.diff:focus .blame-row.cursor.block-start .gutter {
+  box-shadow:
+    inset 2px 0 0 var(--ring),
+    inset 0 1px 0 var(--border);
+}
+.blame-row.current-block {
+  background-image: linear-gradient(var(--primary-soft), var(--primary-soft));
+}
+.blame-row.current-block .gutter {
+  background-color: var(--surface);
+  background-image: linear-gradient(var(--primary-soft), var(--primary-soft));
+}
+.blame-revision {
+  flex: none;
+  font-family: var(--mono);
+  color: var(--subtle-foreground);
+}
+.blame-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* Fixed height, so moving the cursor never shifts the code above it. */
+.blame-preview {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: var(--space-2);
+  height: var(--control-lg);
+  padding: 0 var(--space-3);
+  border-top: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.blame-preview .avatar {
+  flex: none;
+}
+.blame-author {
+  flex: none;
+  color: var(--foreground);
+  font-weight: var(--weight-medium);
+}
+.blame-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--foreground);
+}
+
 /* ---------- operation progress ---------- */
 
 .btn.primary.is-busy:disabled {
