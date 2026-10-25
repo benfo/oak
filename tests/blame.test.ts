@@ -93,3 +93,26 @@ test('runs of one commit form blocks that next and previous step through', () =>
   assert.equal(adjacentBlockStart(starts, 3, -1), 2)
   assert.equal(adjacentBlockStart(starts, 0, -1), null)
 })
+
+test("each line keeps its number in the commit that introduced it, and that commit's path after a rename", async () => {
+  const { dir, write } = await repoWithHistory()
+  write('zero\none\nTWO\nthree\nfour\n')
+  const who = ['-c', 'user.name=Cy', '-c', 'user.email=cy@example.com']
+  await git(dir, ['add', '-A'])
+  await git(dir, [...who, 'commit', '-m', 'third'])
+  const moved = parseBlame(await git(dir, blameArgs('a.txt', null, { ignoreWhitespace: false })))
+  assert.deepEqual(
+    moved.lines.map((l) => l.origLine),
+    [1, 1, 2, 3, 4]
+  )
+  assert.ok(moved.lines.every((l) => l.file === 'a.txt'))
+
+  await git(dir, ['mv', 'a.txt', 'b.txt'])
+  await git(dir, [...who, 'commit', '-m', 'rename'])
+  const renamed = parseBlame(await git(dir, blameArgs('b.txt', null, { ignoreWhitespace: false })))
+  assert.deepEqual(
+    renamed.lines.map((l) => l.text),
+    ['zero', 'one', 'TWO', 'three', 'four']
+  )
+  assert.ok(renamed.lines.every((l) => l.file === 'a.txt'))
+})

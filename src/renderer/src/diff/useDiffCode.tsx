@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import type { FileDiff } from './diff'
 import { useDiffTokens } from './highlight'
+import { showWhitespace } from './whitespace'
 import { wordChanges, wordSpans } from './wordDiff'
 import type { Row } from './diffTypes'
 
@@ -9,11 +10,11 @@ import type { Row } from './diffTypes'
  * doesn't re-render every span and a long diff doesn't build elements it never shows. Syntax colours
  * arrive from a worker a moment after the plain text.
  */
-export function useDiffCode(diff: FileDiff | null, text: string | null, rows: Row[], syntaxHighlighting: boolean) {
+export function useDiffCode(diff: FileDiff | null, text: string | null, rows: Row[], syntaxHighlighting: boolean, whitespace: boolean) {
   const hunkCount = rows.length ? rows[rows.length - 1].hunk + 1 : 0
   const tokens = useDiffTokens(diff, text, hunkCount, syntaxHighlighting)
   const words = useMemo(() => (diff ? wordChanges(diff, hunkCount) : []), [diff, hunkCount])
-  const codeCache = useMemo(() => new Map<string, ReactNode>(), [diff, tokens, words])
+  const codeCache = useMemo(() => new Map<string, ReactNode>(), [diff, tokens, words, whitespace])
   return (r: Row): ReactNode => {
     let node = codeCache.get(r.key)
     if (node === undefined) {
@@ -25,7 +26,7 @@ export function useDiffCode(diff: FileDiff | null, text: string | null, rows: Ro
           {l.text === '' && '\n'}
           {spans.map((s, i) => (
             <span key={i} className={s.changed ? 'word-change' : undefined} style={s.c ? { color: s.c } : undefined}>
-              {s.t}
+              {whitespace ? showWhitespace(s.t) : s.t}
             </span>
           ))}
         </span>

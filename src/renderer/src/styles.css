@@ -1216,6 +1216,21 @@ textarea {
 .dl .code {
   padding-right: var(--space-6);
 }
+/* Show spaces and tabs: a dot per space (one tile per character, as code is monospace) and an arrow at each tab. */
+.ws-space {
+  background-image: radial-gradient(circle, var(--subtle-foreground) 0.07em, transparent 0.1em);
+  background-repeat: repeat-x;
+  background-size: 1ch 100%;
+}
+.ws-tab {
+  position: relative;
+}
+.ws-tab::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--subtle-foreground);
+}
 .dl.add {
   background: var(--diff-add);
 }
@@ -2287,6 +2302,14 @@ input[type='checkbox']:focus-visible,
 .blame-hash {
   flex: none;
 }
+/* In the gutter the subject takes the room the date leaves and is cut off at the column's edge, not at a character count. */
+.blame-info .blame-summary {
+  color: inherit;
+  font-family: var(--font);
+}
+.blame-info .blame-date {
+  flex: none;
+}
 .blame-date {
   flex: 1;
   min-width: 0;
@@ -2299,20 +2322,18 @@ input[type='checkbox']:focus-visible,
   color: var(--subtle-foreground);
   font-family: var(--font);
 }
-/* A block's first line carries a rule; the gutter is opaque, so it repeats it. */
-.blame-row.block-start,
-.blame-row.block-start .gutter {
-  box-shadow: inset 0 1px 0 var(--border);
+/* Sets the blame column off from the code. A border, since the ring and block rules below use box-shadow. */
+.blame-row .gutter {
+  border-right: 1px solid var(--border);
 }
-.diff:focus .blame-row.cursor.block-start .gutter {
-  box-shadow:
-    inset 2px 0 0 var(--ring),
-    inset 0 1px 0 var(--border);
+.blame-row .code {
+  padding-left: var(--space-3);
 }
-.blame-row.current-block {
+/* Every line of the cursor line's commit, wherever it sits in the file, as in VS Code. */
+.blame-row.same-commit {
   background-image: linear-gradient(var(--primary-soft), var(--primary-soft));
 }
-.blame-row.current-block .gutter {
+.blame-row.same-commit .gutter {
   background-color: var(--surface);
   background-image: linear-gradient(var(--primary-soft), var(--primary-soft));
 }
@@ -2366,6 +2387,18 @@ input[type='checkbox']:focus-visible,
 }
 .blame-preview .avatar {
   flex: none;
+}
+/* The gutter's date fills its column; here it only takes the room it needs, so the summary sits next to it. */
+.blame-preview .blame-date {
+  flex: none;
+}
+/* Says the row opens the full message, and which key does the same. */
+.blame-preview-hint {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--subtle-foreground);
 }
 /* An overlay anchored to the cursor line, so it never moves the code. */
 .commit-popover {

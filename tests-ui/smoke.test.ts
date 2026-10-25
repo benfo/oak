@@ -164,6 +164,7 @@ test.describe('blame', () => {
     await expect(page.locator('.blame-row').first()).toBeVisible()
     await expect(page.locator('.blame-preview')).toContainText('Initial commit')
     await expect(page.locator('.blame-view')).toContainText('Not committed yet')
+    await expect(page.locator('.blame-row .code span[style*="color"]').first()).toBeVisible()
 
     await page.keyboard.press('n')
     await expect(page.locator('.blame-row.cursor.block-start')).toHaveCount(1)
@@ -194,6 +195,18 @@ test.describe('blame', () => {
     await expect(page.locator('.blame-view')).toBeVisible()
   })
 
+  test('Left and Right never leave the view', async ({ open, small }) => {
+    const page = await open(small)
+    await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Show blame' }).click()
+    await expect(page.locator('.blame-row').first()).toBeVisible()
+    await page.keyboard.press('ArrowLeft')
+    await page.keyboard.press('ArrowRight')
+    await page.keyboard.press('ArrowLeft')
+    await expect(page.locator('.blame-view')).toBeVisible()
+    await expect(page.locator('.blame-row.cursor')).toBeVisible()
+  })
+
   test('Space shows the full commit message in a popover that Escape closes before the view', async ({ open, small }) => {
     const page = await open(small)
     await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
@@ -215,6 +228,8 @@ test.describe('blame', () => {
     await expect(page.locator('.blame-view .diff')).toBeFocused()
     await page.keyboard.press('Control+1')
     await expect(popover).toHaveCount(0)
+    await expect(page.locator('.blame-view')).toBeHidden()
+    await expect(page.locator('[role=grid]:focus, [role=grid] :focus').first()).toBeAttached()
 
     await page.keyboard.press('Control+3')
     await expect(page.locator('.blame-row.cursor')).toBeVisible()

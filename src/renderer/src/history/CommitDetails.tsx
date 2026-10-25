@@ -54,7 +54,8 @@ export function CommitDetails({
   onOpenChanges,
   onFileHistory,
   onBlame,
-  filePath
+  filePath,
+  jump
 }: {
   repo: string
   hash: string | null
@@ -73,6 +74,8 @@ export function CommitDetails({
   onBlame: (path: string, rev: string | null) => void
   /** In a file's history: the filtered file's path in the selected commit, preselected when the commit's files load. */
   filePath?: string
+  /** Blame's Enter: put the diff cursor on this line of `file` (the commit's version), once per `n`. */
+  jump?: { file: string; line: number; n: number }
 }) {
   const contextLines = useContextLines()
   const loadPreview = useMemo(() => createCommitPreviewLoader(api), [])
@@ -347,6 +350,20 @@ export function CommitDetails({
   const switchList = toggleCommitFilesMode
   const showContent =
     allMode && !!treeSelection && snapshotReady && !treeMissing && (!changed.has(treeSelection) || forceContent === treeSelection)
+  // The jump waits for that file's diff to be the one on screen, and happens once, so later file picks are left alone.
+  const [jumped, setJumped] = useState<number | null>(null)
+  const revealLine =
+    jump &&
+    jumped !== jump.n &&
+    !pending &&
+    detailsCurrent &&
+    !compareBase &&
+    !branchComparison &&
+    !showContent &&
+    !allMode &&
+    file?.path === jump.file
+      ? jump.line
+      : undefined
   const contentKey = JSON.stringify([repo, hash, treeSelection])
   const [content, setContent] = useState<{ key: string; text?: string; error?: string } | null>(null)
   useEffect(() => {
@@ -644,6 +661,8 @@ export function CommitDetails({
             </div>
           )}
           <DiffView
+            revealLine={revealLine}
+            onRevealed={() => jump && setJumped(jump.n)}
             title={
               showContent || treeMissing
                 ? (treeSelection ?? undefined)

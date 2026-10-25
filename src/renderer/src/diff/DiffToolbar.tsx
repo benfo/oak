@@ -8,6 +8,8 @@ import { changeDiffLayout } from './changeDiffLayout'
 import { CONTEXT_STEPS, contextLabel, isFullContext } from './diffContext'
 import { DIFF_LAYOUTS, type DiffLayout } from './diffLayout'
 import { showLessContext, showMoreContext, toggleFullContext, useContextLines } from './useDiffContext'
+import { toggleWhitespace } from './toggleWhitespace'
+import { useSettings } from '../settings'
 
 interface Props {
   title: string
@@ -43,6 +45,7 @@ export function DiffToolbar({
   const toolsRef = useRef<HTMLDivElement>(null)
   useEffect(() => toolbarHomeEnd(toolsRef.current), [])
   const context = useContextLines()
+  const { showWhitespace } = useSettings()
   const layoutLabel = DIFF_LAYOUTS.find((layout) => layout.id === diffLayout)!.label
   const navigationDisabled = !changeCount || (changeCount === 1 && singleChangeVisible)
   const onlyChange = changeCount === 1
@@ -135,6 +138,11 @@ export function DiffToolbar({
                 </Button>
               </Tip>
             </span>
+            <Tip label="Draw spaces and tabs">
+              <Button className="diff-full-button" aria-pressed={showWhitespace} onPress={toggleWhitespace}>
+                Spaces and tabs
+              </Button>
+            </Tip>
             <MenuTrigger>
               <Tip label="Diff layout" keys="Ctrl+Shift+D">
                 <Button

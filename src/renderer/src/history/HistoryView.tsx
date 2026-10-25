@@ -26,6 +26,7 @@ import { SearchFeedback } from '../components/SearchFeedback'
 import { PaneSearch } from '../components/Pane'
 import { Tip } from '../components/Tip'
 import type { WorkspaceLayout } from '../components/LayoutMenu'
+import type { CommitTarget } from '../blame/BlameView'
 import { WORKING_HASH, hasWorkingChanges, workingFileCount } from '../../../shared/working.ts'
 
 export interface ComparisonRequest {
@@ -196,7 +197,7 @@ export function HistoryView({
   onBlame
 }: {
   r: RepoCtx
-  focus: { hash: string; n: number } | null
+  focus: { hash: string; n: number; target?: CommitTarget } | null
   comparisonRequest: ComparisonRequest | null
   layout: WorkspaceLayout
   onSelectedChange?: (c: Commit | null) => void
@@ -211,6 +212,8 @@ export function HistoryView({
   const hasEmphasis = graph.rows.some((row) => row.current)
   const showWorking = hasWorkingChanges(r.status) && !r.historyFile
   const [selected, setSelected] = useState<string | null>(null)
+  /** Where Blame asked to land: a commit's file and line, used once for that commit. */
+  const [jump, setJump] = useState<({ hash: string; n: number } & CommitTarget) | null>(null)
   const [compareBase, setCompareBase] = useState<string | null>(null)
   // `source` null means the checked-out branch; otherwise another branch compared without checking it out.
   const [pinned, setPinned] = useState<{
@@ -229,6 +232,7 @@ export function HistoryView({
   // The filtered file's path in the viewed commit (it differs across renames).
   const historyPath =
     r.historyFile && !pinned && !compareBase ? (r.commits.find((c) => c.hash === activeHash)?.path ?? r.historyFile) : undefined
+  const jumpHere = jump?.hash === activeHash ? jump : undefined
   liveHash.current = activeHash
   useEffect(
     () =>
@@ -411,6 +415,7 @@ export function HistoryView({
     if (focus.hash === WORKING_HASH && pinned) setPinned(null)
     // The requested commit may not touch the filtered file.
     if (r.historyFile) r.setHistoryFile(null, focus.hash === WORKING_HASH ? undefined : focus.hash)
+    setJump(focus.target ? { hash: focus.hash, n: focus.n, ...focus.target } : null)
     select(focus.hash)
   }, [focus])
 
@@ -646,7 +651,8 @@ export function HistoryView({
         onOpenChanges={onOpenChanges}
         onFileHistory={startFileHistory}
         onBlame={onBlame}
-        filePath={historyPath}
+        filePath={jumpHere?.file ?? historyPath}
+        jump={jumpHere}
         comparisonSource={`${pinned?.followHead ? `${pinned.source?.name ?? r.status?.branch ?? 'HEAD'} ` : ''}${activeHash?.slice(0, 8) ?? ''}`}
         onPickTarget={(anchor) => showComparisonBranchPicker(r, anchor, sourceBranch ?? null, (t) => pin(t, sourceBranch ?? null))}
         commits={r.commits}

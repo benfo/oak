@@ -73,3 +73,31 @@ export function useDiffTokens(diff: FileDiff | null, text: string | null, hunkCo
   if (result?.key === key) return result.tokens
   return cache.get(key) ?? null
 }
+
+const FILE_CACHE_SIZE = 5
+const fileCache = new Map<string, Span[][] | null>()
+
+/** Highlighted lines of a whole file (the blame view), or null until ready (or when off / not code). */
+export function useFileTokens(path: string, text: string | null, enabled: boolean): Span[][] | null {
+  const key = text === null ? null : `${path}\u0000${text}`
+  const [result, setResult] = useState<{ key: string; tokens: Span[][] | null } | null>(null)
+
+  useEffect(() => {
+    if (!enabled || key === null || text === null) return
+    if (fileCache.has(key)) return setResult({ key, tokens: fileCache.get(key)! })
+    let live = true
+    request(path, [text]).then((blocks) => {
+      const tokens = blocks?.[0] ?? null
+      if (blocks) {
+        fileCache.set(key, tokens)
+        if (fileCache.size > FILE_CACHE_SIZE) fileCache.delete(fileCache.keys().next().value!)
+      }
+      if (live) setResult({ key, tokens })
+    })
+    return () => void (live = false)
+  }, [key, enabled])
+
+  if (!enabled || key === null) return null
+  if (result?.key === key) return result.tokens
+  return fileCache.get(key) ?? null
+}

@@ -62,7 +62,7 @@
   --diff-counter-width: 64px;
   --diff-layout-width: 104px;
   --diff-context-width: 76px;
-  --blame-info-width: 208px;
+  --blame-info-width: 320px;
   --diff-current-overlay: color-mix(in srgb, var(--primary) 6%, transparent);
   --disabled-opacity: 0.45;
   --graph-line-width: 3px;

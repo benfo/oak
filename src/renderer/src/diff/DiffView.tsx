@@ -48,6 +48,9 @@ interface Props {
   files?: { index: number; count: number; onSelect: (index: number) => void }
   /** Whole-file content (a synthetic all-added diff): shown as plain numbered code, without diff markings or tools. */
   plain?: boolean
+  /** Put the cursor on the line with this new-side number, scroll to it and focus the diff, then call `onRevealed` (also when there is no such line). */
+  revealLine?: number
+  onRevealed?: () => void
 }
 
 export function DiffView({
@@ -61,7 +64,9 @@ export function DiffView({
   onBack,
   onSwitchView,
   files,
-  plain = false
+  plain = false,
+  revealLine,
+  onRevealed
 }: Props) {
   const diff = useMemo(() => (text === null ? null : parseDiff(text)), [text])
   const acts = diff && actions ? actions(diff) : null
@@ -72,7 +77,7 @@ export function DiffView({
   const pendingHunk = useRef<number | null>(null)
   const { ref, hadFocus, paneWidth, setPane, setSideColumn } = useDiffPane()
 
-  const { syntaxHighlighting, diffLayout, vimNavigation } = useSettings()
+  const { syntaxHighlighting, showWhitespace, diffLayout, vimNavigation } = useSettings()
   const split = !plain && resolveDiffLayout(diffLayout, paneWidth) === 'split'
   const { rows, truncated, sideRows, positions, items, rowItem, posItem, itemRow } = useDiffRows(diff, showAll, split)
   const lineType = rows[cursor] && diff?.hunks[rows[cursor].hunk].lines[rows[cursor].line].type
@@ -80,7 +85,7 @@ export function DiffView({
   const cursorHunk = rows[cursor]?.hunk ?? 0
 
   const scroll = useDiffScroll({ ref, diff, split, cursor, cursorSide, rows, items, rowItem, posItem, positions, itemRow })
-  const codeOf = useDiffCode(diff, text, rows, syntaxHighlighting)
+  const codeOf = useDiffCode(diff, text, rows, syntaxHighlighting, showWhitespace)
   const selection = useDiffSelection({
     diff,
     rows,
@@ -115,6 +120,20 @@ export function DiffView({
     const same = source === null ? undefined : rows.find((r) => diff?.hunks[r.hunk].lines[r.line].newNo === source)
     setCursor((c) => (same ? same.index : Math.max(0, Math.min(c, rows.length - 1))))
   }, [text])
+
+  // After the [text] effect above, so a new diff's cursor reset doesn't undo it.
+  useEffect(() => {
+    if (revealLine === undefined || !diff) return
+    const row = rows.find((r) => diff.hunks[r.hunk].lines[r.line].newNo === revealLine)
+    if (!row && truncated && !showAll) return setShowAll(true)
+    if (row) {
+      setCursor(row.index)
+      setSide('new')
+      scroll.revealRow(row.index, 'center')
+      ref.current?.focus({ preventScroll: true })
+    }
+    onRevealed?.()
+  }, [revealLine, diff, rows])
 
   useEffect(() => {
     if (pendingHunk.current === null) return

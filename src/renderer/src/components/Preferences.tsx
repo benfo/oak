@@ -177,6 +177,10 @@ function Preferences({ repo, onClose }: { repo: string | null; onClose: () => vo
             />
             Syntax highlighting <span className="prefs-hint">colours set by the theme</span>
           </label>
+          <label className="check">
+            <input type="checkbox" checked={s.showWhitespace} onChange={(e) => updateSettings({ showWhitespace: e.target.checked })} />
+            Show spaces and tabs <span className="prefs-hint">a dot per space, an arrow per tab</span>
+          </label>
           <Field label="Context lines" hint="Unchanged lines shown around each change">
             <select className="select" value={s.contextLines} onChange={(e) => updateSettings({ contextLines: num(e.target.value) })}>
               {[1, 3, 5, 10, 25].map((n) => (

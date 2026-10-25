@@ -12,6 +12,10 @@ export interface BlameCommit {
 export interface BlameLine {
   hash: string
   text: string
+  /** The line's number in the commit that introduced it, which is where that commit's diff shows it. */
+  origLine: number
+  /** The file's path in that commit; it differs from the blamed file after a rename or a moved line. */
+  file: string
 }
 
 export interface BlameResult {
@@ -40,26 +44,29 @@ export function blameArgs(file: string, rev: string | null, opts: BlameOptions):
   ]
 }
 
-const HEADER = /^([0-9a-f]{40,64}) \d+ \d+(?: \d+)?$/
+const HEADER = /^([0-9a-f]{40,64}) (\d+) \d+(?: \d+)?$/
 const ZERO = /^0+$/
 
 /** Parses `git blame --porcelain`. Each line names its commit; a commit's details come with its first line. */
 export function parseBlame(output: string): BlameResult {
   const lines: BlameLine[] = []
   const commits: Record<string, BlameCommit> = {}
+  const files: Record<string, string> = {}
   let current: BlameCommit | null = null
+  let origLine = 0
   let binary = false
   for (const raw of output.split('\n')) {
     if (raw.startsWith('\t')) {
       if (!current) continue
       const text = raw.slice(1).replace(/\r$/, '')
       if (text.includes('\0')) binary = true
-      lines.push({ hash: current.hash, text })
+      lines.push({ hash: current.hash, text, origLine, file: files[current.hash] ?? '' })
       continue
     }
     const header = HEADER.exec(raw)
     if (header) {
       const hash = header[1]
+      origLine = Number(header[2])
       current = commits[hash] ??= { hash, author: '', email: '', time: 0, summary: '', uncommitted: ZERO.test(hash) }
       continue
     }
@@ -71,6 +78,7 @@ export function parseBlame(output: string): BlameResult {
     else if (key === 'author-mail') current.email = value.replace(/^<|>$/g, '')
     else if (key === 'author-time') current.time = Number(value) || 0
     else if (key === 'summary') current.summary = value
+    else if (key === 'filename') files[current.hash] = value
   }
   return { lines, commits, binary }
 }

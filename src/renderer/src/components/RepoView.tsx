@@ -24,7 +24,7 @@ import { Sidebar } from '../sidebar/Sidebar'
 import { publishActiveRepo } from '../sidebar/activeRepo'
 import { HistoryView, type ComparisonRequest } from '../history/HistoryView'
 import { ChangesView } from '../changes/ChangesView'
-import { BlameView, type BlameRequest } from '../blame/BlameView'
+import { BlameView, type BlameRequest, type CommitTarget } from '../blame/BlameView'
 import { openPalette, openShortcuts } from './Palette'
 import { OutputDialog, showOutput } from './OpStatus'
 import { APP_COMMANDS } from './Preferences'
@@ -32,6 +32,7 @@ import { getSettings, updateSettings, useSettings } from '../settings'
 import { toggleChangesTree } from './TreeToggle'
 import { getCommitFilesMode, setCommitFilesMode, toggleCommitFilesMode, useCommitFilesMode } from '../history/commitFilesMode'
 import { toggleDiffLayout } from '../diff/diffLayout'
+import { toggleWhitespace } from '../diff/toggleWhitespace'
 import { changeDiffLayout } from '../diff/changeDiffLayout'
 import { showLessContext, showMoreContext, toggleFullContext } from '../diff/useDiffContext'
 import { toast } from '../ui'
@@ -59,7 +60,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
   }
   const { sidebarHidden, autoFetchMinutes } = useSettings()
   useCommitFilesMode()
-  const [focus, setFocus] = useState<{ hash: string; n: number } | null>(null)
+  const [focus, setFocus] = useState<{ hash: string; n: number; target?: CommitTarget } | null>(null)
   const [selectedCommit, setSelectedCommit] = useState<Commit | null>(null)
   const [comparisonRequest, setComparisonRequest] = useState<ComparisonRequest | null>(null)
   const compareBranch: CompareBranch = (source, target) => {
@@ -67,9 +68,9 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     setComparisonRequest({ source, target, n: Date.now() })
   }
 
-  const focusCommit = (hash: string) => {
+  const focusCommit = (hash: string, target?: CommitTarget) => {
     setView('history')
-    setFocus({ hash, n: Date.now() })
+    setFocus({ hash, n: Date.now(), target })
   }
 
   const showFileHistory = (file: string) => {
@@ -92,7 +93,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     if (blameFrom.current === 'changes') setTimeout(focusFiles, 0)
     else focusLater('.commit-list')
   }
-  const showBlameCommit = (hash: string | null) => focusCommit(hash ?? WORKING_HASH)
+  const showBlameCommit = (hash: string | null, target: CommitTarget) => focusCommit(hash ?? WORKING_HASH, target)
 
   const sidebarVisible = !sidebarHidden && layout === 'standard'
   const focusMain = () => {
@@ -577,6 +578,7 @@ function buildCommands({
       run: () => focusSidebar(true)
     },
     { id: 'toggle-workspace-focus', title: 'Expand code area / restore previous layout', category: 'View', keys: 'F11', run: toggleFocus },
+    { id: 'toggle-whitespace', title: 'Show / hide spaces and tabs in code', category: 'View', run: toggleWhitespace },
     {
       id: 'restore-workspace-layout',
       title: 'Restore previous layout',
