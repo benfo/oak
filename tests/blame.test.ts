@@ -4,18 +4,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { git } from '../src/main/git.ts'
-import {
-  adjacentBlockStart,
-  blameArgs,
-  blameBlockStarts,
-  blockStartOf,
-  findLines,
-  findHits,
-  findRanges,
-  gotoLine,
-  mapLineToOlder,
-  parseBlame
-} from '../src/shared/blame.ts'
+import { adjacentBlockStart, blameArgs, blameBlockStarts, blockStartOf, mapLineToOlder, parseBlame } from '../src/shared/blame.ts'
 
 async function repoWithHistory() {
   const dir = mkdtempSync(path.join(tmpdir(), 'oak-blame-'))
@@ -151,45 +140,6 @@ test('lines of the root commit are marked as having no earlier version', async (
   const blame = parseBlame(await git(dir, blameArgs('a.txt', null, { ignoreWhitespace: false })))
   assert.equal(blame.commits[first].boundary, true)
   assert.equal(blame.commits[second].boundary, false)
-})
-
-test('find lists the lines containing the text in any case, and a ":N" query names a line kept within the file', () => {
-  const lines = ['const Foo = 1', 'bar()', 'foo(bar)', ''].map((text) => ({ text }))
-  assert.deepEqual(findLines(lines, 'FOO'), [0, 2])
-  assert.deepEqual(findLines(lines, 'bar'), [1, 2])
-  assert.deepEqual(findLines(lines, 'nothing'), [])
-  assert.deepEqual(findLines(lines, ''), [])
-  assert.deepEqual(findRanges('Foo foo.FOO', 'foo'), [
-    [0, 3],
-    [4, 7],
-    [8, 11]
-  ])
-  assert.deepEqual(findRanges('aaaa', 'aa'), [
-    [0, 2],
-    [2, 4]
-  ])
-  // A line with the text twice counts twice, in reading order.
-  assert.deepEqual(
-    findHits(
-      ['a ed ed', 'none', 'ED'].map((text) => ({ text })),
-      'ed'
-    ),
-    [
-      { line: 0, start: 2, end: 4 },
-      { line: 0, start: 5, end: 7 },
-      { line: 2, start: 0, end: 2 }
-    ]
-  )
-  assert.deepEqual(findRanges('abc', 'x'), [])
-  assert.deepEqual(findRanges('abc', ''), [])
-  assert.equal(gotoLine(':3', 4), 2)
-  assert.equal(gotoLine(': 3 ', 4), 2)
-  assert.equal(gotoLine(':0', 4), 0)
-  assert.equal(gotoLine(':99', 4), 3)
-  assert.equal(gotoLine(':', 4), null)
-  assert.equal(gotoLine(':x', 4), null)
-  assert.equal(gotoLine('3', 4), null)
-  assert.equal(gotoLine(':3', 0), null)
 })
 
 test("each line keeps its number in the commit that introduced it, and that commit's path after a rename", async () => {
