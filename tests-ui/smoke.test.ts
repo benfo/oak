@@ -272,6 +272,15 @@ test.describe('blame', () => {
     await page.keyboard.type('changed')
     await expect(bar).toContainText('1 of 3')
     await expect(cursor).toContainText('changed5')
+    // Focus is in the find box, so the current match must still be marked, and marked apart from other matches.
+    await expect(page.locator('.blame-view .diff')).toHaveClass(/finding/)
+    expect(await cursor.evaluate((row) => getComputedStyle(row, '::after').borderTopStyle)).toBe('solid')
+    expect(
+      await page
+        .locator('.blame-row:not(.cursor)')
+        .first()
+        .evaluate((row) => getComputedStyle(row, '::after').borderTopStyle)
+    ).not.toBe('solid')
     await page.keyboard.press('Enter')
     await expect(bar).toContainText('2 of 3')
     await expect(cursor).toContainText('changed60')

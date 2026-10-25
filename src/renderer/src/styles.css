@@ -2267,7 +2267,9 @@ input[type='checkbox']:focus-visible,
 .dl {
   position: relative;
 }
-.diff:focus .dl.cursor::after {
+/* `.finding` keeps the cursor drawn while the find box has focus, since that is where the current match is. */
+.diff:focus .dl.cursor::after,
+.diff.finding .dl.cursor::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -2275,7 +2277,8 @@ input[type='checkbox']:focus-visible,
   pointer-events: none;
   z-index: 2;
 }
-.diff:focus .dl.cursor .gutter {
+.diff:focus .dl.cursor .gutter,
+.diff.finding .dl.cursor .gutter {
   box-shadow: inset 2px 0 0 var(--ring);
 }
 
@@ -2315,9 +2318,12 @@ input[type='checkbox']:focus-visible,
   color: var(--muted-foreground);
   white-space: nowrap;
 }
-/* A line that contains the find text; the cursor's own row keeps its usual marker. */
+/* A line that contains the find text. The current match is the cursor row: ringed like the cursor and tinted twice as strongly, so it stands out from the rest. */
 .blame-row.found .code {
   background-image: linear-gradient(var(--warning-soft), var(--warning-soft));
+}
+.blame-row.found.cursor .code {
+  background-image: linear-gradient(var(--warning-soft), var(--warning-soft)), linear-gradient(var(--warning-soft), var(--warning-soft));
 }
 .blame-info {
   display: flex;

@@ -411,7 +411,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
       <PaneFrame>
         <div
           ref={ref}
-          className={`diff blame${notice || loading ? ' diff-empty' : ''}`}
+          className={`diff blame${notice || loading ? ' diff-empty' : ''}${find !== null ? ' finding' : ''}`}
           tabIndex={0}
           aria-label={`Blame of ${file}`}
           {...pane.targetProps}
