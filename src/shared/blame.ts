@@ -7,6 +7,8 @@ export interface BlameCommit {
   summary: string
   /** Not committed yet: the line only exists in the working tree. */
   uncommitted: boolean
+  /** The commit has no earlier version to step back to (the history's root, or the edge of a shallow clone). */
+  boundary: boolean
 }
 
 export interface BlameLine {
@@ -67,7 +69,7 @@ export function parseBlame(output: string): BlameResult {
     if (header) {
       const hash = header[1]
       origLine = Number(header[2])
-      current = commits[hash] ??= { hash, author: '', email: '', time: 0, summary: '', uncommitted: ZERO.test(hash) }
+      current = commits[hash] ??= { hash, author: '', email: '', time: 0, summary: '', uncommitted: ZERO.test(hash), boundary: false }
       continue
     }
     if (!current) continue
@@ -79,8 +81,34 @@ export function parseBlame(output: string): BlameResult {
     else if (key === 'author-time') current.time = Number(value) || 0
     else if (key === 'summary') current.summary = value
     else if (key === 'filename') files[current.hash] = value
+    else if (key === 'boundary') current.boundary = true
   }
   return { lines, commits, binary }
+}
+
+const HUNK = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/
+
+/**
+ * Where a line of the newer version sits in the older one, read from a zero-context diff of the two (`older` to `newer`).
+ * `added` means the newer version inserted the line, so it has no counterpart and `line` is the nearest one above it.
+ */
+export function mapLineToOlder(diff: string, line: number): { line: number; added: boolean } {
+  let shift = 0
+  for (const row of diff.split('\n')) {
+    const hunk = HUNK.exec(row)
+    if (!hunk) continue
+    const from = Number(hunk[1])
+    const removed = hunk[2] === undefined ? 1 : Number(hunk[2])
+    const start = Number(hunk[3])
+    const added = hunk[4] === undefined ? 1 : Number(hunk[4])
+    // A hunk that only deletes names the newer line before it, not one it covers.
+    if (added === 0 ? line <= start : line < start) break
+    if (added > 0 && line < start + added) {
+      return removed === 0 ? { line: Math.max(1, from), added: true } : { line: from + Math.min(line - start, removed - 1), added: false }
+    }
+    shift += removed - added
+  }
+  return { line: Math.max(1, line + shift), added: false }
 }
 
 /** Indexes of the lines that start a run from the same commit. */

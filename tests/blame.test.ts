@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { git } from '../src/main/git.ts'
-import { adjacentBlockStart, blameArgs, blameBlockStarts, blockStartOf, parseBlame } from '../src/shared/blame.ts'
+import { adjacentBlockStart, blameArgs, blameBlockStarts, blockStartOf, mapLineToOlder, parseBlame } from '../src/shared/blame.ts'
 
 async function repoWithHistory() {
   const dir = mkdtempSync(path.join(tmpdir(), 'oak-blame-'))
@@ -92,6 +92,31 @@ test('runs of one commit form blocks that next and previous step through', () =>
   assert.equal(adjacentBlockStart(starts, 4, -1), 3)
   assert.equal(adjacentBlockStart(starts, 3, -1), 2)
   assert.equal(adjacentBlockStart(starts, 0, -1), null)
+})
+
+test('a line maps to the older version through the zero-context diff, or to the line above when it was inserted', async () => {
+  const { dir, first, second } = await repoWithHistory()
+  const diff = await git(dir, ['diff', '-U0', first, second, '--', 'a.txt'])
+  assert.deepEqual(mapLineToOlder(diff, 2), { line: 2, added: false })
+  assert.deepEqual(mapLineToOlder(diff, 3), { line: 3, added: false })
+  assert.deepEqual(mapLineToOlder(diff, 4), { line: 3, added: true })
+
+  // Two lines replace one, then three lines go; later lines shift by the net change.
+  const hunks = '@@ -2 +2,2 @@\n-b\n+B\n+B2\n@@ -5,3 +6,0 @@\n-e\n-f\n-g\n'
+  assert.deepEqual(mapLineToOlder(hunks, 1), { line: 1, added: false })
+  assert.deepEqual(mapLineToOlder(hunks, 3), { line: 2, added: false })
+  assert.deepEqual(mapLineToOlder(hunks, 5), { line: 4, added: false })
+  assert.deepEqual(mapLineToOlder(hunks, 6), { line: 5, added: false })
+  assert.deepEqual(mapLineToOlder(hunks, 7), { line: 9, added: false })
+  assert.deepEqual(mapLineToOlder('@@ -0,0 +1 @@\n+new\n', 1), { line: 1, added: true })
+  assert.deepEqual(mapLineToOlder('', 7), { line: 7, added: false })
+})
+
+test('lines of the root commit are marked as having no earlier version', async () => {
+  const { dir, first, second } = await repoWithHistory()
+  const blame = parseBlame(await git(dir, blameArgs('a.txt', null, { ignoreWhitespace: false })))
+  assert.equal(blame.commits[first].boundary, true)
+  assert.equal(blame.commits[second].boundary, false)
 })
 
 test("each line keeps its number in the commit that introduced it, and that commit's path after a rename", async () => {
