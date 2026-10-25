@@ -6,14 +6,14 @@ import { copyText } from '../lib/copy'
 import { widgetAction } from '../lib/keymap'
 import { canHandleNavigation, horizontalScrollDirection, movementDelta, toolbarHomeEnd } from '../lib/navigation'
 import { shortcutPlatform } from '../lib/shortcuts'
+import { useFindInFile } from '../lib/useFindInFile'
 import { usePane } from '../lib/usePane'
 import { useVirtualRows } from '../lib/useVirtualRows'
 import { useSettings } from '../settings'
 import { BlameVersion, type BlameStep } from './BlameVersion'
 import { CommitMessage } from './CommitMessage'
 import { CommitPopover } from './CommitPopover'
-import { adjacentBlockStart, blameBlockStarts } from '../../../shared/blame'
-import { findHits, gotoLine } from '../../../shared/find'
+import { adjacentBlockStart, blameBlockStarts, type BlameLine } from '../../../shared/blame'
 import { BlameFind } from './BlameFind'
 import { BlameFooter } from './BlameFooter'
 import { BlameRow } from './BlameRow'
@@ -25,7 +25,8 @@ import { useCommitPopover } from './useCommitPopover'
 /** Keep in sync with --diff-line-height. */
 const ROW_H = 20
 const NOTE_MS = 3500
-const NO_HITS: [number, number][] = []
+/** A stable empty list, so find does not recompute while nothing is loaded. */
+const NO_LINES: BlameLine[] = []
 /** Pixels a plain Left or Right scrolls the code; Shift scrolls a quarter of the pane. */
 const H_STEP = 40
 
@@ -74,9 +75,6 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   // On by default, as it always was.
   const [useIgnoreRevs, setUseIgnoreRevs] = useState(true)
   const [cursor, setCursor] = useState(0)
-  /** The find bar's text; null while it is closed. A leading ":" makes it a go-to-line box. */
-  const [find, setFind] = useState<string | null>(null)
-  const findRef = useRef<HTMLInputElement>(null)
   const ref = useRef<HTMLDivElement>(null)
   const toolsRef = useRef<HTMLDivElement>(null)
   const pane = usePane('blame', { kind: 'diff' })
@@ -93,7 +91,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     status,
     contentRevision
   })
-  const lines = result?.lines ?? []
+  const lines = result?.lines ?? NO_LINES
 
   // The whole file is tokenized as one block, so a line that starts mid-construct is still coloured right.
   const text = useMemo(() => (result?.lines.length ? result.lines.map((l) => l.text).join('\n') : null), [result])
@@ -113,53 +111,8 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     return line && (counts.get(line.hash) ?? 0) * 2 <= lines.length ? line.hash : null
   }, [result, line?.hash])
 
-  const goto = find?.startsWith(':') ?? false
-  // Every occurrence is a match, so a line with the text twice counts twice and Enter steps through both.
-  const hits = useMemo(() => (find && !goto ? findHits(lines, find) : []), [result, find, goto])
-  const hitRows = useMemo(() => {
-    const byLine = new Map<number, { first: number; ranges: [number, number][] }>()
-    hits.forEach((h, i) => {
-      const row = byLine.get(h.line) ?? { first: i, ranges: [] }
-      row.ranges.push([h.start, h.end])
-      byLine.set(h.line, row)
-    })
-    return byLine
-  }, [hits])
-  /** The occurrence Enter last moved to; it only counts while the cursor is still on its line. */
-  const [hitIndex, setHitIndex] = useState(0)
-  const firstOnLine = hitRows.get(at)?.first ?? -1
-  const hitNow = hits[hitIndex]?.line === at ? hitIndex : firstOnLine
-  const target = find !== null && goto ? gotoLine(find, lines.length) : null
-  const findStatus = goto
-    ? target === null
-      ? 'Type a line number'
-      : `Go to line ${target + 1}`
-    : !find
-      ? ''
-      : !hits.length
-        ? 'No matches'
-        : hitNow >= 0
-          ? `${hitNow + 1} of ${hits.length}`
-          : `${hits.length} ${hits.length === 1 ? 'match' : 'matches'}`
-  const closeFind = () => {
-    setFind(null)
-    ref.current?.focus({ preventScroll: true })
-  }
-  // Typing moves the cursor to the first match from where it is, or to the line a ":120" names, so the view follows as you type.
-  const changeFind = (query: string) => {
-    setFind(query)
-    if (query.startsWith(':')) {
-      const to = gotoLine(query, lines.length)
-      if (to !== null) setCursor(to)
-      return
-    }
-    const found = findHits(lines, query)
-    const first = found.findIndex((h) => h.line >= at)
-    const to = first >= 0 ? first : found.length ? 0 : -1
-    if (to < 0) return
-    setHitIndex(to)
-    setCursor(found[to].line)
-  }
+  const findInFile = useFindInFile({ lines, at, moveTo: setCursor, scrollerRef: ref })
+  const finding = findInFile.query !== null
   // The same actions as N, P and "/", for the header buttons; each button hands focus back so the keys keep working afterwards.
   const nextStart = adjacentBlockStart(starts, at, 1)
   const prevStart = adjacentBlockStart(starts, at, -1)
@@ -167,34 +120,9 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     const next = delta === 1 ? nextStart : prevStart
     if (next !== null) setCursor(next)
   }
-  const openFind = () => {
-    if (find === null) setFind('')
-    else findRef.current?.select()
-    findRef.current?.focus()
-  }
   // A click returns focus to the code so the keys work again; a key press on a button leaves focus there, so Enter can repeat.
   const refocus = (pointer: string) => {
     if (pointer === 'mouse' || pointer === 'touch') ref.current?.focus({ preventScroll: true })
-  }
-  const enterFind = (backwards: boolean) => {
-    if (goto) {
-      if (target === null) return
-      setCursor(target)
-      return closeFind()
-    }
-    const n = hits.length
-    if (!n) return
-    let to: number
-    if (hitNow >= 0) to = (hitNow + (backwards ? -1 : 1) + n) % n
-    else if (backwards) {
-      const before = hits.findLastIndex((h) => h.line < at)
-      to = before >= 0 ? before : n - 1
-    } else {
-      const after = hits.findIndex((h) => h.line > at)
-      to = after >= 0 ? after : 0
-    }
-    setHitIndex(to)
-    setCursor(hits[to].line)
   }
 
   const rows = useVirtualRows({ count: lines.length, getScrollElement: () => ref.current, estimateSize: () => ROW_H, overscan: 20 })
@@ -325,7 +253,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
       setMessageOpen(!messageOpen)
     } else if (widget === 'find') {
       e.preventDefault()
-      openFind()
+      findInFile.open()
     } else if (widget === 'blameBefore' || widget === 'blameNewer') {
       // A held key would skip through several versions; each step is a fresh press.
       e.preventDefault()
@@ -359,13 +287,13 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
           toolsRef={toolsRef}
           commit={commit}
           hasLines={lines.length > 0}
-          findOpen={find !== null}
+          findOpen={finding}
           canPrevBlock={prevStart !== null}
           canNextBlock={nextStart !== null}
           ignoreWhitespace={ignoreWhitespace}
           hasIgnoreRevs={hasIgnoreRevs}
           useIgnoreRevs={useIgnoreRevs}
-          onFind={openFind}
+          onFind={findInFile.open}
           onBlock={(delta, pointer) => {
             moveBlock(delta)
             refocus(pointer)
@@ -379,13 +307,20 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
           onClose={onClose}
         />
       </div>
-      {find !== null && (
-        <BlameFind query={find} status={findStatus} inputRef={findRef} onChange={changeFind} onEnter={enterFind} onClose={closeFind} />
+      {findInFile.query !== null && (
+        <BlameFind
+          query={findInFile.query}
+          status={findInFile.status}
+          inputRef={findInFile.inputRef}
+          onChange={findInFile.change}
+          onEnter={findInFile.enter}
+          onClose={findInFile.close}
+        />
       )}
       <PaneFrame>
         <div
           ref={ref}
-          className={`diff blame${notice || loading ? ' diff-empty' : ''}${find !== null ? ' finding' : ''}`}
+          className={`diff blame${notice || loading ? ' diff-empty' : ''}${finding ? ' finding' : ''}`}
           tabIndex={0}
           aria-label={`Blame of ${file}`}
           {...pane.targetProps}
@@ -415,6 +350,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
             <div className="diff-inner" style={rows.spacer}>
               {rows.items.map(({ index }) => {
                 const l = lines[index]
+                const found = findInFile.hitsOn(index)
                 return (
                   <BlameRow
                     key={index}
@@ -426,8 +362,8 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                     tinted={l.hash === tintCommit}
                     tokens={tokens ? tokens[index] : null}
                     whitespace={whitespace}
-                    hits={hitRows.get(index)?.ranges ?? NO_HITS}
-                    currentHit={hitNow >= 0 && hits[hitNow].line === index ? hitNow - hitRows.get(index)!.first : -1}
+                    hits={found.ranges}
+                    currentHit={found.current}
                     onSelect={setCursor}
                     onMenu={(i) => void lineMenu(false, i)}
                     onOpen={open}
