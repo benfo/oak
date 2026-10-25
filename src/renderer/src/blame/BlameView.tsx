@@ -171,6 +171,19 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     const first = query.startsWith(':') ? gotoLine(query, lines.length) : (found.find((i) => i >= at) ?? found[0])
     if (first !== undefined && first !== null) setCursor(first)
   }
+  // The same actions as N, P and "/", for the header buttons; each button hands focus back so the keys keep working afterwards.
+  const nextStart = adjacentBlockStart(starts, at, 1)
+  const prevStart = adjacentBlockStart(starts, at, -1)
+  const moveBlock = (delta: 1 | -1) => {
+    const next = delta === 1 ? nextStart : prevStart
+    if (next !== null) setCursor(next)
+  }
+  const openFind = () => {
+    if (find === null) setFind('')
+    else findRef.current?.select()
+    findRef.current?.focus()
+  }
+  const refocus = () => ref.current?.focus({ preventScroll: true })
   const enterFind = (backwards: boolean) => {
     if (goto) {
       if (target === null) return
@@ -342,16 +355,13 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
       setCursor(Math.max(0, Math.min(lines.length - 1, at + move)))
     } else if (widget === 'nextBlock' || widget === 'prevBlock') {
       e.preventDefault()
-      const next = adjacentBlockStart(starts, at, widget === 'nextBlock' ? 1 : -1)
-      if (next !== null) setCursor(next)
+      moveBlock(widget === 'nextBlock' ? 1 : -1)
     } else if (widget === 'commitMessage') {
       e.preventDefault()
       setMessageOpen(!messageOpen)
     } else if (widget === 'find') {
       e.preventDefault()
-      if (find === null) setFind('')
-      else findRef.current?.select()
-      findRef.current?.focus()
+      openFind()
     } else if (widget === 'blameBefore' || widget === 'blameNewer') {
       // A held key would skip through several versions; each step is a fresh press.
       e.preventDefault()
@@ -382,6 +392,58 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
         </span>
         <BlameVersion steps={steps} onNewer={stepNewer} />
         <Toolbar className="diff-controls" aria-label="Blame tools" ref={toolsRef}>
+          <span className="diff-navigation-group">
+            <Tip label="Find in file" keys="/">
+              <Button
+                className="icon-btn"
+                aria-label="Find in file"
+                aria-pressed={find !== null}
+                isDisabled={!lines.length}
+                onPress={openFind}
+              >
+                <Icon name="search" size={14} />
+              </Button>
+            </Tip>
+            <Tip label="Previous commit block" keys="P">
+              <Button
+                className="icon-btn"
+                aria-label="Previous commit block"
+                isDisabled={prevStart === null}
+                onPress={() => {
+                  moveBlock(-1)
+                  refocus()
+                }}
+              >
+                <Icon name="arrowUp" size={14} />
+              </Button>
+            </Tip>
+            <Tip label="Next commit block" keys="N">
+              <Button
+                className="icon-btn"
+                aria-label="Next commit block"
+                isDisabled={nextStart === null}
+                onPress={() => {
+                  moveBlock(1)
+                  refocus()
+                }}
+              >
+                <Icon name="arrowDown" size={14} />
+              </Button>
+            </Tip>
+            <Tip label={commit?.uncommitted ? 'Blame this line at HEAD' : 'Blame the line as it was before its commit'} keys="B">
+              <Button
+                className="icon-btn"
+                aria-label="Blame before this commit"
+                isDisabled={!commit || commit.boundary}
+                onPress={() => {
+                  void stepBack()
+                  refocus()
+                }}
+              >
+                <Icon name="history" size={14} />
+              </Button>
+            </Tip>
+          </span>
           <Tip label="Ignore whitespace changes">
             <Button className="diff-full-button" aria-pressed={ignoreWhitespace} onPress={() => setIgnoreWhitespace(!ignoreWhitespace)}>
               Ignore whitespace

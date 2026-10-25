@@ -313,6 +313,33 @@ test.describe('blame', () => {
     await expect(page.locator('.blame-view')).toHaveCount(0)
   })
 
+  test('the header buttons do what N, P, / and B do, and hand focus back to the code', async ({ open, small }) => {
+    const page = await open(small)
+    await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Show blame' }).click()
+    await expect(page.locator('.blame-row').first()).toBeVisible()
+    const cursor = page.locator('.blame-row.cursor')
+    const tools = page.getByRole('toolbar', { name: 'Blame tools' })
+
+    await expect(tools.getByRole('button', { name: 'Previous commit block' })).toBeDisabled()
+    await tools.getByRole('button', { name: 'Next commit block' }).click()
+    await expect(cursor).toContainText("const changed5 = 'edited'")
+    await expect(page.locator('.blame-view .diff')).toBeFocused()
+    await tools.getByRole('button', { name: 'Blame before this commit' }).click()
+    await expect(page.locator('.blame-past')).toContainText('At HEAD')
+    await expect(cursor).toContainText('const value5 = 5')
+    await page.getByRole('button', { name: 'Back to newer' }).click()
+
+    await tools.getByRole('button', { name: 'Find in file' }).click()
+    await expect(page.getByRole('textbox', { name: 'Find in file' })).toBeFocused()
+    await page.keyboard.type('changed')
+    await page.getByRole('button', { name: 'Next match' }).click()
+    await expect(cursor).toContainText('changed60')
+    await expect(page.getByRole('textbox', { name: 'Find in file' })).toBeFocused()
+    await page.getByRole('button', { name: 'Previous match' }).click()
+    await expect(cursor).toContainText('changed5')
+  })
+
   test('B blames the line as it was before its commit, Backspace returns, and Escape closes without stepping', async ({ open, small }) => {
     git(small, 'add', '-A')
     git(small, 'commit', '-q', '-m', 'Edit lines')

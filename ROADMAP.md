@@ -109,7 +109,7 @@ Ideas only. None is agreed, and each needs a concrete workflow and a discussion 
 - Conflict safeguards: ours/theirs buttons labelled with branch names, a confirm when taking one side drops the other's changes, an Undo toast. Revisit if users report lost work.
 - Compare the working tree against any selected commit.
 - Blame from a line: a "Blame this line" action in the diff line menu that opens Blame with the cursor already on that line. Needs a decision for deleted lines (blame the old side at the parent) and for History diffs (blame as of that commit).
-- Find in Blame, next steps: Previous and Next buttons in the bar, and the options other editors offer (case sensitive, whole word, regular expression). Also consider the same find bar for the diff view.
+- Find in Blame, next steps: the options other editors offer (case sensitive, whole word, regular expression). Also consider the same find bar for the diff view.
 - Commit details for a line while reading a diff or file, like VS Code's inline blame or hover (author, date, subject, full message on demand), without opening the Blame view. Explore a hover or key-triggered popover first; an always-on inline annotation risks the distraction people report with GitLens.
 - Pull request support: host-to-provider mapping for self-hosted remotes, fork workflows, target branch selection, and a lightweight local PR review (pass a PR URL or pick branches, fetch the refs, open the comparison in Oak; comments and approvals stay on the provider's site).
 - More preferences: default clone folder, external tools, fonts.
