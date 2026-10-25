@@ -35,6 +35,7 @@ export type WidgetAction =
   | 'commitMessage'
   | 'blameBefore'
   | 'blameNewer'
+  | 'find'
   | 'fileNext'
   | 'filePrev'
   | 'fileFirst'
@@ -76,6 +77,13 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
     keys: ['/', 'Mod+F'],
     match: isListSearchKey,
     help: { title: 'Search the focused list', keys: '/ or Ctrl+F', category: 'Navigation' }
+  },
+  {
+    action: 'find',
+    roles: ['blame'],
+    keys: ['/', 'Mod+F'],
+    match: isListSearchKey,
+    help: { title: 'Find in the blamed file (":120" goes to a line)', keys: '/ or Ctrl+F', category: 'Blame' }
   },
   {
     action: 'switchList',
