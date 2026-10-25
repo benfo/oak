@@ -2326,9 +2326,10 @@ input[type='checkbox']:focus-visible,
   box-shadow: 0 0 0 1px var(--warning);
 }
 /* Only the occurrence Enter moved to; the rest of the line's occurrences keep the lighter mark. */
+/* A stronger tint and a heavier ring, with the text colour left alone: a solid fill made syntax colours unreadable. */
 .find-hit.current {
-  background: var(--warning);
-  color: var(--background);
+  background: var(--warning-strong);
+  box-shadow: 0 0 0 2px var(--warning);
 }
 /* A line that contains the find text. The current match is the cursor row: ringed like the cursor and tinted twice as strongly, so it stands out from the rest. */
 .blame-row.found .code {

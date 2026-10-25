@@ -114,6 +114,7 @@
   --danger-foreground: #ffffff;
   --warning: #724c00;
   --warning-soft: rgba(212, 167, 44, 0.16);
+  --warning-strong: rgba(212, 167, 44, 0.45); /* the current find match; translucent so syntax colours stay readable */
 
   /* Diffs */
   --diff-add: rgba(46, 160, 67, 0.12);
@@ -203,6 +204,7 @@
   --danger: #f85149;
   --warning: #e3b341;
   --warning-soft: rgba(212, 167, 44, 0.15);
+  --warning-strong: rgba(212, 167, 44, 0.45);
 
   --diff-add: rgba(46, 160, 67, 0.15);
   --diff-add-gutter: rgba(46, 160, 67, 0.25);
