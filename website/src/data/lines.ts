@@ -72,6 +72,7 @@ export const lines: Line[] = [
           { label: 'Find in the file', keys: ['/'] },
         ],
         points: ["Open Blame from a file's menu or the command palette", "Press B to see the file as it was before a line's commit, and Backspace to return", 'Press Enter to open that commit in History at the file and line it changed'],
+        shots: [{ image: 'oak-blame', title: "Oak's Blame view with each block's commit beside the code and the cursor line's commit in the footer", caption: 'A file in a synthetic project, blamed in the working tree.' }],
       },
     ],
   },
