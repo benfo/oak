@@ -88,6 +88,8 @@ interface TreeNode {
   /** Double-click, e.g. checkout. */
   secondary?: () => void
   menu?: (anchor?: Element) => void
+  /** A small close button at the row's end, for rows that stand for something that can be closed. */
+  close?: { label: string; run: () => void }
   /** Ctrl+C copies `primary` (name); Ctrl+Shift+C the `alternate` (commit hash). */
   copy?: { primary: CopyItem; alternate?: CopyItem }
   optionsLabel?: string
@@ -130,7 +132,10 @@ interface Props {
   setView: (v: View) => void
   onFocusCommit: (hash: string) => void
   onCompareBranch: CompareBranch
-  /** A branch row gained focus (null: a tag or stash did); debounced here. */
+  /** The file in the open Blame view, or null while none is open; the nav row shows only then. */
+  blameFile: string | null
+  /** Closes the open Blame view without leaving the view that is showing. */
+  onCloseBlame: () => void
 }
 
 /**
@@ -138,7 +143,7 @@ interface Props {
  * expand/collapse, Enter or click activates, double-click checks out, Shift+F10 / right-click
  * opens the item's menu, and typing a letter starts filtering.
  */
-export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Props) {
+export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blameFile, onCloseBlame }: Props) {
   const [filter, setFilter] = useState('')
   const branchOptions = r.branchOptions
   const branchOptionsRef = useRef(branchOptions)
@@ -194,6 +199,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
     onFocusCommit,
     onCompareBranch,
     setView,
+    onCloseBlame,
     branchMenu,
     hidePattern,
     toggle: (_key: string) => {},
@@ -203,6 +209,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
   live.current.onFocusCommit = onFocusCommit
   live.current.onCompareBranch = onCompareBranch
   live.current.setView = setView
+  live.current.onCloseBlame = onCloseBlame
   live.current.branchMenu = branchMenu
   live.current.hidePattern = hidePattern
 
@@ -386,7 +393,25 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
       icon: 'history',
       navActive: view === 'history',
       activate: () => live.current.setView('history')
-    }
+    },
+    ...(blameFile
+      ? [
+          {
+            key: 'nav:blame',
+            kind: 'nav' as const,
+            label: 'Blame',
+            icon: 'blame' as const,
+            title: blameFile,
+            navActive: view === 'blame',
+            activate: () => live.current.setView('blame'),
+            close: { label: 'Close blame', run: () => live.current.onCloseBlame() },
+            // The same action from the keyboard (Shift+F10 or the Menu key on the row).
+            menu: async (anchor?: Element) => {
+              if ((await showMenu([{ id: 'close', label: 'Close blame' }], anchor)) === 'close') live.current.onCloseBlame()
+            }
+          }
+        ]
+      : [])
   ]
 
   const { refsByKey, parentKeys } = useMemo(() => {
@@ -542,6 +567,21 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
               </span>
             ))}
             {n.kind === 'nav' && !!n.count && <span className="badge">{n.count}</span>}
+            {n.close && (
+              <Button
+                className="icon-btn tree-close"
+                excludeFromTabOrder
+                aria-label={n.close.label}
+                onPress={(e) => {
+                  // The row keeps the tree's single tab stop, as the branch options button does.
+                  visited.current = true
+                  e.target.closest<HTMLElement>('[role=row]')?.focus()
+                  n.close?.run()
+                }}
+              >
+                <Icon name="x" size={14} />
+              </Button>
+            )}
             {n.optionsLabel && (
               <Button
                 className="icon-btn branch-options"
@@ -585,7 +625,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch }: Pr
         </Tree>
       </Virtualizer>
     ),
-    [rowsId, refSections, view, changeCount, pane.targetProps]
+    [rowsId, refSections, view, changeCount, blameFile, pane.targetProps]
   )
 
   const matches = useMemo(() => [...refsByKey.values()].filter((n) => n.kind === 'item'), [refsByKey])

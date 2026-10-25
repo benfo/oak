@@ -177,6 +177,10 @@ function Preferences({ repo, onClose }: { repo: string | null; onClose: () => vo
             />
             Syntax highlighting <span className="prefs-hint">colours set by the theme</span>
           </label>
+          <label className="check">
+            <input type="checkbox" checked={s.showWhitespace} onChange={(e) => updateSettings({ showWhitespace: e.target.checked })} />
+            Show spaces and tabs <span className="prefs-hint">a dot per space, an arrow per tab</span>
+          </label>
           <Field label="Context lines" hint="Unchanged lines shown around each change">
             <select className="select" value={s.contextLines} onChange={(e) => updateSettings({ contextLines: num(e.target.value) })}>
               {[1, 3, 5, 10, 25].map((n) => (
@@ -268,11 +272,12 @@ function Preferences({ repo, onClose }: { repo: string | null; onClose: () => vo
           <label className="check">
             <input type="checkbox" checked={s.vimNavigation} onChange={(e) => updateSettings({ vimNavigation: e.target.checked })} />
             Vim-style navigation
+            <span className="prefs-hint">
+              Adds h/j/k/l alongside arrow keys in lists, diffs and menus. In lists and diffs, Ctrl+D/U moves half a page and gg/G goes to
+              the beginning/end. Both navigation styles use / or Ctrl+F to search a list. Text fields and searchable pickers keep normal
+              typing.
+            </span>
           </label>
-          <p className="prefs-note">
-            Adds h/j/k/l alongside arrow keys in lists, diffs and menus. In lists and diffs, Ctrl+D/U moves half a page and gg/G goes to the
-            beginning/end. Both navigation styles use / or Ctrl+F to search a list. Text fields and searchable pickers keep normal typing.
-          </p>
           <label className="check">
             <input type="checkbox" checked={s.reopenLastRepo} onChange={(e) => updateSettings({ reopenLastRepo: e.target.checked })} />
             Reopen the last repository on startup

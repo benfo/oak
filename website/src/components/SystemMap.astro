@@ -5,6 +5,7 @@ import { version } from '../data/release.json'
 ---
 <section id="map" class="site-shell" aria-labelledby="map-title" data-system-map>
   <h2 id="map-title" class="sr-only">Oak features, by line</h2>
+  <p class="map-hint">Select a stop to see what it does.</p>
   <div class="map-board">
     <div class="map-lines" data-map-lines aria-label="Oak features, by line">
       {lines.map((line, i) => (
@@ -37,6 +38,7 @@ import { version } from '../data/release.json'
       return (
         <article class="panel" id={stop.id} data-panel={stop.id} data-color={line.color} aria-labelledby={`${stop.id}-title`}>
           <div class="panel-text">
+            <a class="panel-back" href="#map">Back to the map</a>
             <h3 id={`${stop.id}-title`}>{stop.name}</h3>
             {stop.text.map((paragraph) => <p>{paragraph}</p>)}
             {stop.keys && (
@@ -74,6 +76,7 @@ import { version } from '../data/release.json'
     const rows = lineRows.map((row) => [...row.querySelectorAll<HTMLAnchorElement>('[data-stop]')])
     const tabs = rows.flat()
     const panels = new Map([...root.querySelectorAll<HTMLElement>('[data-panel]')].map((panel) => [panel.dataset.panel!, panel]))
+    const narrow = matchMedia('(max-width: 63.999rem)')
     const panelWrap = root.querySelector<HTMLElement>('[data-map-panels]')!
 
     root.querySelector('[data-map-lines]')!.setAttribute('role', 'tablist')
@@ -113,6 +116,17 @@ import { version } from '../data/release.json'
       event.preventDefault()
       select(tab)
       history.replaceState(null, '', `#${tab.dataset.stop}`)
+      // Panels sit below the map: bring them into view when they are not already, on any screen size.
+      const panel = panels.get(tab.dataset.stop!)!
+      const top = panel.getBoundingClientRect().top
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+      const behavior = reduce ? 'auto' : 'smooth'
+      if (narrow.matches) panel.scrollIntoView({ block: 'start', behavior })
+      else if (top > innerHeight * 0.6) {
+        // Start at the clicked stop's line so the map is cut on a line boundary, with the panel following.
+        const line = tab.closest<HTMLElement>('[data-line]')!
+        scrollBy({ top: line.getBoundingClientRect().top - 24, behavior })
+      }
     })
 
     root.addEventListener('keydown', (event) => {

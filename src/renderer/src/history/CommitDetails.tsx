@@ -53,7 +53,9 @@ export function CommitDetails({
   contentRevision,
   onOpenChanges,
   onFileHistory,
-  filePath
+  onBlame,
+  filePath,
+  jump
 }: {
   repo: string
   hash: string | null
@@ -69,8 +71,11 @@ export function CommitDetails({
   contentRevision: number
   onOpenChanges: () => void
   onFileHistory: (path: string) => void
+  onBlame: (path: string, rev: string | null) => void
   /** In a file's history: the filtered file's path in the selected commit, preselected when the commit's files load. */
   filePath?: string
+  /** Blame's Enter: put the diff cursor on this line of `file` (the commit's version), once per `n`. */
+  jump?: { file: string; line: number; n: number }
 }) {
   const contextLines = useContextLines()
   const loadPreview = useMemo(() => createCommitPreviewLoader(api), [])
@@ -209,8 +214,10 @@ export function CommitDetails({
   }
 
   const fileMenu = async (f: ChangedFile) => {
-    const id = await showMenu(fileMenuItems([f.path], { workingTree: working, canOpen: f.status !== 'D', history: true }))
-    runFileMenu(id, repo, [f.path], onFileHistory)
+    const id = await showMenu(
+      fileMenuItems([f.path], { workingTree: working, canOpen: f.status !== 'D', history: true, blame: true, canBlame: f.status !== 'D' })
+    )
+    runFileMenu(id, repo, [f.path], onFileHistory, (path) => onBlame(path, working ? null : hash))
   }
 
   const onListKey = (e: React.KeyboardEvent) => {
@@ -343,6 +350,20 @@ export function CommitDetails({
   const switchList = toggleCommitFilesMode
   const showContent =
     allMode && !!treeSelection && snapshotReady && !treeMissing && (!changed.has(treeSelection) || forceContent === treeSelection)
+  // The jump waits for that file's diff to be the one on screen, and happens once, so later file picks are left alone.
+  const [jumped, setJumped] = useState<number | null>(null)
+  const revealLine =
+    jump &&
+    jumped !== jump.n &&
+    !pending &&
+    detailsCurrent &&
+    !compareBase &&
+    !branchComparison &&
+    !showContent &&
+    !allMode &&
+    file?.path === jump.file
+      ? jump.line
+      : undefined
   const contentKey = JSON.stringify([repo, hash, treeSelection])
   const [content, setContent] = useState<{ key: string; text?: string; error?: string } | null>(null)
   useEffect(() => {
@@ -358,7 +379,7 @@ export function CommitDetails({
   const currentContent = content?.key === contentKey ? content : null
   const treeMenu = async (p: string) => {
     const id = await showMenu([
-      ...fileMenuItems([p], { workingTree: false, history: true }),
+      ...fileMenuItems([p], { workingTree: false, history: true, blame: true }),
       { type: 'separator' },
       { id: 'save', label: 'Save a copy…' }
     ])
@@ -369,7 +390,7 @@ export function CommitDetails({
       } catch (e) {
         toast.error(errorMessage(e))
       }
-    } else runFileMenu(id, repo, [p], onFileHistory)
+    } else runFileMenu(id, repo, [p], onFileHistory, (path) => onBlame(path, working ? null : hash))
   }
   const findFile = () =>
     openPalette({
@@ -640,6 +661,8 @@ export function CommitDetails({
             </div>
           )}
           <DiffView
+            revealLine={revealLine}
+            onRevealed={() => jump && setJumped(jump.n)}
             title={
               showContent || treeMissing
                 ? (treeSelection ?? undefined)

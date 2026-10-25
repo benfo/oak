@@ -1216,6 +1216,21 @@ textarea {
 .dl .code {
   padding-right: var(--space-6);
 }
+/* Show spaces and tabs: a dot per space (one tile per character, as code is monospace) and an arrow at each tab. */
+.ws-space {
+  background-image: radial-gradient(circle, var(--subtle-foreground) 0.07em, transparent 0.1em);
+  background-repeat: repeat-x;
+  background-size: 1ch 100%;
+}
+.ws-tab {
+  position: relative;
+}
+.ws-tab::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--subtle-foreground);
+}
 .dl.add {
   background: var(--diff-add);
 }
@@ -1620,25 +1635,39 @@ textarea {
 .release-notes {
   max-height: 60vh;
   overflow: auto;
-  padding-right: var(--space-2);
+  padding: var(--space-2) var(--row-pad);
   user-select: text;
+  scrollbar-gutter: stable;
 }
 .release-section + .release-section {
   margin-top: var(--space-5);
-  padding-top: var(--space-4);
+  padding-top: var(--space-5);
   border-top: 1px solid var(--border);
 }
 .release-section h3 {
   margin: 0 0 var(--space-3);
   font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
 }
 .release-section h4 {
-  margin: var(--space-3) 0 var(--space-1);
+  margin: var(--space-4) 0 var(--space-1);
   font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+.release-section h3 + .release-highlight h4 {
+  margin-top: 0;
+}
+.release-section h4.release-fixes {
+  margin: var(--space-5) 0 var(--space-1-5);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--subtle-foreground);
 }
 .release-section p {
   margin: 0;
   color: var(--muted-foreground);
+  line-height: 1.5;
 }
 .release-section ul {
   margin: var(--space-1) 0 0;
@@ -2238,7 +2267,9 @@ input[type='checkbox']:focus-visible,
 .dl {
   position: relative;
 }
-.diff:focus .dl.cursor::after {
+/* `.finding` keeps the cursor drawn while the find box has focus, since that is where the current match is. */
+.diff:focus .dl.cursor::after,
+.diff.finding .dl.cursor::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -2246,8 +2277,287 @@ input[type='checkbox']:focus-visible,
   pointer-events: none;
   z-index: 2;
 }
-.diff:focus .dl.cursor .gutter {
+.diff:focus .dl.cursor .gutter,
+.diff.finding .dl.cursor .gutter {
   box-shadow: inset 2px 0 0 var(--ring);
+}
+
+/* ---------- blame ---------- */
+
+.blame-view {
+  position: relative;
+  height: 100%;
+}
+/* Find sits over the top right of the code, like an editor's, so opening it never moves a line. */
+.find-bar {
+  position: absolute;
+  top: calc(var(--control-lg) + var(--space-1));
+  right: var(--space-4);
+  /* Above the cursor ring (2), which is drawn later in the page and would otherwise cross the box. */
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-2);
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  font-size: var(--text-sm);
+}
+.find-bar-field input {
+  width: 200px;
+  height: var(--control-sm);
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  outline: none;
+}
+/* A fixed width, so the bar keeps one size whatever the status says ("No matches", "12 of 345", "Go to line 1200"). */
+.find-bar-status {
+  flex: none;
+  width: 15ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* The found text itself, so it is clear which part of the line matched. */
+.find-hit {
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
+  box-shadow: 0 0 0 1px var(--warning);
+}
+/* A stronger tint and a heavier ring, with the text colour left alone: a solid fill made syntax colours unreadable. */
+.find-hit.current {
+  background: var(--warning-strong);
+  box-shadow: 0 0 0 2px var(--warning);
+}
+/* A line that contains the find text. The current match is the cursor row: ringed like the cursor and tinted twice as strongly, so it stands out from the rest. */
+.blame-row.found .code {
+  background-image: linear-gradient(var(--warning-soft), var(--warning-soft));
+}
+.blame-row.found.cursor .code {
+  background-image: linear-gradient(var(--warning-soft), var(--warning-soft)), linear-gradient(var(--warning-soft), var(--warning-soft));
+}
+.blame-info {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: var(--space-1-5);
+  width: var(--blame-info-width);
+  padding: 0 var(--space-2);
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+  user-select: none;
+}
+.blame-info .avatar {
+  flex: none;
+}
+.blame-hash {
+  flex: none;
+}
+/* In the gutter the subject takes the room the date leaves and is cut off at the column's edge, not at a character count. */
+.blame-info .blame-summary {
+  color: inherit;
+  font-family: var(--font);
+}
+.blame-info .blame-date {
+  flex: none;
+}
+.blame-date {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--subtle-foreground);
+  font-family: var(--font);
+}
+.blame-uncommitted {
+  color: var(--subtle-foreground);
+  font-family: var(--font);
+}
+/* Sets the blame column off from the code. A border, since the ring and block rules below use box-shadow. */
+.blame-row .gutter {
+  border-right: 1px solid var(--border);
+}
+.blame-row .code {
+  padding-left: var(--space-3);
+}
+/* Every line of the cursor line's commit, wherever it sits in the file, as in VS Code. */
+.blame-row.same-commit {
+  background-image: linear-gradient(var(--primary-soft), var(--primary-soft));
+}
+.blame-row.same-commit .gutter {
+  background-color: var(--surface);
+  background-image: linear-gradient(var(--primary-soft), var(--primary-soft));
+}
+.blame-revision {
+  flex: none;
+  font-family: var(--mono);
+  color: var(--subtle-foreground);
+}
+.blame-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* Fixed height, so moving the cursor never shifts the code above it. */
+.blame-preview {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: var(--space-2);
+  height: var(--control-lg);
+  border-top: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* The whole row opens the commit message popover, the same as Space. */
+.blame-preview-button {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: var(--space-2);
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--space-3);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: inherit;
+  overflow: hidden;
+}
+.blame-preview-button[data-hovered] {
+  background: var(--hover);
+}
+.blame-preview-button[data-focus-visible] {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
+.blame-preview .avatar {
+  flex: none;
+}
+/* The gutter's date fills its column; here it only takes the room it needs, so the summary sits next to it. */
+.blame-preview .blame-date {
+  flex: none;
+}
+/* Says the row opens the full message, and which key does the same. */
+.blame-preview-hint {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--subtle-foreground);
+}
+/* A line named by skipping a bulk commit: the number is underlined in the warning colour, and the footer says why. */
+.blame-row.ignored .ln {
+  color: var(--warning);
+  text-decoration: underline dotted;
+}
+.blame-ignored {
+  flex: none;
+  color: var(--warning);
+}
+/* Replaces the commit summary for a few seconds, in the row's reserved height. */
+.blame-note {
+  overflow: hidden;
+  padding: 0 var(--space-3);
+  text-overflow: ellipsis;
+  color: var(--foreground);
+}
+/* Beside the Space hint inside the row, which has no padding of its own. */
+.blame-preview-step {
+  padding-right: var(--space-3);
+}
+/* An older version of the file: the header and the gutter's edge take the accent, so it is not mistaken for the current file. */
+.blame-past {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  gap: var(--space-1);
+  min-width: 0;
+  color: var(--primary);
+  font-family: var(--font);
+}
+.blame-past-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.blame-view.stepped .diff-title {
+  background: var(--primary-soft);
+}
+.blame-view.stepped .blame-row .gutter {
+  border-right-color: var(--primary);
+}
+/* An overlay anchored to the cursor line, so it never moves the code. */
+.commit-popover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: max-content;
+  max-width: min(560px, 90vw);
+  padding: var(--space-3);
+  overflow: auto;
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  color: var(--foreground);
+  font-size: var(--text-sm);
+}
+.commit-popover-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted-foreground);
+}
+.commit-popover-author {
+  color: var(--foreground);
+  font-weight: var(--weight-medium);
+}
+.commit-popover-head code {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+.commit-popover-subject {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+.commit-popover-body {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.commit-popover-note {
+  margin: 0;
+  color: var(--subtle-foreground);
+}
+.blame-author {
+  flex: none;
+  color: var(--foreground);
+  font-weight: var(--weight-medium);
+}
+.blame-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--foreground);
 }
 
 /* ---------- operation progress ---------- */
@@ -2519,6 +2829,19 @@ input[type='checkbox']:focus-visible,
   width: var(--control-sm);
   height: var(--control-sm);
 }
+/* Always takes its room, so showing it never moves the label; it is only drawn for the active or hovered row. */
+.tree-row.nav .tree-close {
+  flex-shrink: 0;
+  width: var(--control-sm);
+  height: var(--control-sm);
+  margin-left: auto;
+  opacity: 0;
+}
+.tree-row.nav[data-hovered] .tree-close,
+.tree-row.nav.nav-active .tree-close,
+.tree-row.nav .tree-close[data-focus-visible] {
+  opacity: 1;
+}
 .tree-row.current {
   color: var(--foreground);
   font-weight: var(--weight-semibold);
@@ -2624,6 +2947,7 @@ input[type='checkbox']:focus-visible,
 /* Hints sit under the label, like a Field's, instead of wrapping beside it. */
 .prefs-panel .check .prefs-hint {
   grid-column: 2;
+  max-width: 72ch;
 }
 .prefs-panel .prefs-note {
   margin-bottom: var(--space-2);

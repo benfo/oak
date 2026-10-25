@@ -27,15 +27,16 @@ test('skipped releases appear in order, without future or already seen notes', (
   const versions = (version: string, since?: string) => notesForRelease(version, since, fixture).map((n) => n.version)
   assert.deepEqual(versions('0.1.5', '0.1.3'), ['0.1.5', '0.1.4'])
   assert.deepEqual(versions('0.1.4', '0.1.1'), ['0.1.4', '0.1.3', '0.1.2'])
-  assert.deepEqual(versions('0.1.4'), ['0.1.4'])
-  assert.deepEqual(versions('0.1.3'), ['0.1.3'])
+  assert.deepEqual(versions('0.1.5'), ['0.1.5', '0.1.4', '0.1.3'])
+  assert.deepEqual(versions('0.1.4'), ['0.1.4', '0.1.3', '0.1.2'])
+  assert.deepEqual(versions('0.1.2'), ['0.1.2'])
   assert.equal(compareReleaseVersions('0.1.10', '0.1.9'), 1)
   assert.equal(compareReleaseVersions('0.1.4-beta', '0.1.3'), null)
 })
 
 test('GitHub release notes use the same curated highlights and fixes as the app', () => {
   const text = releaseNotes('0.1.5', fixture)
-  for (const entry of notesForRelease('0.1.5', null, fixture)) {
+  for (const entry of notesForRelease('0.1.5', null, fixture).slice(0, 1)) {
     for (const highlight of entry.highlights) {
       assert.ok(text.includes(highlight.title))
       assert.ok(text.includes(highlight.text))

@@ -14,7 +14,7 @@ const key = (k: string, extra: Partial<ShortcutKey> = {}): ShortcutKey => ({
 })
 
 test('a role never maps one key to two actions', () => {
-  for (const role of ['list', 'graph', 'diff'] as const) {
+  for (const role of ['list', 'graph', 'diff', 'blame'] as const) {
     const seen = new Map<string, string>()
     for (const entry of WIDGET_KEYMAP.filter((e) => e.roles.includes(role))) {
       for (const keys of entry.keys) {
@@ -37,6 +37,24 @@ test('diff widget keys use exact modifiers, so app commands keep their combos', 
 test('typed letters follow the layout; chords use the physical key', () => {
   assert.equal(widgetAction(key('n', { code: 'KeyL' }), 'diff'), 'nextHunk')
   assert.equal(widgetAction(key('Ctrl', { ctrlKey: true, code: 'KeyA' }), 'diff'), 'selectAll')
+})
+
+test('blame jumps between blocks with N and P, and not in the diff', () => {
+  assert.equal(widgetAction(key('n'), 'blame'), 'nextBlock')
+  assert.equal(widgetAction(key('p', { shiftKey: true }), 'blame'), 'prevBlock')
+  assert.equal(widgetAction(key('ArrowDown', { altKey: true }), 'blame'), 'nextBlock')
+  assert.equal(widgetAction(key('n', { ctrlKey: true, code: 'KeyN' }), 'blame'), undefined)
+  assert.equal(widgetAction(key('Enter'), 'blame'), 'activate')
+  assert.equal(widgetAction(key(' ', { code: 'Space' }), 'blame'), 'commitMessage')
+  assert.equal(widgetAction(key(' ', { code: 'Space' }), 'diff'), 'toggleSelect')
+  assert.equal(widgetAction(key('b'), 'blame'), 'blameBefore')
+  assert.equal(widgetAction(key('Backspace'), 'blame'), 'blameNewer')
+  assert.equal(widgetAction(key('b', { ctrlKey: true, code: 'KeyB' }), 'blame'), undefined)
+  assert.equal(widgetAction(key('b'), 'diff'), undefined)
+  assert.equal(widgetAction(key('/'), 'blame'), 'find')
+  assert.equal(widgetAction(key('f', { ctrlKey: true, code: 'KeyF' }), 'blame'), 'find')
+  assert.equal(widgetAction(key('/'), 'diff'), undefined)
+  assert.equal(widgetAction(key('n'), 'diff'), 'nextHunk')
 })
 
 test('graph separates select, toggle and cursor movement by modifier', () => {

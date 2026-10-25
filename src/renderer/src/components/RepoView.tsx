@@ -24,6 +24,7 @@ import { Sidebar } from '../sidebar/Sidebar'
 import { publishActiveRepo } from '../sidebar/activeRepo'
 import { HistoryView, type ComparisonRequest } from '../history/HistoryView'
 import { ChangesView } from '../changes/ChangesView'
+import { BlameView, type BlameRequest, type CommitTarget } from '../blame/BlameView'
 import { openPalette, openShortcuts } from './Palette'
 import { OutputDialog, showOutput } from './OpStatus'
 import { APP_COMMANDS } from './Preferences'
@@ -31,13 +32,14 @@ import { getSettings, updateSettings, useSettings } from '../settings'
 import { toggleChangesTree } from './TreeToggle'
 import { getCommitFilesMode, setCommitFilesMode, toggleCommitFilesMode, useCommitFilesMode } from '../history/commitFilesMode'
 import { toggleDiffLayout } from '../diff/diffLayout'
+import { toggleWhitespace } from '../diff/toggleWhitespace'
 import { changeDiffLayout } from '../diff/changeDiffLayout'
 import { showLessContext, showMoreContext, toggleFullContext } from '../diff/useDiffContext'
 import { toast } from '../ui'
 import { openRepoOrGlobalConfig } from '../lib/useGitConfig'
 import type { WorkspaceLayout } from './LayoutMenu'
 
-export type View = 'changes' | 'history'
+export type View = 'changes' | 'history' | 'blame'
 
 /** Focuses an element once the view switch has rendered. */
 const focusLater = (selector: string) => setTimeout(() => document.querySelector<HTMLElement>(selector)?.focus(), 0)
@@ -58,7 +60,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
   }
   const { sidebarHidden, autoFetchMinutes } = useSettings()
   useCommitFilesMode()
-  const [focus, setFocus] = useState<{ hash: string; n: number } | null>(null)
+  const [focus, setFocus] = useState<{ hash: string; n: number; target?: CommitTarget } | null>(null)
   const [selectedCommit, setSelectedCommit] = useState<Commit | null>(null)
   const [comparisonRequest, setComparisonRequest] = useState<ComparisonRequest | null>(null)
   const compareBranch: CompareBranch = (source, target) => {
@@ -66,9 +68,9 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     setComparisonRequest({ source, target, n: Date.now() })
   }
 
-  const focusCommit = (hash: string) => {
+  const focusCommit = (hash: string, target?: CommitTarget) => {
     setView('history')
-    setFocus({ hash, n: Date.now() })
+    setFocus({ hash, n: Date.now(), target })
   }
 
   const showFileHistory = (file: string) => {
@@ -77,11 +79,30 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     focusLater('.commit-list')
   }
 
+  // Blame stays open (and keeps its place) while other views are used; it closes only when asked.
+  const [blame, setBlame] = useState<BlameRequest | null>(null)
+  const blameFrom = useRef<'changes' | 'history'>('history')
+  const showBlame = (file: string, rev: string | null) => {
+    if (view !== 'blame') blameFrom.current = view
+    setBlame({ file, rev, n: Date.now() })
+    setView('blame')
+  }
+  const closeBlame = () => {
+    setBlame(null)
+    // Closed from the sidebar while another view is showing: that view stays.
+    if (view !== 'blame') return
+    setView(blameFrom.current)
+    if (blameFrom.current === 'changes') setTimeout(focusFiles, 0)
+    else focusLater('.commit-list')
+  }
+  const showBlameCommit = (hash: string | null, target: CommitTarget) => focusCommit(hash ?? WORKING_HASH, target)
+
   const sidebarVisible = !sidebarHidden && layout === 'standard'
   const focusMain = () => {
     if (layout === 'code' && focusPane('.view:not([hidden]) .diff')) return
     if (view === 'changes' && focusFiles()) return
     if (view === 'history' && focusPane('.commit-list')) return
+    if (view === 'blame' && focusPane('.blame-view .diff')) return
     focusPane('[aria-label="Sidebar"]')
   }
   const revealPanes = () => flushSync(() => setLayout('standard'))
@@ -100,6 +121,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     if (!visible && document.activeElement?.closest('.sidebar, #sidebar-divider')) {
       // Move focus before hiding its owner. Main-pane actions and selections stay intact.
       if (view === 'changes') focusFiles()
+      else if (view === 'blame') focusPane('.blame-view .diff')
       else if (!focusPane('.commit-list')) focusPane('[data-pane="toolbar"] button')
     }
     flushSync(() => {
@@ -123,6 +145,8 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     focusCommit,
     compareBranch,
     showFileHistory,
+    blame,
+    showBlame,
     sidebarHidden: !sidebarVisible,
     setSidebarVisible,
     focusSidebar,
@@ -213,10 +237,24 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
       <OutputDialog op={r.op} />
       <div className="app-body">
         <Split id="sidebar" label="Sidebar width" initial={260} min={180} max={520} collapsed={!sidebarVisible}>
-          <Sidebar r={r} view={view} setView={setView} onFocusCommit={focusCommit} onCompareBranch={compareBranch} />
+          <Sidebar
+            r={r}
+            view={view}
+            setView={setView}
+            onFocusCommit={focusCommit}
+            onCompareBranch={compareBranch}
+            blameFile={blame?.file ?? null}
+            onCloseBlame={closeBlame}
+          />
           <main className="main">
             <div className="view" hidden={view !== 'changes'}>
-              <ChangesView r={r} onBackToSidebar={() => focusSidebar()} focusCode={layout === 'code'} onFileHistory={showFileHistory} />
+              <ChangesView
+                r={r}
+                onBackToSidebar={() => focusSidebar()}
+                focusCode={layout === 'code'}
+                onFileHistory={showFileHistory}
+                onBlame={showBlame}
+              />
             </div>
             <div className="view" hidden={view !== 'history'}>
               <HistoryView
@@ -226,12 +264,27 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
                 onCompareBranch={compareBranch}
                 onSelectedChange={setSelectedCommit}
                 layout={layout}
+                onBlame={showBlame}
                 onOpenChanges={() => {
                   setView('changes')
                   setTimeout(focusFiles, 0)
                 }}
               />
             </div>
+            {blame && (
+              <div className="view" hidden={view !== 'blame'}>
+                <BlameView
+                  key={blame.n}
+                  repo={r.path}
+                  request={blame}
+                  status={r.status}
+                  contentRevision={r.contentRevision}
+                  active={view === 'blame'}
+                  onOpenCommit={showBlameCommit}
+                  onClose={closeBlame}
+                />
+              </div>
+            )}
           </main>
         </Split>
       </div>
@@ -248,6 +301,8 @@ interface CommandCtx {
   focusCommit: (hash: string) => void
   compareBranch: CompareBranch
   showFileHistory: (file: string) => void
+  blame: BlameRequest | null
+  showBlame: (file: string, rev: string | null) => void
   sidebarHidden: boolean
   setSidebarVisible: (visible: boolean) => void
   focusSidebar: (search?: boolean) => void
@@ -265,6 +320,8 @@ function buildCommands({
   focusCommit,
   compareBranch,
   showFileHistory,
+  blame,
+  showBlame,
   sidebarHidden,
   setSidebarVisible,
   focusSidebar,
@@ -374,6 +431,24 @@ function buildCommands({
         })
       }
     },
+    {
+      id: 'blame-file',
+      title: 'Blame file…',
+      category: 'History',
+      run: async () => {
+        let files: string[]
+        try {
+          files = await api.commitTree(r.path, 'HEAD')
+        } catch {
+          toast.info('No committed files yet.')
+          return
+        }
+        openPalette({
+          placeholder: 'Blame file…',
+          items: files.map((f) => ({ id: f, label: f, run: () => showBlame(f, null) }))
+        })
+      }
+    },
     ...(['all', 'head', 'lineage', 'target'] as const).map((kind): Command => ({
       id: `history-scope-${kind}`,
       category: 'History',
@@ -410,6 +485,18 @@ function buildCommands({
       run: () => {
         setView('history')
         focusLater(layout === 'code' ? '.details-diff .diff' : '.commit-list')
+      }
+    },
+    {
+      id: 'view-blame',
+      title: 'Go to Blame',
+      category: 'View',
+      keys: 'Ctrl+3',
+      shortcutDisabledReason: blame ? undefined : 'Open a file blame first, from a file menu or Blame file…',
+      run: () => {
+        if (!blame) return toast.info('No blame is open. Use a file menu or Blame file…')
+        setView('blame')
+        focusLater('.blame-view .diff')
       }
     },
     {
@@ -494,6 +581,7 @@ function buildCommands({
       run: () => focusSidebar(true)
     },
     { id: 'toggle-workspace-focus', title: 'Expand code area / restore previous layout', category: 'View', keys: 'F11', run: toggleFocus },
+    { id: 'toggle-whitespace', title: 'Show / hide spaces and tabs in code', category: 'View', run: toggleWhitespace },
     {
       id: 'restore-workspace-layout',
       title: 'Restore previous layout',

@@ -24,11 +24,13 @@ export function shouldShowReleaseNotice(
   return previous === null ? existingUser : compareReleaseVersions(version, previous) === 1
 }
 
-/** A manual visit shows the latest installed notes; an update also includes skipped releases. */
+export const RECENT_RELEASES = 3
+
+/** A manual visit shows the latest few releases; an update shows every release since the previous version. */
 export function notesForRelease(version: string, since?: string | null, source: readonly Note[] = notes) {
   const eligible = source.filter((note) => {
     const order = compareReleaseVersions(note.version, version)
     return order !== null && order <= 0 && (!since || compareReleaseVersions(note.version, since) === 1)
   })
-  return since ? eligible : eligible.slice(0, 1)
+  return since ? eligible : eligible.slice(0, RECENT_RELEASES)
 }

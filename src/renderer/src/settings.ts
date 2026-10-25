@@ -19,6 +19,8 @@ export interface Settings {
   tabWidth: number
   /** Colour code in diffs by language (Shiki, in a worker). */
   syntaxHighlighting: boolean
+  /** Draw spaces and tabs in diffs and blame (a dot per space, an arrow per tab). */
+  showWhitespace: boolean
   /** Shared layout for working-tree and history diffs. */
   diffLayout: DiffLayout
   /** Changed files (History and working tree) as a folder tree instead of a flat list. */
@@ -60,6 +62,7 @@ export const DEFAULTS: Settings = {
   codeFont: '',
   tabWidth: 4,
   syntaxHighlighting: true,
+  showWhitespace: false,
   diffLayout: 'auto',
   changesTree: false,
   emphasizeCurrentBranch: true,
