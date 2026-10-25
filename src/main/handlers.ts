@@ -11,7 +11,7 @@ import { checkForUpdates, installUpdate, updateStatus } from './updater'
 import { checkoutBranchNames } from '../shared/recentBranches'
 import { setsLineEndings } from '../shared/gitTools'
 import { splitFileLogChunk } from '../shared/fileLog'
-import { blameArgs, parseBlame, type BlameResult } from '../shared/blame'
+import { blameArgs, mapLineToOlder, parseBlame, type BlameResult } from '../shared/blame'
 import { configFilePath, findExecutables, openConfigFile } from './gitConfigFiles'
 import type {
   Branch,
@@ -501,6 +501,32 @@ epo`), if any. */
     const ignoreRevsFile = !configured && existsSync(path.join(repo, ignoreFile)) ? ignoreFile : undefined
     const result = parseBlame(await git(repo, blameArgs(file, rev, { ignoreWhitespace, ignoreRevsFile })))
     return result.binary ? { ...result, lines: [], commits: {} } : result
+  },
+
+  /**
+   * The version of a file just before a line's commit (HEAD, for a line that is not committed yet) and where the line sits in it.
+   * `file` and `line` are the line's path and number in the commit's own version. Null when there is no earlier version to show.
+   */
+  async blameBefore(
+    repo: string,
+    hash: string | null,
+    file: string,
+    line: number
+  ): Promise<{ rev: string; file: string; line: number; added: boolean } | null> {
+    const rev = (await git(repo, ['rev-parse', '--verify', '-q', hash ? `${hash}^` : 'HEAD'], { okCodes: [1] })).trim()
+    if (!rev) return null
+    const range = hash ? [rev, hash] : [rev]
+    // The path may be a rename of another one, which only a diff that spans the whole commit can tell.
+    const changes = splitZ(await git(repo, ['diff', '-M', '--name-status', '-z', ...range]))
+    let before = file
+    for (let i = 0; i < changes.length;) {
+      const moved = /^[RC]/.test(changes[i])
+      if (moved && changes[i + 2] === file) before = changes[i + 1]
+      i += moved ? 3 : 2
+    }
+    if (!(await git(repo, ['ls-tree', '--name-only', rev, '--', before])).trim()) return null
+    const diff = await git(repo, ['diff', '--no-ext-diff', '-M', '-U0', ...range, '--', ...new Set([before, file])])
+    return { rev, file: before, ...mapLineToOlder(diff, line) }
   },
 
   /** A file as it was at a commit, shaped as a new-file diff so the diff view can render and highlight it. */
