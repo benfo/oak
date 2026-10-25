@@ -10,6 +10,7 @@ import {
   blameBlockStarts,
   blockStartOf,
   findLines,
+  findRanges,
   gotoLine,
   mapLineToOlder,
   parseBlame
@@ -157,6 +158,17 @@ test('find lists the lines containing the text in any case, and a ":N" query nam
   assert.deepEqual(findLines(lines, 'bar'), [1, 2])
   assert.deepEqual(findLines(lines, 'nothing'), [])
   assert.deepEqual(findLines(lines, ''), [])
+  assert.deepEqual(findRanges('Foo foo.FOO', 'foo'), [
+    [0, 3],
+    [4, 7],
+    [8, 11]
+  ])
+  assert.deepEqual(findRanges('aaaa', 'aa'), [
+    [0, 2],
+    [2, 4]
+  ])
+  assert.deepEqual(findRanges('abc', 'x'), [])
+  assert.deepEqual(findRanges('abc', ''), [])
   assert.equal(gotoLine(':3', 4), 2)
   assert.equal(gotoLine(': 3 ', 4), 2)
   assert.equal(gotoLine(':0', 4), 0)
