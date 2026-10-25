@@ -18,28 +18,38 @@ export interface BlameLine {
   origLine: number
   /** The file's path in that commit; it differs from the blamed file after a rename or a moved line. */
   file: string
+  /** Blame passed over a commit on the ignore-revs list to name this one, so the line's real last change is hidden. */
+  ignored: boolean
 }
 
 export interface BlameResult {
   lines: BlameLine[]
   commits: Record<string, BlameCommit>
   binary: boolean
+  /** The repository has an ignore-revs list, whether or not this blame applied it. */
+  hasIgnoreRevs?: boolean
 }
 
 export interface BlameOptions {
   ignoreWhitespace: boolean
   /** A revisions file to skip (for example `.git-blame-ignore-revs`), when Git isn't already configured to use one. */
   ignoreRevsFile?: string
+  /** Turns the ignore-revs list off, including one Git is configured to use. */
+  skipIgnoreRevs?: boolean
 }
 
 /** `-M` follows lines moved within the file; `-C` is left out as slow and surprising. A null `rev` blames the working tree. */
 export function blameArgs(file: string, rev: string | null, opts: BlameOptions): string[] {
   return [
+    // Without this the output does not say which lines were attributed by skipping an ignored commit.
+    '-c',
+    'blame.markIgnoredLines=true',
     'blame',
     '--porcelain',
     '-M',
     ...(opts.ignoreWhitespace ? ['-w'] : []),
-    ...(opts.ignoreRevsFile ? ['--ignore-revs-file', opts.ignoreRevsFile] : []),
+    // An empty name clears the list, including one that comes from Git's configuration.
+    ...(opts.skipIgnoreRevs ? ['--ignore-revs-file', ''] : opts.ignoreRevsFile ? ['--ignore-revs-file', opts.ignoreRevsFile] : []),
     ...(rev ? [rev] : []),
     '--',
     file
@@ -56,19 +66,21 @@ export function parseBlame(output: string): BlameResult {
   const files: Record<string, string> = {}
   let current: BlameCommit | null = null
   let origLine = 0
+  let ignored = false
   let binary = false
   for (const raw of output.split('\n')) {
     if (raw.startsWith('\t')) {
       if (!current) continue
       const text = raw.slice(1).replace(/\r$/, '')
       if (text.includes('\0')) binary = true
-      lines.push({ hash: current.hash, text, origLine, file: files[current.hash] ?? '' })
+      lines.push({ hash: current.hash, text, origLine, file: files[current.hash] ?? '', ignored })
       continue
     }
     const header = HEADER.exec(raw)
     if (header) {
       const hash = header[1]
       origLine = Number(header[2])
+      ignored = false
       current = commits[hash] ??= { hash, author: '', email: '', time: 0, summary: '', uncommitted: ZERO.test(hash), boundary: false }
       continue
     }
@@ -82,6 +94,7 @@ export function parseBlame(output: string): BlameResult {
     else if (key === 'summary') current.summary = value
     else if (key === 'filename') files[current.hash] = value
     else if (key === 'boundary') current.boundary = true
+    else if (key === 'ignored') ignored = true
   }
   return { lines, commits, binary }
 }

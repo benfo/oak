@@ -75,6 +75,29 @@ test('an ignore-revs file skips a bulk commit', async () => {
   assert.equal(blame.lines[3].hash, second)
 })
 
+test('lines named by skipping an ignored commit are flagged, and the list can be turned off', async () => {
+  const { dir, write, second } = await repoWithHistory()
+  write('one\n  TWO\nthree\nfour\n')
+  await git(dir, ['add', '-A'])
+  await git(dir, ['-c', 'user.name=Cy', '-c', 'user.email=cy@example.com', 'commit', '-m', 'indent'])
+  const bulk = (await git(dir, ['rev-parse', 'HEAD'])).trim()
+  writeFileSync(path.join(dir, '.ignore-revs'), `${bulk}\n`)
+  const skipped = parseBlame(await git(dir, blameArgs('a.txt', null, { ignoreWhitespace: false, ignoreRevsFile: '.ignore-revs' })))
+  assert.deepEqual(
+    skipped.lines.map((l) => l.ignored),
+    [false, true, false, false]
+  )
+  assert.equal(skipped.lines[1].hash, second)
+
+  // Turning it off also overrides a list that Git is configured to use.
+  await git(dir, ['config', 'blame.ignoreRevsFile', '.ignore-revs'])
+  const off = parseBlame(await git(dir, blameArgs('a.txt', null, { ignoreWhitespace: false, skipIgnoreRevs: true })))
+  assert.equal(off.commits[off.lines[1].hash].summary, 'indent')
+  assert.ok(off.lines.every((l) => !l.ignored))
+  const on = parseBlame(await git(dir, blameArgs('a.txt', null, { ignoreWhitespace: false })))
+  assert.equal(on.lines[1].hash, second)
+})
+
 test('binary content is reported instead of parsed as lines of text', () => {
   const hash = 'a'.repeat(40)
   const blame = parseBlame(`${hash} 1 1 1\nauthor Ann\nauthor-mail <ann@example.com>\nauthor-time 1\nsummary s\nfilename b.bin\n\tab\0cd\n`)
