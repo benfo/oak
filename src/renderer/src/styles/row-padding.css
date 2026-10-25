@@ -1,0 +1,14 @@
+/* ---------- row padding ----------
+ * Every list row keeps the same 10px inner padding on both sides, so icons and text never touch
+ * the edge of the highlight. Nesting indentation is added on top (sidebar tree: --indent).
+ */
+.tree-row-content {
+  padding-left: calc(var(--row-pad) + var(--indent, 0px));
+  padding-right: var(--row-pad);
+}
+.file-row,
+.file-grid .file-row {
+  padding-left: calc(var(--row-pad) + var(--indent, 0px));
+  padding-right: var(--row-pad);
+}
+

@@ -1,0 +1,203 @@
+/* ---------- command palette & shortcuts ---------- */
+
+kbd {
+  display: inline-block;
+  padding: 1px var(--space-1-5);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  background: var(--surface-sunken);
+  color: var(--muted-foreground);
+  font: var(--text-xs)/16px var(--font);
+  white-space: nowrap;
+}
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: var(--scrim-soft);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 12vh;
+  animation: fade 0.1s ease-out;
+}
+.palette {
+  width: 640px;
+  max-width: calc(100vw - 32px);
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  animation: pop 0.12s ease-out;
+}
+.palette-field {
+  display: flex;
+  flex-direction: column;
+}
+.palette-dialog {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  outline: none;
+}
+.palette-input {
+  flex: none;
+  height: var(--control-lg);
+  margin: var(--space-2) var(--space-2) 0;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+  outline: none;
+  font-size: var(--text-lg);
+}
+.palette-list {
+  min-height: 0;
+  outline: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(60vh - 60px);
+}
+/* Virtualized rows fill their slot; the rounded highlight is on the inner row, inset from the edges. */
+.palette-item {
+  height: 100%;
+  padding: var(--space-0-5) var(--space-2) 0;
+  cursor: pointer;
+  outline: none;
+}
+.palette-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  height: 100%;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+}
+.palette-item[data-hovered] .palette-row {
+  background: var(--hover);
+}
+.palette-item[data-focused] .palette-row {
+  background: var(--selection-strong);
+}
+.palette-label {
+  flex: none;
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.palette-label .dim-part {
+  color: var(--muted-foreground);
+}
+.palette-label .hit {
+  color: var(--primary);
+  font-weight: var(--weight-bold);
+}
+.palette-detail {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--subtle-foreground);
+  font-size: var(--text-sm);
+}
+.palette-recent {
+  font-size: var(--text-xs);
+  color: var(--subtle-foreground);
+}
+.palette-item kbd {
+  margin-left: auto;
+}
+.palette-empty {
+  padding: var(--space-3);
+  color: var(--subtle-foreground);
+  text-align: center;
+}
+
+.shortcuts-browser {
+  height: min(var(--shortcuts-height), 70vh);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.shortcuts-filters,
+.shortcuts-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: none;
+}
+.shortcuts-search {
+  min-width: 0;
+  max-width: none;
+}
+.shortcuts-search[data-empty] .shortcut-clear {
+  visibility: hidden;
+}
+.shortcuts-search input {
+  min-width: 0;
+}
+.shortcuts-category {
+  max-width: 40%;
+}
+.shortcuts-count {
+  flex: none;
+}
+.shortcuts-browser > .pane-frame {
+  flex: 1;
+  min-height: 0;
+}
+.shortcuts-results {
+  height: 100%;
+  overflow: auto;
+  padding: var(--space-2) var(--row-pad);
+  user-select: text;
+  scrollbar-gutter: stable;
+}
+.shortcuts-footer {
+  justify-content: space-between;
+}
+.shortcut-group {
+  margin-bottom: var(--space-4);
+}
+.shortcut-group h3 {
+  margin: 0 0 var(--space-1-5);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--subtle-foreground);
+}
+.shortcut-group dl,
+.shortcut-row dd {
+  margin: 0;
+}
+.shortcut-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  font-size: var(--text-sm);
+}
+.shortcut-row dd {
+  text-align: right;
+}
+.shortcut-row kbd {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.changes-files {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+

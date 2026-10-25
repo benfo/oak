@@ -1,0 +1,41 @@
+/* ---------- Changes file lists (React Aria GridList) ----------
+ * React Aria renders state as data attributes; these map them onto the shared theme and focus rules.
+ */
+.file-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0;
+  outline: none;
+}
+.file-grid .file-row {
+  outline: none;
+}
+.file-grid .file-row[data-selected] {
+  background: var(--selection);
+}
+.file-grid:focus-within .file-row[data-selected] {
+  background: var(--selection-strong);
+}
+/* Keyboard focus: a ring around the list, and a cursor outline on the focused row. */
+.file-grid .file-row[data-focus-visible] {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+.file-grid .file-row[data-focus-visible]:not([data-selected]) {
+  background: var(--hover);
+}
+.file-grid .file-row[data-selected] .row-actions {
+  display: flex;
+}
+.file-grid .list-empty {
+  padding: var(--space-1-5) var(--space-3);
+}
+/* The virtualizer positions rows across the full list width, so spacing lives inside the row. */
+.file-grid .file-row {
+  border-radius: 0;
+}
+.diff-kind.count {
+  text-transform: none;
+}
+

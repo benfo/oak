@@ -1,7 +1,7 @@
 import type { Theme } from './theme'
 
 /*
- * Built-in themes. Light and Dark are the palettes in styles.css; the others are well-known
+ * Built-in themes. Light and Dark are the palettes in tokens.css; the others are well-known
  * editor palettes mapped onto our tokens (same keys a custom theme file uses, without `--`).
  * Layout roles: bg = window chrome and sidebar, bg-elev = main panels, bg-sunken = inputs and
  * headers; accent-fg is text on accent-coloured buttons.

@@ -1,0 +1,127 @@
+/* ---------- buttons & inputs ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  height: var(--control-md);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) {
+  background: var(--hover);
+}
+.btn.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+.btn.primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  background: var(--primary);
+}
+.btn.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--danger-foreground);
+}
+.btn.danger:hover:not(:disabled) {
+  background: var(--danger);
+  filter: brightness(1.08);
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: var(--control-sm);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.icon-btn:hover:not(:disabled):not([data-disabled]) {
+  background: var(--hover);
+  color: var(--foreground);
+}
+.icon-btn:disabled,
+.icon-btn[data-disabled] {
+  background: transparent;
+  color: var(--subtle-foreground);
+  opacity: var(--disabled-opacity);
+  cursor: default;
+}
+
+.link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--primary);
+  cursor: pointer;
+}
+.link:hover {
+  text-decoration: underline;
+}
+
+.input,
+.field input,
+.field textarea {
+  width: 100%;
+  height: var(--control-md);
+  padding: 0 var(--space-2-5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-sunken);
+  outline: none;
+}
+.field textarea {
+  height: 90px;
+  padding: var(--space-2) var(--space-2-5);
+  resize: vertical;
+}
+.input.small {
+  height: var(--control-md);
+  width: 200px;
+}
+
+.pill {
+  display: inline-block;
+  padding: 0 var(--space-1-5);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-xs);
+  line-height: 17px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: var(--weight-semibold);
+}
+.pill.warn {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--primary-soft);
+  border-top-color: var(--primary);
+  animation: spin 0.7s linear infinite;
+  flex: none;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.busy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+}
+
