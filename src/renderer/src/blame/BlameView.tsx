@@ -331,7 +331,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (!canHandleNavigation(e)) return
     const widget = widgetAction(e.nativeEvent, 'blame', shortcutPlatform())
-    // Left and Right only ever scroll the code; leaving the view is Escape (close) or Enter (open the commit).
+    // Left and Right only ever scroll the code; the view is left with Enter (open the commit), the Close button, or the view shortcuts.
     const wide = horizontalScrollDirection(e.nativeEvent, vimNavigation)
     const plain = e.shiftKey || e.ctrlKey || e.metaKey || e.altKey ? 0 : e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0
     if (wide || plain) {
@@ -341,10 +341,12 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
         scroller.scrollBy({ left: wide ? wide * Math.max(1, Math.round(scroller.clientWidth / 4)) : plain * H_STEP, behavior: 'instant' })
       return
     }
+    // Escape only dismisses what is on top of the code. Leaving the view is never Escape, so a second press cannot lose the place.
     if (widget === 'dismiss') {
-      e.preventDefault()
-      if (messageOpen) setMessageOpen(false)
-      else onClose()
+      if (messageOpen) {
+        e.preventDefault()
+        setMessageOpen(false)
+      }
       return
     }
     if (!lines.length) return
@@ -461,7 +463,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
               Spaces and tabs
             </Button>
           </Tip>
-          <Tip label="Close blame" keys="Escape">
+          <Tip label="Close blame">
             <Button className="icon-btn" aria-label="Close blame" onPress={onClose}>
               <Icon name="x" size={14} />
             </Button>

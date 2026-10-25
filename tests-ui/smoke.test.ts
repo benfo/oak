@@ -155,7 +155,7 @@ test.describe('large diff', () => {
 })
 
 test.describe('blame', () => {
-  test('opens from the file menu, keeps its place across views, and closes with Escape', async ({ open, small }) => {
+  test('opens from the file menu, keeps its place across views, and closes only with the Close button', async ({ open, small }) => {
     const page = await open(small)
     await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
     await page.getByRole('menuitem', { name: 'Show blame' }).click()
@@ -178,7 +178,10 @@ test.describe('blame', () => {
     await expect(page.locator('.blame-view')).toBeVisible()
     await expect(page.locator('.blame-row.cursor')).toBeVisible()
 
+    // Escape never leaves Blame; only the Close button does.
     await page.keyboard.press('Escape')
+    await expect(page.locator('.blame-view')).toBeVisible()
+    await page.getByRole('button', { name: 'Close blame' }).click()
     await expect(page.locator('.blame-view')).toHaveCount(0)
   })
 
@@ -258,7 +261,7 @@ test.describe('blame', () => {
     expect(Math.min(...counts)).toBeGreaterThan(0)
   })
 
-  test('find jumps between matches, ":N" goes to a line, and Escape closes the bar before the view', async ({ open, small }) => {
+  test('find jumps between matches, ":N" goes to a line, and Escape closes the bar but never leaves the view', async ({ open, small }) => {
     const page = await open(small)
     await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
     await page.getByRole('menuitem', { name: 'Show blame' }).click()
@@ -310,7 +313,8 @@ test.describe('blame', () => {
     await expect(bar).toHaveCount(0)
     await expect(page.locator('.blame-view')).toBeVisible()
     await page.keyboard.press('Escape')
-    await expect(page.locator('.blame-view')).toHaveCount(0)
+    await expect(page.locator('.blame-view')).toBeVisible()
+    await expect(page.locator('.blame-view .diff')).toBeFocused()
   })
 
   test('the header buttons do what N, P, / and B do, and hand focus back to the code', async ({ open, small }) => {
@@ -340,7 +344,7 @@ test.describe('blame', () => {
     await expect(cursor).toContainText('changed5')
   })
 
-  test('B blames the line as it was before its commit, Backspace returns, and Escape closes without stepping', async ({ open, small }) => {
+  test('B blames the line as it was before its commit, Backspace returns, and Escape neither steps nor leaves', async ({ open, small }) => {
     git(small, 'add', '-A')
     git(small, 'commit', '-q', '-m', 'Edit lines')
     // The file needs a change of its own to be listed in Changes, where the blame is opened from.
@@ -380,7 +384,9 @@ test.describe('blame', () => {
     await page.keyboard.press('b')
     await expect(page.locator('.blame-past')).toBeVisible()
     await page.keyboard.press('Escape')
-    await expect(page.locator('.blame-view')).toHaveCount(0)
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.blame-view')).toBeVisible()
+    await expect(page.locator('.blame-past')).toBeVisible()
   })
 
   test('lines named by skipping an ignored commit are marked, and the list can be switched off', async ({ open, small }) => {
@@ -432,7 +438,7 @@ test.describe('blame', () => {
     await expect(page.locator('.blame-past')).toHaveCount(0)
   })
 
-  test('Space shows the full commit message in a popover that Escape closes before the view', async ({ open, small }) => {
+  test('Space shows the full commit message in a popover that Escape closes without leaving the view', async ({ open, small }) => {
     const page = await open(small)
     await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
     await page.getByRole('menuitem', { name: 'Show blame' }).click()
@@ -458,8 +464,6 @@ test.describe('blame', () => {
 
     await page.keyboard.press('Control+3')
     await expect(page.locator('.blame-row.cursor')).toBeVisible()
-    await page.keyboard.press('Escape')
-    await expect(page.locator('.blame-view')).toHaveCount(0)
   })
 })
 
