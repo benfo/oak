@@ -2400,6 +2400,31 @@ input[type='checkbox']:focus-visible,
   gap: var(--space-1);
   color: var(--subtle-foreground);
 }
+/* Beside the Space hint inside the row, which has no padding of its own. */
+.blame-preview-step {
+  padding-right: var(--space-3);
+}
+/* An older version of the file: the header and the gutter's edge take the accent, so it is not mistaken for the current file. */
+.blame-past {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  gap: var(--space-1);
+  min-width: 0;
+  color: var(--primary);
+  font-family: var(--font);
+}
+.blame-past-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.blame-view.stepped .diff-title {
+  background: var(--primary-soft);
+}
+.blame-view.stepped .blame-row .gutter {
+  border-right-color: var(--primary);
+}
 /* An overlay anchored to the cursor line, so it never moves the code. */
 .commit-popover {
   display: flex;

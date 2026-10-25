@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures'
-import { git } from './repos'
+import { git, numberedLines, write } from './repos'
 
 test.describe('changes and diff', () => {
   test('opens a repo and lists its changes', async ({ open, small }) => {
@@ -205,6 +205,57 @@ test.describe('blame', () => {
     await page.keyboard.press('ArrowLeft')
     await expect(page.locator('.blame-view')).toBeVisible()
     await expect(page.locator('.blame-row.cursor')).toBeVisible()
+  })
+
+  test('B blames the line as it was before its commit, Backspace returns, and Escape closes without stepping', async ({ open, small }) => {
+    git(small, 'add', '-A')
+    git(small, 'commit', '-q', '-m', 'Edit lines')
+    // The file needs a change of its own to be listed in Changes, where the blame is opened from.
+    write(
+      small,
+      'src/app.ts',
+      numberedLines(120, (n) => (n === 5 || n === 60 || n === 110 ? `const changed${n} = 'edited'` : n === 120 ? 'const last = 1' : null))
+    )
+    const page = await open(small)
+    await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Show blame' }).click()
+    await expect(page.locator('.blame-row').first()).toBeVisible()
+    const cursor = page.locator('.blame-row.cursor')
+
+    // The first line is from the root commit, so there is nothing earlier to show.
+    await page.keyboard.press('Home')
+    await page.keyboard.press('b')
+    await expect(page.locator('.blame-past')).toHaveCount(0)
+
+    for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowDown')
+    await expect(cursor).toContainText("const changed5 = 'edited'")
+    await page.keyboard.press('b')
+    await expect(page.locator('.blame-past')).toContainText('Edit lines')
+    await expect(cursor).toContainText('const value5 = 5')
+    await expect(page.locator('.blame-view')).toHaveClass(/stepped/)
+
+    await page.keyboard.press('Backspace')
+    await expect(page.locator('.blame-past')).toHaveCount(0)
+    await expect(cursor).toContainText("const changed5 = 'edited'")
+
+    await page.keyboard.press('b')
+    await expect(page.locator('.blame-past')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.blame-view')).toHaveCount(0)
+  })
+
+  test('B on a line that is not committed yet blames HEAD', async ({ open, small }) => {
+    const page = await open(small)
+    await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Show blame' }).click()
+    await expect(page.locator('.blame-row').first()).toBeVisible()
+    for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowDown')
+    await expect(page.locator('.blame-row.cursor')).toContainText("const changed5 = 'edited'")
+    await page.keyboard.press('b')
+    await expect(page.locator('.blame-past')).toContainText('At HEAD')
+    await expect(page.locator('.blame-row.cursor')).toContainText('const value5 = 5')
+    await page.getByRole('button', { name: 'Back to newer' }).click()
+    await expect(page.locator('.blame-past')).toHaveCount(0)
   })
 
   test('Space shows the full commit message in a popover that Escape closes before the view', async ({ open, small }) => {

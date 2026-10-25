@@ -16,6 +16,8 @@ import { shortcutPlatform } from '../lib/shortcuts'
 import { usePane } from '../lib/usePane'
 import { useVirtualRows } from '../lib/useVirtualRows'
 import { useSettings } from '../settings'
+import { toast } from '../ui'
+import { BlameVersion, type BlameStep } from './BlameVersion'
 import { CommitMessage } from './CommitMessage'
 import { CommitPopover } from './CommitPopover'
 import { adjacentBlockStart, blameBlockStarts, type BlameResult } from '../../../shared/blame'
@@ -56,7 +58,12 @@ type Loaded = { base: string; result: BlameResult } | { base: string; error: str
 
 export function BlameView({ repo, request, status, contentRevision, active, onOpenCommit, onClose }: Props) {
   const { vimNavigation, syntaxHighlighting, showWhitespace: whitespace } = useSettings()
-  const { file, rev } = request
+  // Stepping back replaces the version shown; the steps are dropped with the view, so closing starts afresh.
+  const [steps, setSteps] = useState<BlameStep[]>([])
+  const stepping = useRef(false)
+  const past = steps[steps.length - 1]
+  const file = past ? past.file : request.file
+  const rev = past ? past.rev : request.rev
   const [ignoreWhitespace, setIgnoreWhitespace] = useState(false)
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [slow, setSlow] = useState(false)
@@ -163,6 +170,38 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     else onOpenCommit(l.hash, { file: l.file || file, line: l.origLine })
   }
 
+  // The version just before the line's commit, with the cursor on the line's place in it. A line that is not committed steps to HEAD.
+  const stepBack = async (index = at) => {
+    const l = lines[index]
+    const c = l && result?.commits[l.hash]
+    if (!l || !c || c.boundary || stepping.current) return
+    stepping.current = true
+    try {
+      const older = await api.blameBefore(
+        repo,
+        c.uncommitted ? null : l.hash,
+        c.uncommitted ? file : l.file || file,
+        c.uncommitted ? index + 1 : l.origLine
+      )
+      if (!older) return toast.info('There is no earlier version of this file.')
+      if (older.added) toast.info('This commit added the line. Showing the nearest line above it.')
+      setSteps([
+        ...steps,
+        { file: older.file, rev: older.rev, before: c.uncommitted ? null : { hash: c.hash, summary: c.summary }, returnTo: index }
+      ])
+      setCursor(older.line - 1)
+    } catch (e) {
+      toast.error(errorMessage(e))
+    } finally {
+      stepping.current = false
+    }
+  }
+  const stepNewer = () => {
+    if (!past) return
+    setSteps(steps.slice(0, -1))
+    setCursor(past.returnTo)
+  }
+
   // From the keyboard the menu opens under the cursor line; with the mouse, at the pointer and on the line clicked.
   const lineMenu = async (viaKeyboard: boolean, index = at) => {
     const l = lines[index]
@@ -173,6 +212,16 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
       [
         { id: 'message', label: 'Show full commit message', enabled: !c.uncommitted },
         { id: 'open', label: c.uncommitted ? 'Show working changes' : 'Show commit in History' },
+        {
+          id: 'before',
+          label: c.uncommitted
+            ? 'Blame at HEAD'
+            : c.boundary
+              ? 'Blame before this commit (no earlier version)'
+              : 'Blame before this commit',
+          enabled: !c.boundary
+        },
+        ...(past ? [{ id: 'newer', label: 'Back to newer blame' }] : []),
         { id: 'copyhash', label: 'Copy commit hash', enabled: !c.uncommitted },
         { id: 'copyline', label: 'Copy line' }
       ],
@@ -180,6 +229,8 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     )
     if (id === 'message') setMessageOpen(true)
     else if (id === 'open') open(index)
+    else if (id === 'before') void stepBack(index)
+    else if (id === 'newer') stepNewer()
     else if (id === 'copyhash') copyText(l.hash, 'commit hash')
     else if (id === 'copyline') copyText(l.text, 'line')
   }
@@ -216,6 +267,12 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     } else if (widget === 'commitMessage') {
       e.preventDefault()
       setMessageOpen(!messageOpen)
+    } else if (widget === 'blameBefore' || widget === 'blameNewer') {
+      // A held key would skip through several versions; each step is a fresh press.
+      e.preventDefault()
+      if (e.repeat) return
+      if (widget === 'blameBefore') void stepBack()
+      else stepNewer()
     } else if (widget === 'activate') {
       e.preventDefault()
       open()
@@ -230,7 +287,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     error ?? (result?.binary ? 'Blame is not available for binary files.' : result && !lines.length ? 'This file is empty.' : null)
 
   return (
-    <div className="diff-wrap blame-view" {...pane.ownerProps}>
+    <div className={`diff-wrap blame-view${past ? ' stepped' : ''}`} {...pane.ownerProps}>
       <div className="diff-title">
         <span className="diff-filename" title={file}>
           {file}
@@ -238,6 +295,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
         <span className="blame-revision" title={rev ?? undefined}>
           {revision}
         </span>
+        <BlameVersion steps={steps} onNewer={stepNewer} />
         <Toolbar className="diff-controls" aria-label="Blame tools" ref={toolsRef}>
           <Tip label="Ignore whitespace changes">
             <Button className="diff-full-button" aria-pressed={ignoreWhitespace} onPress={() => setIgnoreWhitespace(!ignoreWhitespace)}>
@@ -346,34 +404,42 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
       </PaneFrame>
       <div className="blame-preview" aria-live="polite">
         {commit && (
-          <Tip label="Show the full commit message" keys="Space" placement="top">
-            <Button
-              className="blame-preview-button"
-              aria-expanded={messageOpen}
-              onPress={() => {
-                setMessageOpen(!messageOpen)
-                ref.current?.focus({ preventScroll: true })
-              }}
-            >
-              {commit.uncommitted ? (
-                <span className="blame-uncommitted">Not committed yet. Enter shows the working changes.</span>
-              ) : (
-                <>
-                  <Avatar name={commit.author} email={commit.email} size={16} />
-                  <span className="blame-author">{commit.author}</span>
-                  <span className="blame-date" title={fullDate(commit.time * 1000)}>
-                    {relativeTime(commit.time * 1000)}
-                  </span>
-                  <span className="blame-hash">{commit.hash.slice(0, 8)}</span>
-                  <span className="blame-summary">{commit.summary}</span>
-                  <span className="blame-preview-hint" aria-hidden="true">
-                    <Icon name="info" size={14} />
-                    <kbd>Space</kbd>
-                  </span>
-                </>
-              )}
-            </Button>
-          </Tip>
+          <>
+            <Tip label="Show the full commit message" keys="Space" placement="top">
+              <Button
+                className="blame-preview-button"
+                aria-expanded={messageOpen}
+                onPress={() => {
+                  setMessageOpen(!messageOpen)
+                  ref.current?.focus({ preventScroll: true })
+                }}
+              >
+                {commit.uncommitted ? (
+                  <span className="blame-uncommitted">Not committed yet. Enter shows the working changes.</span>
+                ) : (
+                  <>
+                    <Avatar name={commit.author} email={commit.email} size={16} />
+                    <span className="blame-author">{commit.author}</span>
+                    <span className="blame-date" title={fullDate(commit.time * 1000)}>
+                      {relativeTime(commit.time * 1000)}
+                    </span>
+                    <span className="blame-hash">{commit.hash.slice(0, 8)}</span>
+                    <span className="blame-summary">{commit.summary}</span>
+                    <span className="blame-preview-hint" aria-hidden="true">
+                      <Icon name="info" size={14} />
+                      <kbd>Space</kbd>
+                    </span>
+                  </>
+                )}
+              </Button>
+            </Tip>
+            {!commit.boundary && (
+              <span className="blame-preview-hint blame-preview-step" aria-hidden="true">
+                <kbd>B</kbd>
+                {commit.uncommitted ? 'at HEAD' : 'earlier'}
+              </span>
+            )}
+          </>
         )}
       </div>
       {/* One popover that moves with the cursor (it is not remounted per line, which flashed); hidden while the cursor's row is scrolled out of the window. */}
