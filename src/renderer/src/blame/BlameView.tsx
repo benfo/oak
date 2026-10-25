@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
-import { api, errorMessage, showMenu } from '../api'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { errorMessage, showMenu } from '../api'
 import { PaneFrame } from '../components/Pane'
 import { useFileTokens } from '../diff/highlight'
 import { copyText } from '../lib/copy'
@@ -12,15 +12,17 @@ import { useSettings } from '../settings'
 import { BlameVersion, type BlameStep } from './BlameVersion'
 import { CommitMessage } from './CommitMessage'
 import { CommitPopover } from './CommitPopover'
-import { adjacentBlockStart, blameBlockStarts, findHits, gotoLine, type BlameResult } from '../../../shared/blame'
+import { adjacentBlockStart, blameBlockStarts, findHits, gotoLine } from '../../../shared/blame'
 import { BlameFind } from './BlameFind'
 import { BlameFooter } from './BlameFooter'
 import { BlameRow } from './BlameRow'
 import { BlameToolbar } from './BlameToolbar'
+import { stepBefore } from './stepBefore'
+import { useBlameData } from './useBlameData'
+import { useCommitPopover } from './useCommitPopover'
 
 /** Keep in sync with --diff-line-height. */
 const ROW_H = 20
-const SLOW_MS = 300
 const NOTE_MS = 3500
 const NO_HITS: [number, number][] = []
 /** Pixels a plain Left or Right scrolls the code; Shift scrolls a quarter of the pane. */
@@ -52,9 +54,6 @@ interface Props {
   onClose: () => void
 }
 
-/** `version` is the file and revision alone, so a setting change can keep showing the same file while it reloads. */
-type Loaded = { base: string; version: string; result: BlameResult } | { base: string; version: string; error: string }
-
 export function BlameView({ repo, request, status, contentRevision, active, onOpenCommit, onClose }: Props) {
   const { vimNavigation, syntaxHighlighting, showWhitespace: whitespace } = useSettings()
   // Stepping back replaces the version shown; the steps are dropped with the view, so closing starts afresh.
@@ -71,67 +70,40 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   const file = past ? past.file : request.file
   const rev = past ? past.rev : request.rev
   const [ignoreWhitespace, setIgnoreWhitespace] = useState(false)
-  // On by default, as it always was; the toggle only appears once a blame has found a list, and stays while the next one loads.
+  // On by default, as it always was.
   const [useIgnoreRevs, setUseIgnoreRevs] = useState(true)
-  const [hasIgnoreRevs, setHasIgnoreRevs] = useState(false)
-  const [loaded, setLoaded] = useState<Loaded | null>(null)
-  const [slow, setSlow] = useState(false)
   const [cursor, setCursor] = useState(0)
-  const [messageOpen, setMessageOpen] = useState(false)
   /** The find bar's text; null while it is closed. A leading ":" makes it a go-to-line box. */
   const [find, setFind] = useState<string | null>(null)
   const findRef = useRef<HTMLInputElement>(null)
-  /** Full messages by commit hash, read on demand; a commit never changes, so entries stay (null: could not be read). */
-  const messages = useRef(new Map<string, string | null>())
-  const [, messagesChanged] = useReducer((n: number) => n + 1, 0)
-  /** The cursor row's code, which the popover hangs from. Held in state because Aria reads the element while rendering, so a ref would reposition one move late. */
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const toolsRef = useRef<HTMLDivElement>(null)
   const pane = usePane('blame', { kind: 'diff' })
-  const version = JSON.stringify([repo, file, rev])
-  const base = JSON.stringify([version, ignoreWhitespace, useIgnoreRevs])
 
   useEffect(() => toolbarHomeEnd(toolsRef.current), [])
   useEffect(() => ref.current?.focus({ preventScroll: true }), [])
 
-  useEffect(() => {
-    let cancelled = false
-    api
-      .blame(repo, file, rev, ignoreWhitespace, useIgnoreRevs)
-      .then((result) => {
-        if (cancelled) return
-        if (result.hasIgnoreRevs) setHasIgnoreRevs(true)
-        setLoaded({ base, version, result })
-      })
-      .catch((e) => !cancelled && setLoaded({ base, version, error: errorMessage(e) }))
-    return () => {
-      cancelled = true
-    }
-  }, [base, rev === null ? status : null, rev === null ? contentRevision : 0])
-
-  // The previous lines stay up while a working-tree reload or a setting change reloads the same file; only a different file or revision shows the loading state.
-  const current = loaded?.version === version ? loaded : null
-  const result = current && 'result' in current ? current.result : null
-  const error = current && 'error' in current ? current.error : null
+  const { result, error, loading, slow, hasIgnoreRevs } = useBlameData({
+    repo,
+    file,
+    rev,
+    ignoreWhitespace,
+    useIgnoreRevs,
+    status,
+    contentRevision
+  })
   const lines = result?.lines ?? []
-  const loading = !current
 
   // The whole file is tokenized as one block, so a line that starts mid-construct is still coloured right.
   const text = useMemo(() => (result?.lines.length ? result.lines.map((l) => l.text).join('\n') : null), [result])
   const tokenLines = useFileTokens(file, text, syntaxHighlighting)
   const tokens = tokenLines?.length === lines.length ? tokenLines : null
 
-  useEffect(() => {
-    if (!loading) return setSlow(false)
-    const timer = setTimeout(() => setSlow(true), SLOW_MS)
-    return () => clearTimeout(timer)
-  }, [loading])
-
   const starts = blameBlockStarts(lines)
   const at = Math.max(0, Math.min(lines.length - 1, cursor))
   const line = lines[at]
   const commit = line && result ? result.commits[line.hash] : undefined
+  const { open: messageOpen, setOpen: setMessageOpen, anchor, message } = useCommitPopover({ repo, commit, active, scrollerRef: ref })
 
   // The tint only says something while the commit is a minority of the file; a new file is one commit, and tinting all of it just lowers contrast.
   const tintCommit = useMemo(() => {
@@ -249,37 +221,6 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     return () => cancelAnimationFrame(frame)
   }, [active])
 
-  // Runs before paint, so the popover is placed on the new row in the same frame the cursor moves to it.
-  useLayoutEffect(() => {
-    setAnchor(messageOpen ? (ref.current?.querySelector<HTMLElement>('.blame-row.cursor .code') ?? null) : null)
-  })
-
-  const wantedMessage = messageOpen && commit && !commit.uncommitted ? commit.hash : null
-  useEffect(() => {
-    if (!wantedMessage || messages.current.has(wantedMessage)) return
-    api
-      .commitMessage(repo, wantedMessage)
-      .then(
-        (text) => messages.current.set(wantedMessage, text),
-        () => messages.current.set(wantedMessage, null)
-      )
-      .then(messagesChanged)
-  }, [wantedMessage])
-
-  // The popover is portalled, so it must not outlive the view being shown or the focus staying in it.
-  useEffect(() => {
-    if (!active) setMessageOpen(false)
-  }, [active])
-  useEffect(() => {
-    if (!messageOpen) return
-    const onPointerDown = (e: PointerEvent) => {
-      const target = e.target as Element
-      if (!ref.current?.contains(target) && !target.closest('.commit-popover, .blame-preview')) setMessageOpen(false)
-    }
-    document.addEventListener('pointerdown', onPointerDown, true)
-    return () => document.removeEventListener('pointerdown', onPointerDown, true)
-  }, [messageOpen])
-
   // The commit's diff shows the line where that commit put it, which is not where the line sits now.
   const open = (index = at) => {
     const l = lines[index]
@@ -293,23 +234,14 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     const l = lines[index]
     const c = l && result?.commits[l.hash]
     if (!l || !c || stepping.current) return
-    if (c.boundary) return setNote('No earlier version: this is the first version of the file.')
     stepping.current = true
     try {
-      const older = await api.blameBefore(
-        repo,
-        c.uncommitted ? null : l.hash,
-        c.uncommitted ? file : l.file || file,
-        c.uncommitted ? index + 1 : l.origLine
-      )
-      if (!older) return setNote('No earlier version: this commit created the file.')
-      setNote(older.added ? 'This commit added the line. Showing the nearest line above it.' : null)
+      const older = await stepBefore(repo, file, l, c, index)
+      setNote(older.note)
+      if (!older.step) return
       rememberOffset()
-      setSteps([
-        ...steps,
-        { file: older.file, rev: older.rev, before: c.uncommitted ? null : { hash: c.hash, summary: c.summary }, returnTo: index }
-      ])
-      setCursor(older.line - 1)
+      setSteps([...steps, older.step])
+      setCursor(older.line!)
     } catch (e) {
       setNote(errorMessage(e))
     } finally {
@@ -518,7 +450,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
       {/* One popover that moves with the cursor (it is not remounted per line, which flashed); hidden while the cursor's row is scrolled out of the window. */}
       {messageOpen && commit && anchor && (
         <CommitPopover anchor={anchor} scroller={ref.current}>
-          <CommitMessage commit={commit} message={messages.current.get(commit.hash)} />
+          <CommitMessage commit={commit} message={message(commit.hash)} />
         </CommitPopover>
       )}
     </div>
