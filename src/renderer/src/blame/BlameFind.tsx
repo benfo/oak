@@ -36,6 +36,34 @@ export function BlameFind({ query, status, inputRef, onChange, onEnter, onClose 
       <span className="blame-find-status" aria-live="polite">
         {status}
       </span>
+      {!query.startsWith(':') && (
+        <>
+          <Tip label="Previous match" keys="Shift+Enter">
+            <Button
+              className="icon-btn"
+              aria-label="Previous match"
+              onPress={() => {
+                onEnter(true)
+                inputRef.current?.focus()
+              }}
+            >
+              <Icon name="arrowUp" size={14} />
+            </Button>
+          </Tip>
+          <Tip label="Next match" keys="Enter">
+            <Button
+              className="icon-btn"
+              aria-label="Next match"
+              onPress={() => {
+                onEnter(false)
+                inputRef.current?.focus()
+              }}
+            >
+              <Icon name="arrowDown" size={14} />
+            </Button>
+          </Tip>
+        </>
+      )}
       <Tip label="Close find" keys="Escape">
         <Button className="icon-btn" aria-label="Close find" onPress={onClose}>
           <Icon name="x" size={14} />
