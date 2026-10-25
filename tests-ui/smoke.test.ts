@@ -296,6 +296,23 @@ test.describe('blame', () => {
     await page.keyboard.press('Enter')
     await expect(cursor).toContainText('changed5')
 
+    // Every occurrence counts: each edited line has "ed" three times (chang-ed, 'ed'ited, edit-ed).
+    await page.keyboard.press('Control+a')
+    await page.keyboard.type('ed')
+    await expect(bar).toContainText('1 of 9')
+    await expect(page.locator('.blame-row.cursor .find-hit')).toHaveCount(3)
+    await expect(page.locator('.blame-row.cursor .find-hit.current')).toHaveCount(1)
+    await page.keyboard.press('Enter')
+    await expect(bar).toContainText('2 of 9')
+    await expect(cursor).toContainText('changed5')
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('Enter')
+    await expect(bar).toContainText('4 of 9')
+    await expect(cursor).toContainText('changed60')
+    await page.keyboard.press('Shift+Enter')
+    await expect(bar).toContainText('3 of 9')
+    await expect(cursor).toContainText('changed5')
+
     await page.keyboard.press('Control+a')
     await page.keyboard.type(':100')
     await expect(bar).toContainText('Go to line 100')

@@ -2325,7 +2325,8 @@ input[type='checkbox']:focus-visible,
   background: var(--warning-soft);
   box-shadow: 0 0 0 1px var(--warning);
 }
-.blame-row.cursor .find-hit {
+/* Only the occurrence Enter moved to; the rest of the line's occurrences keep the lighter mark. */
+.find-hit.current {
   background: var(--warning);
   color: var(--background);
 }

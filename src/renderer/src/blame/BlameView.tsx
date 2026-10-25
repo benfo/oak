@@ -18,7 +18,7 @@ import { useSettings } from '../settings'
 import { BlameVersion, type BlameStep } from './BlameVersion'
 import { CommitMessage } from './CommitMessage'
 import { CommitPopover } from './CommitPopover'
-import { adjacentBlockStart, blameBlockStarts, findLines, findRanges, gotoLine, type BlameResult } from '../../../shared/blame'
+import { adjacentBlockStart, blameBlockStarts, findHits, gotoLine, type BlameResult } from '../../../shared/blame'
 import { BlameCode } from './BlameCode'
 import { BlameFind } from './BlameFind'
 
@@ -145,21 +145,33 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   }, [result, line?.hash])
 
   const goto = find?.startsWith(':') ?? false
-  const matches = useMemo(() => (find && !goto ? findLines(lines, find) : []), [result, find, goto])
-  const matchSet = useMemo(() => new Set(matches), [matches])
+  // Every occurrence is a match, so a line with the text twice counts twice and Enter steps through both.
+  const hits = useMemo(() => (find && !goto ? findHits(lines, find) : []), [result, find, goto])
+  const hitRows = useMemo(() => {
+    const byLine = new Map<number, { first: number; ranges: [number, number][] }>()
+    hits.forEach((h, i) => {
+      const row = byLine.get(h.line) ?? { first: i, ranges: [] }
+      row.ranges.push([h.start, h.end])
+      byLine.set(h.line, row)
+    })
+    return byLine
+  }, [hits])
+  /** The occurrence Enter last moved to; it only counts while the cursor is still on its line. */
+  const [hitIndex, setHitIndex] = useState(0)
+  const firstOnLine = hitRows.get(at)?.first ?? -1
+  const hitNow = hits[hitIndex]?.line === at ? hitIndex : firstOnLine
   const target = find !== null && goto ? gotoLine(find, lines.length) : null
-  const here = matches.indexOf(at)
   const findStatus = goto
     ? target === null
       ? 'Type a line number'
       : `Go to line ${target + 1}`
     : !find
       ? ''
-      : !matches.length
+      : !hits.length
         ? 'No matches'
-        : here >= 0
-          ? `${here + 1} of ${matches.length}`
-          : `${matches.length} ${matches.length === 1 ? 'match' : 'matches'}`
+        : hitNow >= 0
+          ? `${hitNow + 1} of ${hits.length}`
+          : `${hits.length} ${hits.length === 1 ? 'match' : 'matches'}`
   const closeFind = () => {
     setFind(null)
     ref.current?.focus({ preventScroll: true })
@@ -167,9 +179,17 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   // Typing moves the cursor to the first match from where it is, or to the line a ":120" names, so the view follows as you type.
   const changeFind = (query: string) => {
     setFind(query)
-    const found = findLines(lines, query)
-    const first = query.startsWith(':') ? gotoLine(query, lines.length) : (found.find((i) => i >= at) ?? found[0])
-    if (first !== undefined && first !== null) setCursor(first)
+    if (query.startsWith(':')) {
+      const to = gotoLine(query, lines.length)
+      if (to !== null) setCursor(to)
+      return
+    }
+    const found = findHits(lines, query)
+    const first = found.findIndex((h) => h.line >= at)
+    const to = first >= 0 ? first : found.length ? 0 : -1
+    if (to < 0) return
+    setHitIndex(to)
+    setCursor(found[to].line)
   }
   // The same actions as N, P and "/", for the header buttons; each button hands focus back so the keys keep working afterwards.
   const nextStart = adjacentBlockStart(starts, at, 1)
@@ -190,9 +210,19 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
       setCursor(target)
       return closeFind()
     }
-    if (!matches.length) return
-    const next = backwards ? (matches.findLast((i) => i < at) ?? matches[matches.length - 1]) : (matches.find((i) => i > at) ?? matches[0])
-    setCursor(next)
+    const n = hits.length
+    if (!n) return
+    let to: number
+    if (hitNow >= 0) to = (hitNow + (backwards ? -1 : 1) + n) % n
+    else if (backwards) {
+      const before = hits.findLastIndex((h) => h.line < at)
+      to = before >= 0 ? before : n - 1
+    } else {
+      const after = hits.findIndex((h) => h.line > at)
+      to = after >= 0 ? after : 0
+    }
+    setHitIndex(to)
+    setCursor(hits[to].line)
   }
 
   const rows = useVirtualRows({ count: lines.length, getScrollElement: () => ref.current, estimateSize: () => ROW_H, overscan: 20 })
@@ -511,7 +541,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                 return (
                   <div
                     key={index}
-                    className={`dl blame-row${first ? ' block-start' : ''}${index === at ? ' cursor' : ''}${l.hash === tintCommit ? ' same-commit' : ''}${l.ignored ? ' ignored' : ''}${matchSet.has(index) ? ' found' : ''}`}
+                    className={`dl blame-row${first ? ' block-start' : ''}${index === at ? ' cursor' : ''}${l.hash === tintCommit ? ' same-commit' : ''}${l.ignored ? ' ignored' : ''}${hitRows.has(index) ? ' found' : ''}`}
                     onClick={() => setCursor(index)}
                     onContextMenu={(e) => {
                       e.preventDefault()
@@ -553,7 +583,8 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                         text={l.text}
                         tokens={tokens ? tokens[index] : null}
                         whitespace={whitespace}
-                        hits={find && !goto && matchSet.has(index) ? findRanges(l.text, find) : NO_HITS}
+                        hits={hitRows.get(index)?.ranges ?? NO_HITS}
+                        currentHit={hitNow >= 0 && hits[hitNow].line === index ? hitNow - hitRows.get(index)!.first : -1}
                       />
                     </span>
                   </div>
