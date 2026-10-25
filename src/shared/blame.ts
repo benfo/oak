@@ -124,6 +124,24 @@ export function mapLineToOlder(diff: string, line: number): { line: number; adde
   return { line: Math.max(1, line + shift), added: false }
 }
 
+/** Indexes of the lines whose text contains the query, ignoring case. An empty query finds nothing. */
+export function findLines(lines: readonly Pick<BlameLine, 'text'>[], query: string): number[] {
+  const needle = query.toLowerCase()
+  const found: number[] = []
+  if (!needle) return found
+  lines.forEach((line, i) => {
+    if (line.text.toLowerCase().includes(needle)) found.push(i)
+  })
+  return found
+}
+
+/** The 0-based line a ":120" query names, kept within the file; null when the query is not a line number. */
+export function gotoLine(query: string, count: number): number | null {
+  const match = /^:\s*(\d+)\s*$/.exec(query)
+  if (!match || count < 1) return null
+  return Math.min(count, Math.max(1, Number(match[1]))) - 1
+}
+
 /** Indexes of the lines that start a run from the same commit. */
 export function blameBlockStarts(lines: readonly Pick<BlameLine, 'hash'>[]): number[] {
   const starts: number[] = []
