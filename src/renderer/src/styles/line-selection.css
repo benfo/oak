@@ -1,0 +1,58 @@
+/* ---------- line selection in diffs ---------- */
+
+/* The gutter stays put while long lines scroll sideways, so line numbers and the click-to-select
+   area are always reachable. It's opaque (code passes under it), so it repaints the row tint. */
+.dl .gutter {
+  display: flex;
+  flex: none;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+}
+.dl.add .gutter {
+  /* the row tint over the opaque panel colour */
+  background-color: var(--surface);
+  background-image: linear-gradient(var(--diff-add), var(--diff-add));
+}
+.dl.del .gutter {
+  background-color: var(--surface);
+  background-image: linear-gradient(var(--diff-del), var(--diff-del));
+}
+.diff.selectable .dl.add .gutter,
+.diff.selectable .dl.del .gutter {
+  cursor: pointer;
+}
+.diff.selectable .dl.add .gutter:hover,
+.diff.selectable .dl.del .gutter:hover {
+  filter: brightness(1.25);
+}
+/* Picked lines: accent gutter plus an accent tint over the add/del colour. */
+.dl.picked {
+  background-image: linear-gradient(var(--selection-strong), var(--selection-strong));
+}
+.dl.picked .gutter .ln,
+.dl.picked .gutter .sign {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+/* The line cursor (only while the diff has keyboard focus) is an overlay above the sticky gutter,
+   which would otherwise cover its left edge; the gutter also carries a bar for when lines scroll sideways. */
+.dl {
+  position: relative;
+}
+/* `.finding` keeps the cursor drawn while the find box has focus, since that is where the current match is. */
+.diff:focus .dl.cursor::after,
+.diff.finding .dl.cursor::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--ring);
+  pointer-events: none;
+  z-index: 2;
+}
+.diff:focus .dl.cursor .gutter,
+.diff.finding .dl.cursor .gutter {
+  box-shadow: inset 2px 0 0 var(--ring);
+}
+

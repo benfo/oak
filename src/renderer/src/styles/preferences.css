@@ -1,0 +1,211 @@
+/* ---------- preferences ---------- */
+
+/* Categories on the left, one page per category. Fixed height, so switching never resizes the dialog. */
+.prefs {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  height: min(72vh, 640px);
+  margin: 0 calc(var(--space-5) * -1);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.prefs-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  padding: var(--space-2-5) var(--space-2);
+  border-right: 1px solid var(--border);
+}
+.prefs-tab {
+  padding: var(--space-1-5) var(--row-pad);
+  border-radius: var(--radius-md);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.prefs-tab[data-hovered] {
+  background: var(--hover);
+  color: var(--foreground);
+}
+.prefs-tab[data-selected] {
+  background: var(--selection-strong);
+  color: var(--foreground);
+  font-weight: var(--weight-semibold);
+}
+.prefs-tab[data-focus-visible] {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
+.prefs-panel {
+  overflow-y: auto;
+  /* Controls keep their column whether or not a page scrolls. */
+  scrollbar-gutter: stable;
+  padding: var(--space-3) var(--space-5) var(--space-4);
+}
+.prefs-panel h4 {
+  margin: var(--space-4) 0 var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--subtle-foreground);
+}
+.prefs-panel h3 + h4 {
+  margin-top: 0;
+}
+.prefs-panel .check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0 var(--space-2);
+  padding: var(--space-1-5) 0;
+}
+/* Hints sit under the label, like a Field's, instead of wrapping beside it. */
+.prefs-panel .check .prefs-hint {
+  grid-column: 2;
+  max-width: 72ch;
+}
+.prefs-panel .prefs-note {
+  margin-bottom: var(--space-2);
+}
+.prefs-warn {
+  margin: var(--space-1-5) 0 0;
+  font-size: var(--text-sm);
+  color: var(--warning);
+}
+.prefs-panel h3 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+}
+.prefs-panel[data-focus-visible] {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
+/* Theme pickers don't dim the app: the preview is the point. */
+.modal-backdrop.see-through,
+.palette-backdrop.see-through {
+  background: transparent;
+}
+.prefs-field {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-1-5) 0;
+}
+.prefs-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+.prefs-hint,
+.prefs-note {
+  font-size: var(--text-sm);
+  color: var(--subtle-foreground);
+}
+.prefs-note {
+  margin: var(--space-2-5) 0 0;
+  max-width: 72ch;
+}
+.select {
+  height: var(--control-md);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-sunken);
+  color: var(--foreground);
+  font: inherit;
+}
+.prefs-panel .input {
+  width: 100%;
+}
+
+/* Theme cards: each preview is a miniature of the app rendered in that theme. */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+.theme-card {
+  padding: var(--space-1-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.theme-card[data-hovered] {
+  border-color: var(--border-strong);
+}
+.theme-card[data-selected] {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.theme-name {
+  display: block;
+  padding: var(--space-1-5) var(--space-0-5) 0;
+  font-size: var(--text-sm);
+}
+.theme-preview {
+  display: flex;
+  height: 78px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.tp {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  background: var(--background);
+}
+.tp-side {
+  width: 28%;
+  padding: var(--space-2) var(--space-1);
+}
+.tp-side i {
+  display: block;
+  height: 4px;
+  margin-bottom: var(--space-1);
+  border-radius: var(--radius-xs);
+  background: var(--subtle-foreground);
+  opacity: 0.6;
+}
+.tp-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+}
+.tp-bar {
+  height: 11px;
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border);
+}
+.tp-line {
+  height: 6px;
+  margin: var(--space-1) var(--space-1-5) 0;
+  border-radius: var(--radius-xs);
+}
+.tp-line.ctx {
+  width: 70%;
+  background: var(--subtle-foreground);
+  opacity: 0.5;
+}
+.tp-line.short {
+  width: 40%;
+}
+.tp-line.add {
+  background: var(--diff-add-gutter);
+  border-left: 3px solid var(--diff-add-foreground);
+}
+.tp-line.del {
+  background: var(--diff-del-gutter);
+  border-left: 3px solid var(--diff-del-foreground);
+}
+.tp-btn {
+  width: 34px;
+  height: 10px;
+  margin: auto var(--space-1-5) var(--space-1-5) auto;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+}
+

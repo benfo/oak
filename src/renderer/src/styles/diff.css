@@ -1,0 +1,302 @@
+/* ---------- diff ---------- */
+
+.diff-controls {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-0-5);
+  margin-left: auto;
+  font-family: var(--font);
+}
+.diff-navigation-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+}
+.diff-counter {
+  min-width: var(--diff-counter-width);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+}
+.diff-layout-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  gap: var(--space-1);
+  width: var(--diff-layout-width);
+  height: var(--control-sm);
+  margin-left: var(--space-1);
+  padding: 0 var(--space-1-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+}
+.diff-layout-button[data-hovered],
+.diff-layout-button[aria-expanded='true'] {
+  background: var(--hover);
+}
+.diff-context-group {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: var(--space-0-5);
+  margin-left: var(--space-1);
+}
+.diff-context-value {
+  min-width: var(--diff-context-width);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+.diff-full-button {
+  height: var(--control-sm);
+  padding: 0 var(--space-1-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+.diff-full-button[data-hovered] {
+  background: var(--hover);
+}
+.diff-full-button[aria-pressed='true'] {
+  background: var(--primary-soft);
+}
+.tooltip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 320px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--foreground) 80%, var(--background));
+  color: var(--background);
+  font-size: var(--text-sm);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+.tooltip kbd {
+  padding: 0 var(--space-1);
+  border: 1px solid color-mix(in srgb, var(--background) 40%, transparent);
+  background: transparent;
+  color: inherit;
+  opacity: 0.8;
+}
+.diff.side-mode {
+  overflow: hidden;
+  min-height: 0;
+}
+.side-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  height: 100%;
+}
+.side-column {
+  overflow: auto;
+  overflow-x: scroll;
+  min-width: 0;
+  scrollbar-gutter: stable;
+}
+.side-column + .side-column {
+  border-left: 1px solid var(--border-strong);
+}
+.side-columns[data-select-side='old'] .side-column[data-side='new'],
+.side-columns[data-select-side='new'] .side-column[data-side='old'] {
+  user-select: none;
+}
+.side-inner {
+  width: max-content;
+  min-width: 100%;
+}
+.side-mode .hunk-header {
+  width: var(--side-w, 100%);
+}
+.side-mode .dl {
+  height: var(--diff-line-height);
+}
+.side-blank {
+  background: var(--surface-sunken);
+  user-select: none;
+}
+
+.diff-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.diff-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  flex: none;
+  min-height: var(--control-lg);
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: var(--text-sm);
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.diff-filename {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.diff-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--subtle-foreground);
+  padding: var(--space-5);
+  font-size: var(--text-sm);
+}
+.diff {
+  flex: 1;
+  overflow: auto;
+  background: var(--surface);
+  font: var(--text-sm)/var(--diff-line-height) var(--mono);
+  user-select: text;
+}
+.diff-inner {
+  width: max-content;
+  min-width: 100%;
+}
+.hunk-slot.gap {
+  padding-top: var(--space-1);
+}
+.hunk-header {
+  position: sticky;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--control-lg);
+  padding: 0 var(--space-3);
+  background: var(--surface-sunken);
+  color: var(--subtle-foreground);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  /* Visible width of the diff (set by DiffView), not the longest line */
+  width: var(--view-w, 100%);
+  min-width: 0;
+  user-select: none;
+}
+.hunk-range {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hunk-actions {
+  display: flex;
+  gap: var(--space-1-5);
+  font-family: var(--font);
+}
+.hunk-actions .btn {
+  height: var(--control-sm);
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+}
+.dl {
+  display: flex;
+  white-space: pre;
+  tab-size: var(--tab-size, 4);
+}
+.dl .ln {
+  flex: none;
+  width: 48px;
+  padding-right: var(--space-2);
+  text-align: right;
+  color: var(--subtle-foreground);
+  user-select: none;
+}
+.dl .sign {
+  flex: none;
+  width: 18px;
+  text-align: center;
+  user-select: none;
+}
+.dl .code {
+  padding-right: var(--space-6);
+}
+/* Show spaces and tabs: a dot per space (one tile per character, as code is monospace) and an arrow at each tab. */
+.ws-space {
+  background-image: radial-gradient(circle, var(--subtle-foreground) 0.07em, transparent 0.1em);
+  background-repeat: repeat-x;
+  background-size: 1ch 100%;
+}
+.ws-tab {
+  position: relative;
+}
+.ws-tab::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--subtle-foreground);
+}
+.dl.add {
+  background: var(--diff-add);
+}
+.dl.add .ln {
+  background: var(--diff-add-gutter);
+}
+.dl.add .sign {
+  color: var(--diff-add-foreground);
+}
+.dl.del {
+  background: var(--diff-del);
+}
+.dl.del .ln {
+  background: var(--diff-del-gutter);
+}
+.dl.del .sign {
+  color: var(--diff-del-foreground);
+}
+.dl.add .word-change {
+  background: var(--diff-add-word);
+}
+.dl.del .word-change {
+  background: var(--diff-del-word);
+}
+.dl.note {
+  color: var(--subtle-foreground);
+  font-style: italic;
+}
+/* Whole-file content is code, not a change: no add tint, hunk header, old line number or sign. */
+.diff-wrap.plain .hunk-header,
+.diff-wrap.plain .dl .gutter .ln:first-child,
+.diff-wrap.plain .dl .sign {
+  display: none;
+}
+.diff-wrap.plain .dl.add,
+.diff-wrap.plain .dl.add .ln,
+.diff-wrap.plain .dl.add .word-change {
+  background: none;
+}
+.plain-content {
+  background: var(--surface);
+}
+.diff-wrap.plain .dl.add .gutter {
+  background-image: none;
+}
+.diff-truncated {
+  padding: var(--space-3);
+  font-family: var(--font);
+  color: var(--muted-foreground);
+}
+

@@ -70,7 +70,7 @@ export const themesDir = () => path.join(app.getPath('userData'), 'themes')
 /**
  * Custom themes are JSON files in the themes folder:
  * `{ "name": "Midnight", "base": "dark", "colors": { "primary": "#e5534b", "background": "#0d1117" } }`
- * `colors` overrides any CSS variable from styles.css (name without `--`). Bad files are skipped.
+ * `colors` overrides any CSS variable from tokens.css (name without `--`). Bad files are skipped.
  */
 export async function listThemes(): Promise<ThemeFile[]> {
   const files = await readdir(themesDir()).catch(() => [] as string[])

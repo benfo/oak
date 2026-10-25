@@ -1,0 +1,75 @@
+/* ---------- toolbar ---------- */
+
+.toolbar {
+  height: var(--titlebar-h);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: 0 calc(var(--caption-w) + var(--space-2)) 0 var(--space-2);
+  -webkit-app-region: drag;
+  flex: none;
+}
+:root[data-platform='darwin'] .toolbar {
+  padding: 0 var(--space-2) 0 var(--space-20);
+}
+.toolbar button,
+.toolbar .tb-branch {
+  -webkit-app-region: no-drag;
+}
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  height: min(var(--control-lg), calc(var(--titlebar-h) - 4px));
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tb-btn:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--foreground);
+}
+.tb-btn[data-active] {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.tb-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.tb-repo {
+  color: var(--foreground);
+  font-weight: var(--weight-semibold);
+}
+.tb-repo-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tb-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  height: min(var(--control-md), calc(var(--titlebar-h) - 6px));
+  padding: 0 var(--space-2-5);
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  font-size: var(--text-sm);
+}
+.tb-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  padding-left: var(--space-1-5);
+  margin-left: var(--space-1-5);
+  border-left: 1px solid var(--border);
+}
+.tb-group:first-of-type {
+  border-left: 0;
+}
+

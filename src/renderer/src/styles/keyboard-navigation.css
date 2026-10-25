@@ -1,0 +1,70 @@
+/* ---------- keyboard navigation ---------- */
+
+.tree-row.nav.nav-active {
+  color: var(--foreground);
+  font-weight: var(--weight-semibold);
+}
+.tree-row.nav.nav-active .icon {
+  color: var(--primary);
+}
+.tree-row.current {
+  color: var(--foreground);
+  font-weight: var(--weight-semibold);
+}
+.tree-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-filter {
+  margin-top: var(--space-1);
+}
+.sidebar-filter .icon-btn {
+  width: 18px;
+  height: var(--control-xs);
+}
+.sidebar {
+  padding-top: 0;
+}
+.diff.diff-empty {
+  font-family: var(--font);
+  font-size: var(--text-sm);
+}
+.clean-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+.clean-state strong {
+  color: var(--muted-foreground);
+  font-weight: var(--weight-medium);
+}
+.clean-mark {
+  width: var(--space-10);
+  height: var(--space-10);
+  margin-bottom: var(--space-2);
+}
+.diff .hunk-header.active-hunk {
+  background: var(--primary-soft);
+  color: var(--muted-foreground);
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+.dl.active-hunk:is(.add, .del):not(.picked) {
+  background-image: linear-gradient(var(--diff-current-overlay), var(--diff-current-overlay));
+}
+.dl.active-hunk:is(.add, .del) .gutter {
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+/* Whole-file content has no current change to mark. */
+.diff-wrap.plain .dl.active-hunk:not(.picked) {
+  background-image: none;
+}
+.diff-wrap.plain .dl.active-hunk .gutter {
+  box-shadow: none;
+}
+.recent li.active {
+  background: var(--selection);
+}
+

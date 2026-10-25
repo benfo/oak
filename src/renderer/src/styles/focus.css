@@ -1,0 +1,106 @@
+/* ---------- focus indicators ----------
+ * One rule set for the whole app, so keyboard focus always looks the same:
+ *  - controls and text fields: a 2px accent ring just outside the element
+ *  - panes (lists, tree, diff): a 2px accent ring just inside the pane, plus an
+ *    accent bar on the pane's active row
+ * Rings use `outline` (not box-shadow) so they survive Windows high-contrast mode.
+ * Mouse clicks on panes and buttons don't show the ring (:focus-visible); text fields always do.
+ */
+:focus {
+  outline: none;
+}
+
+/* Controls */
+button:focus-visible,
+.link:focus-visible,
+input[type='checkbox']:focus-visible,
+.select:focus-visible,
+.theme-card[data-focus-visible] {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.split-handle:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+  z-index: 30;
+}
+
+/* Text fields (standalone, or wrapped with an icon) */
+.input:focus,
+.field input:focus,
+.field textarea:focus,
+.palette-input:focus,
+.commit-box textarea:focus,
+.sidebar-filter:focus-within,
+.search:focus-within {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+  border-color: var(--primary);
+}
+
+/* Panes: each scrolling pane sits in a .pane-frame, which draws the ring as an overlay above
+   everything inside it and doesn't scroll. (An outline on the pane itself gets covered by its
+   positioned content: virtualized rows, sticky headers, the diff's line-number gutter.) */
+.pane-frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Lists sit a little inside their frame, so a highlighted row never touches the ring. */
+.pane-frame > [data-pane]:not(.diff) {
+  margin: var(--space-1);
+}
+.pane-frame > [data-pane] {
+  flex: 1;
+  min-height: 0;
+}
+/* data-focus-ring (lib/focusRing.ts): only when focus arrived from the keyboard, not after a click. */
+.pane-frame:has(> [data-pane][data-focus-ring])::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--ring);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  z-index: 30;
+  forced-color-adjust: none;
+}
+/* The active row inside a focused pane: a tint and an accent bar, never a ring hugging the text. */
+[data-pane]:focus .active,
+[data-pane]:focus .selected,
+[data-pane]:focus-within .commit-row.selected {
+  background: var(--selection-strong);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+@media (forced-colors: active) {
+  /* Tints and accent bars (box-shadow) disappear in high-contrast mode, so rows get a real ring there. */
+  .file-grid .file-row[data-focus-visible],
+  .tree .tree-row[data-focus-visible] .tree-row-content,
+  .tree-row-content[data-search-match],
+  [data-pane]:focus .active,
+  [data-pane]:focus .selected {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
+/* Disabled buttons look inert: neutral outline, never the accent/danger fill. */
+.btn:disabled,
+.btn.primary:disabled,
+.btn.danger:disabled {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--subtle-foreground);
+  opacity: 1;
+  filter: none;
+  cursor: not-allowed;
+}
+.btn:disabled .btn-count {
+  background: var(--hover);
+}
+

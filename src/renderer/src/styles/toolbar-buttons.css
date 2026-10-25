@@ -1,0 +1,28 @@
+/* ---------- toolbar buttons ---------- */
+
+button.tb-branch {
+  color: var(--foreground);
+  cursor: pointer;
+}
+button.tb-branch:hover {
+  border-color: var(--border-strong);
+  background: var(--hover);
+}
+.tb-split {
+  display: flex;
+  align-items: center;
+}
+.tb-split .tb-btn:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  padding-right: var(--space-1-5);
+}
+.tb-chevron {
+  padding: 0 var(--space-1);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.tb-btn .pill {
+  margin-left: calc(var(--space-0-5) * -1);
+}
+

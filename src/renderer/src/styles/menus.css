@@ -1,0 +1,107 @@
+/* ---------- menus (React Aria Menu) ---------- */
+
+.menu-popover {
+  min-width: 260px;
+  padding: var(--space-1);
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  animation: pop 0.1s ease-out;
+}
+.menu {
+  outline: none;
+}
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  outline: none;
+}
+.menu-item[data-focused] {
+  background: var(--selection-strong);
+}
+.menu-item[data-disabled] {
+  color: var(--subtle-foreground);
+  cursor: default;
+}
+.menu-help {
+  font-size: var(--text-sm);
+  color: var(--subtle-foreground);
+}
+.menu-separator {
+  height: 1px;
+  margin: var(--space-1) var(--space-2);
+  /* --border would vanish against the lighter overlay in dark themes */
+  background: var(--border-strong);
+}
+@media (forced-colors: active) {
+  .menu-item[data-focused] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+/* Context menu rows: check column, label, submenu arrow. The point is an invisible anchor at the pointer. */
+.menu-point {
+  position: fixed;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.menu-item.row {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
+  white-space: nowrap;
+}
+.menu-check {
+  flex: none;
+  width: 14px;
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+}
+.menu-item .menu-label {
+  flex: 1;
+}
+.menu-more {
+  color: var(--subtle-foreground);
+  margin-right: calc(var(--space-1-5) * -1);
+}
+.menu-item[data-open] {
+  background: var(--hover);
+}
+/* Picker footer: actions that never scroll away with a long list. */
+.palette-body {
+  display: contents;
+}
+.palette-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+.palette-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--control-md);
+  flex: none;
+}
+.palette-action-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.palette-action.end {
+  margin-left: auto;
+}
+.palette-action kbd {
+  flex: none;
+}

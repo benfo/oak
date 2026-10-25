@@ -1,5 +1,5 @@
 /*
- * Oak's design tokens: the only place raw values live. Component CSS (styles.css) uses these
+ * Oak's design tokens: the only place raw values live. Component CSS (styles/) uses these
  * variables, never literal colours, spacing, radii, font sizes or control heights (`npm run lint`
  * checks). Themes (built-in or custom JSON files) override any of the palette tokens; the scales
  * are shared. Modelled on shadcn/ui and HeroUI: semantic names, surfaces paired with a
@@ -71,7 +71,7 @@
   /* Every list row keeps this inner padding on both sides; nesting adds --indent per level. */
   --row-pad: var(--space-2-5);
 
-  /* Focus: one ring for the whole app (see "focus indicators" in styles.css). */
+  /* Focus: one ring for the whole app (see styles/focus.css). */
   --focus-ring: 2px solid var(--ring);
 
   /* The native title-bar buttons (44px tall, ~140px wide) ignore page zoom; divide by --zoom to match. */

@@ -2,7 +2,7 @@ import { api } from './api'
 import { BUILT_IN_THEMES } from './builtInThemes'
 
 /**
- * Themes. Every colour in the app is a CSS variable (see the top of styles.css): the built-in
+ * Themes. Every colour in the app is a CSS variable (see the top of tokens.css): the built-in
  * light and dark palettes are selected by `<html data-theme>`, and a theme can override any
  * variable on top of one of them. So a custom theme is just a base plus the tokens it changes.
  */

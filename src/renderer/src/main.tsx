@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import './tokens.css'
-import './styles.css'
+import './styles/index.css'
 import { initTheme } from './theme'
 import { initUpdates } from './updates'
 import { initSettings } from './settings'
