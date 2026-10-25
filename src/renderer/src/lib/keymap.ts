@@ -33,6 +33,8 @@ export type WidgetAction =
   | 'nextBlock'
   | 'prevBlock'
   | 'commitMessage'
+  | 'blameBefore'
+  | 'blameNewer'
   | 'fileNext'
   | 'filePrev'
   | 'fileFirst'
@@ -123,6 +125,18 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
     roles: ['blame'],
     keys: ['Space'],
     help: { title: 'Show the full commit message of the line', keys: 'Space', category: 'Blame' }
+  },
+  {
+    action: 'blameBefore',
+    roles: ['blame'],
+    keys: ['b'],
+    help: { title: 'Blame the line as it was before its commit', keys: 'B', category: 'Blame' }
+  },
+  {
+    action: 'blameNewer',
+    roles: ['blame'],
+    keys: ['Backspace'],
+    help: { title: 'Back to the newer blame', keys: 'Backspace', category: 'Blame' }
   },
   {
     action: 'fileNext',
