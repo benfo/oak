@@ -181,7 +181,7 @@ test.describe('blame', () => {
     // Escape never leaves Blame; only the Close button does.
     await page.keyboard.press('Escape')
     await expect(page.locator('.blame-view')).toBeVisible()
-    await page.getByRole('button', { name: 'Close blame' }).click()
+    await page.getByRole('toolbar', { name: 'Blame tools' }).getByRole('button', { name: 'Close blame' }).click()
     await expect(page.locator('.blame-view')).toHaveCount(0)
   })
 
@@ -211,6 +211,23 @@ test.describe('blame', () => {
     await page.locator('.blame-row .gutter').nth(1).dblclick()
     await expect(page.locator('.blame-view')).toBeHidden()
     await expect(page.locator('.commit-list')).toContainText('Initial commit')
+  })
+
+  test('the sidebar Blame row has a close button that leaves the showing view alone', async ({ open, small }) => {
+    const page = await open(small)
+    await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Show blame' }).click()
+    await expect(page.locator('.blame-row').first()).toBeVisible()
+    const nav = page.getByRole('treegrid', { name: 'Repository navigation' })
+    await expect(nav.getByRole('row', { name: /Blame/ })).toBeVisible()
+
+    // Closed from another view, Blame goes away and that view stays.
+    await page.keyboard.press('Control+2')
+    await expect(page.locator('.commit-list')).toBeVisible()
+    await nav.getByRole('button', { name: 'Close blame' }).click({ force: true })
+    await expect(nav.getByRole('row', { name: /Blame/ })).toHaveCount(0)
+    await expect(page.locator('.commit-list')).toBeVisible()
+    await expect(page.locator('.blame-view')).toHaveCount(0)
   })
 
   test('Left and Right never leave the view', async ({ open, small }) => {

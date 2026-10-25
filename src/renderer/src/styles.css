@@ -2824,6 +2824,19 @@ input[type='checkbox']:focus-visible,
   width: var(--control-sm);
   height: var(--control-sm);
 }
+/* Always takes its room, so showing it never moves the label; it is only drawn for the active or hovered row. */
+.tree-row.nav .tree-close {
+  flex-shrink: 0;
+  width: var(--control-sm);
+  height: var(--control-sm);
+  margin-left: auto;
+  opacity: 0;
+}
+.tree-row.nav[data-hovered] .tree-close,
+.tree-row.nav.nav-active .tree-close,
+.tree-row.nav .tree-close[data-focus-visible] {
+  opacity: 1;
+}
 .tree-row.current {
   color: var(--foreground);
   font-weight: var(--weight-semibold);

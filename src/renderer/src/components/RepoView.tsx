@@ -89,6 +89,8 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
   }
   const closeBlame = () => {
     setBlame(null)
+    // Closed from the sidebar while another view is showing: that view stays.
+    if (view !== 'blame') return
     setView(blameFrom.current)
     if (blameFrom.current === 'changes') setTimeout(focusFiles, 0)
     else focusLater('.commit-list')
@@ -242,6 +244,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
             onFocusCommit={focusCommit}
             onCompareBranch={compareBranch}
             blameFile={blame?.file ?? null}
+            onCloseBlame={closeBlame}
           />
           <main className="main">
             <div className="view" hidden={view !== 'changes'}>
