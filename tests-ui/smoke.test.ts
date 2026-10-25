@@ -224,14 +224,20 @@ test.describe('blame', () => {
 
     // The first line is from the root commit, so there is nothing earlier to show.
     await page.keyboard.press('Home')
+    await expect(page.locator('.blame-preview-step')).toHaveText('First version')
     await page.keyboard.press('b')
     await expect(page.locator('.blame-past')).toHaveCount(0)
+    await expect(page.locator('.blame-note')).toContainText('No earlier version')
 
     for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowDown')
     await expect(cursor).toContainText("const changed5 = 'edited'")
+    const top = async () => (await cursor.boundingBox())!.y
+    const before = await top()
     await page.keyboard.press('b')
     await expect(page.locator('.blame-past')).toContainText('Edit lines')
     await expect(cursor).toContainText('const value5 = 5')
+    // The line stays where the eye left it while the numbers underneath change.
+    expect(Math.abs((await top()) - before)).toBeLessThan(2)
     await expect(page.locator('.blame-view')).toHaveClass(/stepped/)
 
     await page.keyboard.press('Backspace')

@@ -2400,6 +2400,13 @@ input[type='checkbox']:focus-visible,
   gap: var(--space-1);
   color: var(--subtle-foreground);
 }
+/* Replaces the commit summary for a few seconds, in the row's reserved height. */
+.blame-note {
+  overflow: hidden;
+  padding: 0 var(--space-3);
+  text-overflow: ellipsis;
+  color: var(--foreground);
+}
 /* Beside the Space hint inside the row, which has no padding of its own. */
 .blame-preview-step {
   padding-right: var(--space-3);

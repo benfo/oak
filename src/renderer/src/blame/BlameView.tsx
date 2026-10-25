@@ -16,7 +16,6 @@ import { shortcutPlatform } from '../lib/shortcuts'
 import { usePane } from '../lib/usePane'
 import { useVirtualRows } from '../lib/useVirtualRows'
 import { useSettings } from '../settings'
-import { toast } from '../ui'
 import { BlameVersion, type BlameStep } from './BlameVersion'
 import { CommitMessage } from './CommitMessage'
 import { CommitPopover } from './CommitPopover'
@@ -25,6 +24,7 @@ import { adjacentBlockStart, blameBlockStarts, type BlameResult } from '../../..
 /** Keep in sync with --diff-line-height. */
 const ROW_H = 20
 const SLOW_MS = 300
+const NOTE_MS = 3500
 /** Pixels a plain Left or Right scrolls the code; Shift scrolls a quarter of the pane. */
 const H_STEP = 40
 
@@ -61,6 +61,13 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   // Stepping back replaces the version shown; the steps are dropped with the view, so closing starts afresh.
   const [steps, setSteps] = useState<BlameStep[]>([])
   const stepping = useRef(false)
+  /** A short message in the footer, which is where the eye already is; it clears itself. */
+  const [note, setNote] = useState<string | null>(null)
+  useEffect(() => {
+    if (!note) return
+    const timer = setTimeout(() => setNote(null), NOTE_MS)
+    return () => clearTimeout(timer)
+  }, [note])
   const past = steps[steps.length - 1]
   const file = past ? past.file : request.file
   const rev = past ? past.rev : request.rev
@@ -117,8 +124,18 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   const commit = line && result ? result.commits[line.hash] : undefined
 
   const rows = useVirtualRows({ count: lines.length, getScrollElement: () => ref.current, estimateSize: () => ROW_H, overscan: 20 })
+  // After a step the cursor row goes back to where it sat in the pane, so the eye keeps its place while the line numbers change.
+  const keepOffset = useRef<number | null>(null)
+  const rememberOffset = () => {
+    const row = ref.current?.querySelector('.blame-row.cursor')
+    keepOffset.current = row && ref.current ? row.getBoundingClientRect().top - ref.current.getBoundingClientRect().top : null
+  }
   useEffect(() => {
-    if (lines.length) rows.virtual.scrollToIndex(at, { align: 'auto' })
+    if (!lines.length) return
+    const offset = keepOffset.current
+    keepOffset.current = null
+    if (offset === null) rows.virtual.scrollToIndex(at, { align: 'auto' })
+    else rows.virtual.scrollToOffset(Math.max(0, at * ROW_H - offset))
   }, [at, lines.length])
 
   // The virtualizer measured a zero-size scroller while hidden, so it is re-measured once the view shows again.
@@ -174,7 +191,8 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   const stepBack = async (index = at) => {
     const l = lines[index]
     const c = l && result?.commits[l.hash]
-    if (!l || !c || c.boundary || stepping.current) return
+    if (!l || !c || stepping.current) return
+    if (c.boundary) return setNote('No earlier version: this is the first version of the file.')
     stepping.current = true
     try {
       const older = await api.blameBefore(
@@ -183,21 +201,24 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
         c.uncommitted ? file : l.file || file,
         c.uncommitted ? index + 1 : l.origLine
       )
-      if (!older) return toast.info('There is no earlier version of this file.')
-      if (older.added) toast.info('This commit added the line. Showing the nearest line above it.')
+      if (!older) return setNote('No earlier version: this commit created the file.')
+      setNote(older.added ? 'This commit added the line. Showing the nearest line above it.' : null)
+      rememberOffset()
       setSteps([
         ...steps,
         { file: older.file, rev: older.rev, before: c.uncommitted ? null : { hash: c.hash, summary: c.summary }, returnTo: index }
       ])
       setCursor(older.line - 1)
     } catch (e) {
-      toast.error(errorMessage(e))
+      setNote(errorMessage(e))
     } finally {
       stepping.current = false
     }
   }
   const stepNewer = () => {
     if (!past) return
+    setNote(null)
+    rememberOffset()
     setSteps(steps.slice(0, -1))
     setCursor(past.returnTo)
   }
@@ -403,43 +424,51 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
         </div>
       </PaneFrame>
       <div className="blame-preview" aria-live="polite">
-        {commit && (
-          <>
-            <Tip label="Show the full commit message" keys="Space" placement="top">
-              <Button
-                className="blame-preview-button"
-                aria-expanded={messageOpen}
-                onPress={() => {
-                  setMessageOpen(!messageOpen)
-                  ref.current?.focus({ preventScroll: true })
-                }}
-              >
-                {commit.uncommitted ? (
-                  <span className="blame-uncommitted">Not committed yet. Enter shows the working changes.</span>
+        {note ? (
+          <span className="blame-note">{note}</span>
+        ) : (
+          commit && (
+            <>
+              <Tip label="Show the full commit message" keys="Space" placement="top">
+                <Button
+                  className="blame-preview-button"
+                  aria-expanded={messageOpen}
+                  onPress={() => {
+                    setMessageOpen(!messageOpen)
+                    ref.current?.focus({ preventScroll: true })
+                  }}
+                >
+                  {commit.uncommitted ? (
+                    <span className="blame-uncommitted">Not committed yet. Enter shows the working changes.</span>
+                  ) : (
+                    <>
+                      <Avatar name={commit.author} email={commit.email} size={16} />
+                      <span className="blame-author">{commit.author}</span>
+                      <span className="blame-date" title={fullDate(commit.time * 1000)}>
+                        {relativeTime(commit.time * 1000)}
+                      </span>
+                      <span className="blame-hash">{commit.hash.slice(0, 8)}</span>
+                      <span className="blame-summary">{commit.summary}</span>
+                      <span className="blame-preview-hint" aria-hidden="true">
+                        <Icon name="info" size={14} />
+                        <kbd>Space</kbd>
+                      </span>
+                    </>
+                  )}
+                </Button>
+              </Tip>
+              <span className="blame-preview-hint blame-preview-step" aria-hidden="true">
+                {commit.boundary ? (
+                  'First version'
                 ) : (
                   <>
-                    <Avatar name={commit.author} email={commit.email} size={16} />
-                    <span className="blame-author">{commit.author}</span>
-                    <span className="blame-date" title={fullDate(commit.time * 1000)}>
-                      {relativeTime(commit.time * 1000)}
-                    </span>
-                    <span className="blame-hash">{commit.hash.slice(0, 8)}</span>
-                    <span className="blame-summary">{commit.summary}</span>
-                    <span className="blame-preview-hint" aria-hidden="true">
-                      <Icon name="info" size={14} />
-                      <kbd>Space</kbd>
-                    </span>
+                    <kbd>B</kbd>
+                    {commit.uncommitted ? 'at HEAD' : 'earlier'}
                   </>
                 )}
-              </Button>
-            </Tip>
-            {!commit.boundary && (
-              <span className="blame-preview-hint blame-preview-step" aria-hidden="true">
-                <kbd>B</kbd>
-                {commit.uncommitted ? 'at HEAD' : 'earlier'}
               </span>
-            )}
-          </>
+            </>
+          )
         )}
       </div>
       {/* One popover that moves with the cursor (it is not remounted per line, which flashed); hidden while the cursor's row is scrolled out of the window. */}
