@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { Button, Toolbar } from 'react-aria-components'
+import { useEffect, useReducer, useRef, useState } from 'react'
+import { Button, Popover, Toolbar } from 'react-aria-components'
 import { api, errorMessage, showMenu } from '../api'
 import { Avatar } from '../components/Avatar'
 import { Icon } from '../components/Icon'
@@ -13,6 +13,7 @@ import { shortcutPlatform } from '../lib/shortcuts'
 import { usePane } from '../lib/usePane'
 import { useVirtualRows } from '../lib/useVirtualRows'
 import { useSettings } from '../settings'
+import { CommitMessage } from './CommitMessage'
 import { adjacentBlockStart, blameBlockStarts, blockStartOf, type BlameResult } from '../../../shared/blame'
 
 /** Keep in sync with --diff-line-height. */
@@ -48,6 +49,11 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [slow, setSlow] = useState(false)
   const [cursor, setCursor] = useState(0)
+  const [messageOpen, setMessageOpen] = useState(false)
+  /** Full messages by commit hash, read on demand; a commit never changes, so entries stay (null: could not be read). */
+  const messages = useRef(new Map<string, string | null>())
+  const [, messagesChanged] = useReducer((n: number) => n + 1, 0)
+  const anchorRef = useRef<HTMLSpanElement>(null)
   const ref = useRef<HTMLDivElement>(null)
   const toolsRef = useRef<HTMLDivElement>(null)
   const pane = usePane('blame', { kind: 'diff' })
@@ -101,6 +107,32 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     return () => cancelAnimationFrame(frame)
   }, [active])
 
+  const wantedMessage = messageOpen && commit && !commit.uncommitted ? commit.hash : null
+  useEffect(() => {
+    if (!wantedMessage || messages.current.has(wantedMessage)) return
+    api
+      .commitMessage(repo, wantedMessage)
+      .then(
+        (text) => messages.current.set(wantedMessage, text),
+        () => messages.current.set(wantedMessage, null)
+      )
+      .then(messagesChanged)
+  }, [wantedMessage])
+
+  // The popover is portalled, so it must not outlive the view being shown or the focus staying in it.
+  useEffect(() => {
+    if (!active) setMessageOpen(false)
+  }, [active])
+  useEffect(() => {
+    if (!messageOpen) return
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Element
+      if (!ref.current?.contains(target) && !target.closest('.commit-popover, .blame-preview')) setMessageOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+  }, [messageOpen])
+
   const open = () => line && onOpenCommit(commit?.uncommitted ? null : line.hash)
 
   const lineMenu = async () => {
@@ -127,7 +159,8 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     }
     if (widget === 'dismiss' || (widget === 'back' && !ref.current?.scrollLeft)) {
       e.preventDefault()
-      onClose()
+      if (messageOpen) setMessageOpen(false)
+      else onClose()
       return
     }
     if (!lines.length) return
@@ -140,6 +173,9 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
       e.preventDefault()
       const next = adjacentBlockStart(starts, at, widget === 'nextBlock' ? 1 : -1)
       if (next !== null) setCursor(next)
+    } else if (widget === 'commitMessage') {
+      e.preventDefault()
+      setMessageOpen(!messageOpen)
     } else if (widget === 'activate' || widget === 'deeper') {
       e.preventDefault()
       open()
@@ -185,6 +221,10 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
           {...pane.resetProps}
           onKeyDown={onKeyDown}
           onKeyDownCapture={(e) => pane.navigate(e)}
+          onBlur={(e) => {
+            const to = e.relatedTarget as Element | null
+            if (to && !to.closest('.blame-preview')) setMessageOpen(false)
+          }}
           onContextMenu={(e) => {
             if (!lines.length) return
             e.preventDefault()
@@ -228,7 +268,9 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                           ))}
                       </span>
                     </span>
-                    <span className="code">{l.text}</span>
+                    <span className="code" ref={index === at ? anchorRef : undefined}>
+                      {l.text}
+                    </span>
                   </div>
                 )
               })}
@@ -237,21 +279,48 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
         </div>
       </PaneFrame>
       <div className="blame-preview" aria-live="polite">
-        {commit &&
-          (commit.uncommitted ? (
-            <span className="blame-uncommitted">Not committed yet. Enter shows the working changes.</span>
-          ) : (
-            <>
-              <Avatar name={commit.author} email={commit.email} size={16} />
-              <span className="blame-author">{commit.author}</span>
-              <span className="blame-date" title={fullDate(commit.time * 1000)}>
-                {relativeTime(commit.time * 1000)}
-              </span>
-              <span className="blame-hash">{commit.hash.slice(0, 8)}</span>
-              <span className="blame-summary">{commit.summary}</span>
-            </>
-          ))}
+        {commit && (
+          <Tip label="Show the full commit message" keys="Space" placement="top">
+            <Button
+              className="blame-preview-button"
+              aria-expanded={messageOpen}
+              onPress={() => {
+                setMessageOpen(!messageOpen)
+                ref.current?.focus({ preventScroll: true })
+              }}
+            >
+              {commit.uncommitted ? (
+                <span className="blame-uncommitted">Not committed yet. Enter shows the working changes.</span>
+              ) : (
+                <>
+                  <Avatar name={commit.author} email={commit.email} size={16} />
+                  <span className="blame-author">{commit.author}</span>
+                  <span className="blame-date" title={fullDate(commit.time * 1000)}>
+                    {relativeTime(commit.time * 1000)}
+                  </span>
+                  <span className="blame-hash">{commit.hash.slice(0, 8)}</span>
+                  <span className="blame-summary">{commit.summary}</span>
+                </>
+              )}
+            </Button>
+          </Tip>
+        )}
       </div>
+      {/* Keyed by line so it re-anchors as the cursor moves; hidden while the cursor's row is scrolled out of the window. */}
+      {messageOpen && commit && rows.items.some(({ index }) => index === at) && (
+        <Popover
+          key={at}
+          className="commit-popover"
+          triggerRef={anchorRef}
+          isOpen
+          isNonModal
+          placement="bottom start"
+          offset={4}
+          onOpenChange={(isOpen) => !isOpen && setMessageOpen(false)}
+        >
+          <CommitMessage commit={commit} message={messages.current.get(commit.hash)} />
+        </Popover>
+      )}
     </div>
   )
 }

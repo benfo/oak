@@ -2333,7 +2333,6 @@ input[type='checkbox']:focus-visible,
   flex: none;
   gap: var(--space-2);
   height: var(--control-lg);
-  padding: 0 var(--space-3);
   border-top: 1px solid var(--border);
   background: var(--surface-sunken);
   color: var(--muted-foreground);
@@ -2341,8 +2340,80 @@ input[type='checkbox']:focus-visible,
   white-space: nowrap;
   overflow: hidden;
 }
+/* The whole row opens the commit message popover, the same as Space. */
+.blame-preview-button {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: var(--space-2);
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--space-3);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: inherit;
+  overflow: hidden;
+}
+.blame-preview-button[data-hovered] {
+  background: var(--hover);
+}
+.blame-preview-button[data-focus-visible] {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
 .blame-preview .avatar {
   flex: none;
+}
+/* An overlay anchored to the cursor line, so it never moves the code. */
+.commit-popover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: max-content;
+  max-width: min(560px, 90vw);
+  padding: var(--space-3);
+  overflow: auto;
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  color: var(--foreground);
+  font-size: var(--text-sm);
+}
+.commit-popover-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted-foreground);
+}
+.commit-popover-author {
+  color: var(--foreground);
+  font-weight: var(--weight-medium);
+}
+.commit-popover-head code {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+.commit-popover-subject {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+.commit-popover-body {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.commit-popover-note {
+  margin: 0;
+  color: var(--subtle-foreground);
 }
 .blame-author {
   flex: none;

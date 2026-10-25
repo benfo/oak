@@ -428,6 +428,11 @@ epo`), if any. */
     return Number((await git(repo, ['rev-list', '--count', `${source}..${target}`])).trim()) || 0
   },
 
+  /** The full message only, for places that show it on demand (the blame popover); `commitDetails` also diffs the commit. */
+  async commitMessage(repo: string, hash: string): Promise<string> {
+    return (await git(repo, ['show', '-s', '--format=%B', hash])).trim()
+  },
+
   async commitDetails(repo: string, hash: string, compareBase?: string): Promise<CommitDetails> {
     const meta = await git(repo, ['show', '-s', '--format=%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%cn%x1f%ce%x1f%ct%x1f%B', hash])
     const [h, p, an, ae, at, cn, ce, ct, ...body] = meta.split(US)

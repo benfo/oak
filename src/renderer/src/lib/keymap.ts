@@ -32,6 +32,7 @@ export type WidgetAction =
   | 'prevHunk'
   | 'nextBlock'
   | 'prevBlock'
+  | 'commitMessage'
   | 'fileNext'
   | 'filePrev'
   | 'fileFirst'
@@ -117,6 +118,12 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
     help: { title: 'Next / previous blame block', keys: 'N / P', category: 'Blame' }
   },
   { action: 'prevBlock', roles: ['blame'], keys: ['p', 'Shift+p', 'Alt+ArrowUp'] },
+  {
+    action: 'commitMessage',
+    roles: ['blame'],
+    keys: ['Space'],
+    help: { title: 'Show the full commit message of the line', keys: 'Space', category: 'Blame' }
+  },
   {
     action: 'fileNext',
     roles: ['diff'],

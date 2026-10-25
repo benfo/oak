@@ -45,6 +45,8 @@ test('blame jumps between blocks with N and P, and not in the diff', () => {
   assert.equal(widgetAction(key('ArrowDown', { altKey: true }), 'blame'), 'nextBlock')
   assert.equal(widgetAction(key('n', { ctrlKey: true, code: 'KeyN' }), 'blame'), undefined)
   assert.equal(widgetAction(key('Enter'), 'blame'), 'activate')
+  assert.equal(widgetAction(key(' ', { code: 'Space' }), 'blame'), 'commitMessage')
+  assert.equal(widgetAction(key(' ', { code: 'Space' }), 'diff'), 'toggleSelect')
   assert.equal(widgetAction(key('n'), 'diff'), 'nextHunk')
 })
 
