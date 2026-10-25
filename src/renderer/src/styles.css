@@ -2293,7 +2293,8 @@ input[type='checkbox']:focus-visible,
   position: absolute;
   top: calc(var(--control-lg) + var(--space-1));
   right: var(--space-4);
-  z-index: 2;
+  /* Above the cursor ring (2), which is drawn later in the page and would otherwise cross the box. */
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
