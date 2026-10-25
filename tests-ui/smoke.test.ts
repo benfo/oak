@@ -195,6 +195,21 @@ test.describe('blame', () => {
     await expect(page.locator('.blame-view')).toBeVisible()
   })
 
+  test('double-clicking the blame column shows the commit in History, and the code keeps word selection', async ({ open, small }) => {
+    const page = await open(small)
+    await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Show blame' }).click()
+    await expect(page.locator('.blame-row').first()).toBeVisible()
+
+    await page.locator('.blame-row .code').nth(1).dblclick()
+    await expect(page.locator('.blame-view')).toBeVisible()
+    expect(await page.evaluate(() => window.getSelection()?.toString())).toContain('value2')
+
+    await page.locator('.blame-row .gutter').nth(1).dblclick()
+    await expect(page.locator('.blame-view')).toBeHidden()
+    await expect(page.locator('.commit-list')).toContainText('Initial commit')
+  })
+
   test('Left and Right never leave the view', async ({ open, small }) => {
     const page = await open(small)
     await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })

@@ -455,7 +455,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                       void lineMenu(false, index)
                     }}
                   >
-                    <span className="gutter">
+                    <span className="gutter" onDoubleClick={() => open(index)}>
                       <span
                         className="ln"
                         title={l.ignored ? 'Blame skipped a commit on the ignore-revs list to name this one' : undefined}
