@@ -2314,10 +2314,15 @@ input[type='checkbox']:focus-visible,
   font: inherit;
   outline: none;
 }
+/* A fixed width, so the bar keeps one size whatever the status says ("No matches", "12 of 345", "Go to line 1200"). */
 .find-bar-status {
-  min-width: 7ch;
+  flex: none;
+  width: 15ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--muted-foreground);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 /* The found text itself, so it is clear which part of the line matched. */
 .find-hit {
@@ -2325,7 +2330,6 @@ input[type='checkbox']:focus-visible,
   background: var(--warning-soft);
   box-shadow: 0 0 0 1px var(--warning);
 }
-/* Only the occurrence Enter moved to; the rest of the line's occurrences keep the lighter mark. */
 /* A stronger tint and a heavier ring, with the text colour left alone: a solid fill made syntax colours unreadable. */
 .find-hit.current {
   background: var(--warning-strong);

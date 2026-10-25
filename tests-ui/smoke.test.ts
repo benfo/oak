@@ -289,6 +289,17 @@ test.describe('blame', () => {
 
     await page.keyboard.press('/')
     await expect(field).toBeFocused()
+    // The bar keeps one size whatever is typed: empty, a partial word, no match, a go-to-line, a match.
+    const widths = new Set<number>()
+    const measure = async () => widths.add(Math.round((await bar.boundingBox())!.width))
+    await measure()
+    for (const text of ['c', 'chang', 'changedzzz', ':', ':1200', 'changed']) {
+      await page.keyboard.press('Control+a')
+      await page.keyboard.type(text)
+      await measure()
+    }
+    expect([...widths]).toHaveLength(1)
+    await page.keyboard.press('Control+a')
     await page.keyboard.type('changed')
     await expect(bar).toContainText('1 of 3')
     await expect(cursor).toContainText('changed5')

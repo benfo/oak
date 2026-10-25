@@ -41,7 +41,7 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef }: Options) {
 
   const status = goto
     ? target === null
-      ? 'Type a line number'
+      ? 'Line number'
       : `Go to line ${target + 1}`
     : !query
       ? ''
