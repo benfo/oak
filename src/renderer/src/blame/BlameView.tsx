@@ -1,14 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
-import { Button, Toolbar } from 'react-aria-components'
 import { api, errorMessage, showMenu } from '../api'
-import { Avatar } from '../components/Avatar'
-import { Icon } from '../components/Icon'
 import { PaneFrame } from '../components/Pane'
-import { Tip } from '../components/Tip'
 import { useFileTokens } from '../diff/highlight'
-import { toggleWhitespace } from '../diff/toggleWhitespace'
 import { copyText } from '../lib/copy'
-import { fullDate, relativeTime } from '../lib/format'
 import { widgetAction } from '../lib/keymap'
 import { canHandleNavigation, horizontalScrollDirection, movementDelta, toolbarHomeEnd } from '../lib/navigation'
 import { shortcutPlatform } from '../lib/shortcuts'
@@ -19,8 +13,10 @@ import { BlameVersion, type BlameStep } from './BlameVersion'
 import { CommitMessage } from './CommitMessage'
 import { CommitPopover } from './CommitPopover'
 import { adjacentBlockStart, blameBlockStarts, findHits, gotoLine, type BlameResult } from '../../../shared/blame'
-import { BlameCode } from './BlameCode'
 import { BlameFind } from './BlameFind'
+import { BlameFooter } from './BlameFooter'
+import { BlameRow } from './BlameRow'
+import { BlameToolbar } from './BlameToolbar'
 
 /** Keep in sync with --diff-line-height. */
 const ROW_H = 20
@@ -426,82 +422,29 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
           {revision}
         </span>
         <BlameVersion steps={steps} onNewer={stepNewer} />
-        <Toolbar className="diff-controls" aria-label="Blame tools" ref={toolsRef}>
-          <span className="diff-navigation-group">
-            <Tip label="Find in file" keys="/">
-              <Button
-                className="icon-btn"
-                aria-label="Find in file"
-                aria-pressed={find !== null}
-                isDisabled={!lines.length}
-                onPress={openFind}
-              >
-                <Icon name="search" size={14} />
-              </Button>
-            </Tip>
-            <Tip label="Previous commit block" keys="P">
-              <Button
-                className="icon-btn"
-                aria-label="Previous commit block"
-                isDisabled={prevStart === null}
-                onPress={(e) => {
-                  moveBlock(-1)
-                  refocus(e.pointerType)
-                }}
-              >
-                <Icon name="arrowUp" size={14} />
-              </Button>
-            </Tip>
-            <Tip label="Next commit block" keys="N">
-              <Button
-                className="icon-btn"
-                aria-label="Next commit block"
-                isDisabled={nextStart === null}
-                onPress={(e) => {
-                  moveBlock(1)
-                  refocus(e.pointerType)
-                }}
-              >
-                <Icon name="arrowDown" size={14} />
-              </Button>
-            </Tip>
-            <Tip label={commit?.uncommitted ? 'Blame this line at HEAD' : 'Blame the line as it was before its commit'} keys="B">
-              <Button
-                className="icon-btn"
-                aria-label="Blame before this commit"
-                isDisabled={!commit || commit.boundary}
-                onPress={(e) => {
-                  void stepBack()
-                  refocus(e.pointerType)
-                }}
-              >
-                <Icon name="history" size={14} />
-              </Button>
-            </Tip>
-          </span>
-          <Tip label="Ignore whitespace changes">
-            <Button className="diff-full-button" aria-pressed={ignoreWhitespace} onPress={() => setIgnoreWhitespace(!ignoreWhitespace)}>
-              Ignore whitespace
-            </Button>
-          </Tip>
-          {hasIgnoreRevs && (
-            <Tip label="Skip the commits on the repository's ignore-revs list, such as bulk reformatting">
-              <Button className="diff-full-button" aria-pressed={useIgnoreRevs} onPress={() => setUseIgnoreRevs(!useIgnoreRevs)}>
-                Ignore bulk commits
-              </Button>
-            </Tip>
-          )}
-          <Tip label="Draw spaces and tabs">
-            <Button className="diff-full-button" aria-pressed={whitespace} onPress={toggleWhitespace}>
-              Spaces and tabs
-            </Button>
-          </Tip>
-          <Tip label="Close blame">
-            <Button className="icon-btn" aria-label="Close blame" onPress={onClose}>
-              <Icon name="x" size={14} />
-            </Button>
-          </Tip>
-        </Toolbar>
+        <BlameToolbar
+          toolsRef={toolsRef}
+          commit={commit}
+          hasLines={lines.length > 0}
+          findOpen={find !== null}
+          canPrevBlock={prevStart !== null}
+          canNextBlock={nextStart !== null}
+          ignoreWhitespace={ignoreWhitespace}
+          hasIgnoreRevs={hasIgnoreRevs}
+          useIgnoreRevs={useIgnoreRevs}
+          onFind={openFind}
+          onBlock={(delta, pointer) => {
+            moveBlock(delta)
+            refocus(pointer)
+          }}
+          onStepBack={(pointer) => {
+            void stepBack()
+            refocus(pointer)
+          }}
+          onIgnoreWhitespace={() => setIgnoreWhitespace(!ignoreWhitespace)}
+          onUseIgnoreRevs={() => setUseIgnoreRevs(!useIgnoreRevs)}
+          onClose={onClose}
+        />
       </div>
       {find !== null && (
         <BlameFind query={find} status={findStatus} inputRef={findRef} onChange={changeFind} onEnter={enterFind} onClose={closeFind} />
@@ -539,113 +482,39 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
             <div className="diff-inner" style={rows.spacer}>
               {rows.items.map(({ index }) => {
                 const l = lines[index]
-                const c = result!.commits[l.hash]
-                const first = index === 0 || lines[index - 1].hash !== l.hash
                 return (
-                  <div
+                  <BlameRow
                     key={index}
-                    className={`dl blame-row${first ? ' block-start' : ''}${index === at ? ' cursor' : ''}${l.hash === tintCommit ? ' same-commit' : ''}${l.ignored ? ' ignored' : ''}${hitRows.has(index) ? ' found' : ''}`}
-                    onClick={() => setCursor(index)}
-                    onContextMenu={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setCursor(index)
-                      void lineMenu(false, index)
-                    }}
-                  >
-                    <span className="gutter" onDoubleClick={() => open(index)}>
-                      <span
-                        className="ln"
-                        title={l.ignored ? 'Blame skipped a commit on the ignore-revs list to name this one' : undefined}
-                      >
-                        {index + 1}
-                      </span>
-                      <span
-                        className="blame-info"
-                        title={
-                          first && c && !c.uncommitted
-                            ? `${c.summary}\n${c.author}, ${fullDate(c.time * 1000)}, ${c.hash.slice(0, 7)}`
-                            : undefined
-                        }
-                      >
-                        {first &&
-                          c &&
-                          (c.uncommitted ? (
-                            <span className="blame-uncommitted">Not committed yet</span>
-                          ) : (
-                            <>
-                              <Avatar name={c.author} email={c.email} size={16} />
-                              <span className="blame-summary">{c.summary}</span>
-                              <span className="blame-date">{relativeTime(c.time * 1000)}</span>
-                            </>
-                          ))}
-                      </span>
-                    </span>
-                    <span className="code">
-                      <BlameCode
-                        text={l.text}
-                        tokens={tokens ? tokens[index] : null}
-                        whitespace={whitespace}
-                        hits={hitRows.get(index)?.ranges ?? NO_HITS}
-                        currentHit={hitNow >= 0 && hits[hitNow].line === index ? hitNow - hitRows.get(index)!.first : -1}
-                      />
-                    </span>
-                  </div>
+                    index={index}
+                    line={l}
+                    commit={result!.commits[l.hash]}
+                    first={index === 0 || lines[index - 1].hash !== l.hash}
+                    cursor={index === at}
+                    tinted={l.hash === tintCommit}
+                    tokens={tokens ? tokens[index] : null}
+                    whitespace={whitespace}
+                    hits={hitRows.get(index)?.ranges ?? NO_HITS}
+                    currentHit={hitNow >= 0 && hits[hitNow].line === index ? hitNow - hitRows.get(index)!.first : -1}
+                    onSelect={setCursor}
+                    onMenu={(i) => void lineMenu(false, i)}
+                    onOpen={open}
+                  />
                 )
               })}
             </div>
           )}
         </div>
       </PaneFrame>
-      <div className="blame-preview" aria-live="polite">
-        {note ? (
-          <span className="blame-note">{note}</span>
-        ) : (
-          commit && (
-            <>
-              <Tip label="Show the full commit message" keys="Space" placement="top">
-                <Button
-                  className="blame-preview-button"
-                  aria-expanded={messageOpen}
-                  onPress={() => {
-                    setMessageOpen(!messageOpen)
-                    ref.current?.focus({ preventScroll: true })
-                  }}
-                >
-                  {commit.uncommitted ? (
-                    <span className="blame-uncommitted">Not committed yet. Enter shows the working changes.</span>
-                  ) : (
-                    <>
-                      <Avatar name={commit.author} email={commit.email} size={16} />
-                      <span className="blame-author">{commit.author}</span>
-                      <span className="blame-date" title={fullDate(commit.time * 1000)}>
-                        {relativeTime(commit.time * 1000)}
-                      </span>
-                      <span className="blame-hash">{commit.hash.slice(0, 8)}</span>
-                      <span className="blame-summary">{commit.summary}</span>
-                      {line?.ignored && <span className="blame-ignored">Skipped an ignored commit</span>}
-                      <span className="blame-preview-hint" aria-hidden="true">
-                        <Icon name="info" size={14} />
-                        <kbd>Space</kbd>
-                      </span>
-                    </>
-                  )}
-                </Button>
-              </Tip>
-              <span className="blame-preview-hint blame-preview-step" aria-hidden="true">
-                {commit.boundary ? (
-                  'First version'
-                ) : (
-                  <>
-                    <kbd>B</kbd>
-                    {commit.uncommitted ? 'at HEAD' : 'earlier'}
-                  </>
-                )}
-              </span>
-            </>
-          )
-        )}
-      </div>
+      <BlameFooter
+        note={note}
+        commit={commit}
+        ignored={!!line?.ignored}
+        messageOpen={messageOpen}
+        onToggleMessage={() => {
+          setMessageOpen(!messageOpen)
+          ref.current?.focus({ preventScroll: true })
+        }}
+      />
       {/* One popover that moves with the cursor (it is not remounted per line, which flashed); hidden while the cursor's row is scrolled out of the window. */}
       {messageOpen && commit && anchor && (
         <CommitPopover anchor={anchor} scroller={ref.current}>
