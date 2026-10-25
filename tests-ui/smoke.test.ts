@@ -250,6 +250,41 @@ test.describe('blame', () => {
     await expect(page.locator('.blame-view')).toHaveCount(0)
   })
 
+  test('lines named by skipping an ignored commit are marked, and the list can be switched off', async ({ open, small }) => {
+    write(
+      small,
+      'src/app.ts',
+      numberedLines(120, (n) => (n === 3 ? '  const value3 = 3' : null))
+    )
+    git(small, 'add', '-A')
+    git(small, 'commit', '-q', '-m', 'Reformat')
+    write(small, '.git-blame-ignore-revs', `${git(small, 'rev-parse', 'HEAD').trim()}\n`)
+    write(
+      small,
+      'src/app.ts',
+      numberedLines(120, (n) => (n === 3 ? '  const value3 = 3' : n === 120 ? 'const last = 1' : null))
+    )
+    const page = await open(small)
+    await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Show blame' }).click()
+    await expect(page.locator('.blame-row').first()).toBeVisible()
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('ArrowDown')
+    const cursor = page.locator('.blame-row.cursor')
+    await expect(cursor).toContainText('const value3 = 3')
+    await expect(cursor).toHaveClass(/ignored/)
+    await expect(page.locator('.blame-ignored')).toBeVisible()
+    await expect(page.locator('.blame-preview')).toContainText('Initial commit')
+
+    const toggle = page.getByRole('button', { name: 'Ignore bulk commits' })
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.locator('.blame-preview')).toContainText('Reformat')
+    await expect(page.locator('.blame-ignored')).toHaveCount(0)
+    await expect(page.locator('.blame-row.ignored')).toHaveCount(0)
+  })
+
   test('B on a line that is not committed yet blames HEAD', async ({ open, small }) => {
     const page = await open(small)
     await page.getByRole('row', { name: /app\.ts/ }).click({ button: 'right' })

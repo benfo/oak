@@ -72,6 +72,9 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   const file = past ? past.file : request.file
   const rev = past ? past.rev : request.rev
   const [ignoreWhitespace, setIgnoreWhitespace] = useState(false)
+  // On by default, as it always was; the toggle only appears once a blame has found a list, and stays while the next one loads.
+  const [useIgnoreRevs, setUseIgnoreRevs] = useState(true)
+  const [hasIgnoreRevs, setHasIgnoreRevs] = useState(false)
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [slow, setSlow] = useState(false)
   const [cursor, setCursor] = useState(0)
@@ -84,7 +87,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   const ref = useRef<HTMLDivElement>(null)
   const toolsRef = useRef<HTMLDivElement>(null)
   const pane = usePane('blame', { kind: 'diff' })
-  const base = JSON.stringify([repo, file, rev, ignoreWhitespace])
+  const base = JSON.stringify([repo, file, rev, ignoreWhitespace, useIgnoreRevs])
 
   useEffect(() => toolbarHomeEnd(toolsRef.current), [])
   useEffect(() => ref.current?.focus({ preventScroll: true }), [])
@@ -92,8 +95,12 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   useEffect(() => {
     let cancelled = false
     api
-      .blame(repo, file, rev, ignoreWhitespace)
-      .then((result) => !cancelled && setLoaded({ base, result }))
+      .blame(repo, file, rev, ignoreWhitespace, useIgnoreRevs)
+      .then((result) => {
+        if (cancelled) return
+        if (result.hasIgnoreRevs) setHasIgnoreRevs(true)
+        setLoaded({ base, result })
+      })
       .catch((e) => !cancelled && setLoaded({ base, error: errorMessage(e) }))
     return () => {
       cancelled = true
@@ -323,6 +330,13 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
               Ignore whitespace
             </Button>
           </Tip>
+          {hasIgnoreRevs && (
+            <Tip label="Skip the commits on the repository's ignore-revs list, such as bulk reformatting">
+              <Button className="diff-full-button" aria-pressed={useIgnoreRevs} onPress={() => setUseIgnoreRevs(!useIgnoreRevs)}>
+                Ignore bulk commits
+              </Button>
+            </Tip>
+          )}
           <Tip label="Draw spaces and tabs">
             <Button className="diff-full-button" aria-pressed={whitespace} onPress={toggleWhitespace}>
               Spaces and tabs
@@ -373,7 +387,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                 return (
                   <div
                     key={index}
-                    className={`dl blame-row${first ? ' block-start' : ''}${index === at ? ' cursor' : ''}${l.hash === line?.hash ? ' same-commit' : ''}`}
+                    className={`dl blame-row${first ? ' block-start' : ''}${index === at ? ' cursor' : ''}${l.hash === line?.hash ? ' same-commit' : ''}${l.ignored ? ' ignored' : ''}`}
                     onClick={() => setCursor(index)}
                     onContextMenu={(e) => {
                       e.preventDefault()
@@ -383,7 +397,12 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                     }}
                   >
                     <span className="gutter">
-                      <span className="ln">{index + 1}</span>
+                      <span
+                        className="ln"
+                        title={l.ignored ? 'Blame skipped a commit on the ignore-revs list to name this one' : undefined}
+                      >
+                        {index + 1}
+                      </span>
                       <span
                         className="blame-info"
                         title={
@@ -449,6 +468,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
                       </span>
                       <span className="blame-hash">{commit.hash.slice(0, 8)}</span>
                       <span className="blame-summary">{commit.summary}</span>
+                      {line?.ignored && <span className="blame-ignored">Skipped an ignored commit</span>}
                       <span className="blame-preview-hint" aria-hidden="true">
                         <Icon name="info" size={14} />
                         <kbd>Space</kbd>

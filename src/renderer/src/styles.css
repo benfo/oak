@@ -2400,6 +2400,15 @@ input[type='checkbox']:focus-visible,
   gap: var(--space-1);
   color: var(--subtle-foreground);
 }
+/* A line named by skipping a bulk commit: the number is underlined in the warning colour, and the footer says why. */
+.blame-row.ignored .ln {
+  color: var(--warning);
+  text-decoration: underline dotted;
+}
+.blame-ignored {
+  flex: none;
+  color: var(--warning);
+}
 /* Replaces the commit summary for a few seconds, in the row's reserved height. */
 .blame-note {
   overflow: hidden;
