@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { findHits, gotoLine } from '../../../shared/find'
+import { useRevealFindMatch } from './useRevealFindMatch'
 
 const NO_HITS: [number, number][] = []
 
@@ -40,6 +41,8 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef, resolveLine, lin
   /** The occurrence Enter last moved to; it only counts while the cursor is still on its line. */
   const [hitIndex, setHitIndex] = useState(0)
   const current = hits[hitIndex]?.line === at ? hitIndex : (rowsWithHits.get(at)?.first ?? -1)
+  const [revealRequest, setRevealRequest] = useState(0)
+  useRevealFindMatch(scrollerRef, query && current >= 0 ? JSON.stringify([query, current, revealRequest]) : null)
   const resolved = query !== null && goto && resolveLine ? resolveLine(query) : null
   const target = query !== null && goto ? (resolveLine ? (resolved?.row ?? null) : gotoLine(query, lines.length)) : null
 
@@ -76,6 +79,7 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef, resolveLine, lin
     const first = found.findIndex((h) => h.line >= at)
     const to = first >= 0 ? first : found.length ? 0 : -1
     if (to < 0) return
+    setRevealRequest((n) => n + 1)
     setHitIndex(to)
     moveTo(found[to].line)
   }
@@ -98,6 +102,7 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef, resolveLine, lin
       to = after >= 0 ? after : 0
     }
     setHitIndex(to)
+    setRevealRequest((n) => n + 1)
     moveTo(hits[to].line)
   }
   /** The occurrences on one line, and which of them (if any) is the current one, for drawing the row. */
