@@ -60,7 +60,7 @@ export const lines: Line[] = [
         id: 'file-history',
         name: 'File history',
         text: ['Choose "Show file history" from a file\'s menu, or from the command palette, to filter the History graph to the commits that touched that file. Stepping through them shows only that file\'s diff.'],
-        points: ["Open a file's menu, or the command palette", 'Choose Show file history', "Step through the commits that touched it, each showing only that file's diff"],
+        points: ["Open a file's menu, or the command palette", 'Choose Show file history', "Step through the commits that touched it, each showing only that file's diff", 'Press Escape to return to all commits'],
       },
       {
         id: 'blame',
@@ -144,11 +144,11 @@ export const lines: Line[] = [
         name: 'Navigate by keyboard',
         text: ['Move between history, files and diffs using the keyboard. Tab steps through the controls inside a pane, such as the buttons in a file list. F6 switches panes.'],
         keys: [
-          { label: 'Find in a list', keys: ['Ctrl', 'F'] },
+          { label: 'Find in a list, diff or file', keys: ['Ctrl', 'F'] },
           { label: 'All shortcuts', keys: ['Ctrl', '/'] },
           { label: 'Switch panes', keys: ['F6'] },
         ],
-        points: ['Arrow keys move in lists, diffs and menus', 'Slash or Ctrl F searches the focused list', 'Optional h, j, k and l keys work alongside the arrows'],
+        points: ['Arrow keys move in lists, diffs and menus', 'Slash or Ctrl F searches the focused list, a diff or a file preview; type :120 to go to a line', 'Optional h, j, k and l keys work alongside the arrows'],
       },
       {
         id: 'focus',
