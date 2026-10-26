@@ -2,9 +2,9 @@
 
 Done, in progress and backlog. [PRODUCT.md](PRODUCT.md) holds who Oak is for and its principles; [AGENTS.md](AGENTS.md) holds the conventions and design rules; this file records status, decisions and ideas. Keep it short: when something ships, fold it into the shipped list below.
 
-## Current status (2026-10-24)
+## Current status (2026-10-26)
 
-**Open source (done 2026-10-23).** `benfo/oak` is the single public MIT repo. The private `benfo/oak-source` is archived and `OAK_PUBLIC_TOKEN` is revoked. `main` is one root commit, "Initial open-source release", and the only tag and release is `v0.1.15` (Latest); older releases and tags were deleted on purpose.
+**Open source (done 2026-10-23).** `benfo/oak` is the single public MIT repo. The private `benfo/oak-source` is archived and `OAK_PUBLIC_TOKEN` is revoked. `main` is one root commit, "Initial open-source release", and older releases and tags were deleted on purpose. Subsequent releases use the public repository.
 
 - Workflows run in this repo with the built-in `GITHUB_TOKEN`. The site publishes to this repo's `gh-pages`. Release steps are in `docs/releasing.md`.
 - Community files: `CONTRIBUTING.md`, `SECURITY.md` (private vulnerability reporting is on), `CODE_OF_CONDUCT.md`, issue and PR templates. Contributions come in under MIT with no CLA, and the maintainer approves every PR.
@@ -18,24 +18,23 @@ Lessons for any future history rewrite or tag move:
 - Remove branch protection before a force push and restore it afterwards. GitHub may keep old SHAs reachable until Support garbage-collects them.
 - This clone excludes `gh-pages` from fetch so it does not clutter History: `git config --add remote.origin.fetch "^refs/heads/gh-pages"` then `git branch -dr origin/gh-pages`. A fresh clone needs the same two commands.
 
-**Release state.** Oak 0.1.17 is prepared (notes in `src/shared/releases.json`); once its `v0.1.17` tag has published, `website/src/data/release.json` is pinned to it. The next version needs a `package.json` bump, release notes, a push to `main` and a matching `vX.Y.Z` tag. Details still worth knowing from the unreleased work:
+**Release state.** Oak 0.1.18 has shipped, including Blame and space/tab markers. The website downloads point to 0.1.18 and Blame has its own map stop. The next release follows `docs/releasing.md`. Details worth keeping from recent work:
 
 - "Merge into" a branch that is already contained in the current branch now says "Nothing to merge: <branch> already contains <ref>" (`merge` returns Git's output). A disabled "(already merged)" menu item was tried and reverted because the check delayed the menu. If wanted later, compute it in the background when a repo opens or refreshes, like the compare-target cache, so menus never wait on Git.
 - V switches the changed-files List/Tree view from the diff as well as the file lists (`switchView` has the `diff` role in `lib/keymap.ts`). It does nothing in the graph, sidebar or toolbar, in the expanded Code layout or in History's All files mode.
 - Opening Oak with flags before the folder (as automation tools pass them) now opens the right folder.
 - What's new lists the last 3 releases when no version range applies (`RECENT_RELEASES` in `lib/releaseNotes.ts`), so someone who skipped versions can still see recent notes. The notes list is a focusable pane, and the Preferences General tab attaches the Vim hint under its checkbox.
 - Website: map stops show a hint, a chevron and a "Back to the map" link, scroll their panel into view on click, and mobile visitors see a note that Oak is a desktop app.
-- Transit-map visual redesign of the Light and Dark base themes (tokens only; layout, behaviour and keyboard model unchanged): warm paper and ink Light, ink Dark, 2px radii, saturated line colours, a 3px graph with ringed stations, filled merge dots and a HEAD ring, WCAG AA text tiers, quieter avatars. Context is in `PRODUCT.md` and `DESIGN.md`. Still open from the finish review: `--radius-full` pills (branch button, chips) could use the signage radius, the Dark grounds could take an ink tint, the Light selection tint is cool on warm paper, and `.icon-btn` has a literal `24px` width. The `test:ui` test "scrolls a 5,000 commit history to the end" fails on a clean `main` too, so look at it before adding `test:ui` to CI.
+- Transit-map visual redesign of the Light and Dark base themes (tokens only; layout, behaviour and keyboard model unchanged): warm paper and ink Light, ink Dark, 2px radii, saturated line colours, a 3px graph with ringed stations, filled merge dots and a HEAD ring, WCAG AA text tiers, quieter avatars. Context is in `PRODUCT.md` and `DESIGN.md`. Still open from the finish review: `--radius-full` pills (branch button, chips) could use the signage radius, the Dark grounds could take an ink tint, the Light selection tint is cool on warm paper, and `.icon-btn` has a literal `24px` width. The 5,000-commit scroll test is currently removed with a TODO in `tests-ui/smoke.test.ts`; restore and stabilise it before adding `test:ui` to CI.
 
 ## Resume next
 
-0. **Website follow-ups.** The revamp has shipped. Panels have different heights, so content below the map shifts a little when a station changes; revisit if it bothers anyone. Keep the "planned" section in step with this file. Blame is still listed there; it moves to a line stop when Blame is released, not before, because pushes to `website/` deploy straight away. Notes and rules are in `website/README.md`.
+0. **Website follow-ups.** The revamp has shipped. Panels have different heights, so content below the map shifts a little when a station changes; revisit if it bothers anyone. Keep the "planned" section in step with this file. Blame now has a released feature stop. Notes and rules are in `website/README.md`.
 1. **Refactor follow-ups.** Add the `test:ui` job to `checks.yml` once the suite has been stable for a while (it needs a display on Linux, for example xvfb). Work down the 12 `max-lines` warnings (`npm run lint`) when touching those files; `DiffView.tsx` is still about 380 lines. The ESLint Babel parser needs `@babel/core` 8 declared explicitly so `npm ci` resolves its peers.
 2. **Agent contributions (first pass done).** `AGENTS.md` is now contributor-facing (design rules, keyboard model, tokens, checks, no releases or deploys). The maintainer's personal workflow lives in gitignored `AGENTS.local.md` (plus a `CLAUDE.local.md` import, both listed in `.git/info/exclude`), which `AGENTS.md` tells any agent to read, so a fresh clone needs them recreated. Still open: decide how to check that agent-written PRs follow the rules (PR template checklist, CI), and whether `AGENTS.md` should be shorter.
 3. **Code signing.** Windows marks downloads with Mark of the Web, so users must Unblock the installer (the website explains the workarounds). The real fix is signing. SignPath Foundation is free for open-source projects and Oak is now public, so it is worth reconsidering next to Azure Artifact Signing (about $10 a month, supported by electron-builder `win.azureSignOptions`, no hardware token). SmartScreen may still warn until reputation builds. Needs the maintainer to set up the account.
 4. **Conflict handling follow-ups** (one small step at a time; the maintainer wants it kept simple): stash-pop conflict banner, ours/theirs side labels (swapped in a rebase), modify/delete conflicts, pulling conflicts from Pull/Rebase into the same flow.
-5. **Blame (built on `feature/blame-view`, awaiting hand testing and a PR).** A persistent third Blame view (Ctrl+3), opened from file context menus or "Blame file..." in the palette, with a sidebar row that has its own close button. It blames the working tree from Changes and the palette, and the selected commit from History. The gutter names each block's commit by subject and age; a footer row shows the cursor line's commit and opens the full message popover (Space). Lines of the cursor's commit are tinted while that commit is a minority of the file. Enter, or a double-click on the gutter, shows the commit in History at the file and line it changed. N/P jump between blocks. B steps back to the version before a line's commit, with the cursor mapped through the commit's diff, renames followed and uncommitted lines stepping to HEAD (Backspace returns; the header chip and tint say it is an older version). Find (/ or Ctrl+F, ":120" goes to a line) counts and steps through every occurrence and highlights the match. Ignore whitespace and Ignore bulk commits toggles (`.git-blame-ignore-revs` or `blame.ignoreRevsFile`; skipped lines are marked). Syntax colours and the spaces-and-tabs markers share the diff settings. Header buttons mirror every key. Escape only dismisses a popover, menu or the find bar and never leaves the view; the Close buttons do. The code is split into `blame/` components and hooks, with find in `shared/find.ts`, `lib/useFindInFile.ts` and `components/FindBar.tsx` ready for the other code views. Not in v1: a revision picker, `-C`, blame in side-by-side diffs, and cancelling a stale blame when switching files. At release: add notes to `src/shared/releases.json` and `CHANGELOG.md`, move Blame out of the website's "planned" list into a stop in `website/src/data/lines.ts` (it needs points or screenshots), and move this item to Shipped.
-6. **Housekeeping.** Optionally ask GitHub Support to garbage-collect the old commit SHAs; add a README screenshot; confirm Linux in more real-world testing.
+5. **Housekeeping.** Optionally ask GitHub Support to garbage-collect the old commit SHAs; add a README screenshot; confirm Linux in more real-world testing.
 
 ## Shipped
 
@@ -83,6 +82,16 @@ Versions are approximate for the early work: everything before 0.1.8 is grouped.
 - The History file list renders only the rows near the viewport (checked with a 5,000-file commit). The other long lists (commit graph, sidebar tree, palettes, All files tree, Changes) were already virtualized; the rest are small and bounded.
 - A Playwright smoke suite (`npm run test:ui`, `tests-ui/`) drives the real app: open, diff, staging, line selection, hunks, layouts, History, and the 5,000-commit and 60,000-line windows. Adding it to CI is a follow-up once it has proven stable.
 - The diff view (inline and side by side) renders only rows near the viewport once a diff has over 600 rows, using `@tanstack/react-virtual` (checked with a 60,000-line file). Native select-all and copy then cover only rendered rows; line-pick copy is unaffected.
+
+**0.1.16 to 0.1.18**
+
+- Transit-map Light and Dark themes, graph station rings and merge dots.
+- Per-repository branch hiding by pattern and remote-only status, with the checked-out branch always visible.
+- Persistent Blame view (Ctrl+3), with commit details, History navigation, stepping to earlier versions, occurrence-based find and line jumps, ignore-whitespace and ignore-revisions options. Escape dismisses transient UI and keeps the view open. Shared find helpers, hook and bar are ready for other code views.
+- Space and tab markers shared by diffs and Blame.
+- Feature styles split into separate files, preserving cascade order.
+- Website downloads updated to 0.1.18, with a Blame map stop and screenshot.
+- Blame follow-ups remain: a revision picker, copy detection, blame in side-by-side diffs, and cancelling stale requests when switching files.
 
 ## Decisions worth keeping
 
