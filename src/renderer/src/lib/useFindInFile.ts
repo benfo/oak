@@ -41,15 +41,20 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef, resolveLine, lin
   /** The occurrence Enter last moved to; it only counts while the cursor is still on its line. */
   const [hitIndex, setHitIndex] = useState(0)
   const current = hits[hitIndex]?.line === at ? hitIndex : (rowsWithHits.get(at)?.first ?? -1)
+  // Enter can reveal the same occurrence again after manual scrolling, even when its index is unchanged.
   const [revealRequest, setRevealRequest] = useState(0)
   useRevealFindMatch(scrollerRef, query && current >= 0 ? JSON.stringify([query, current, revealRequest]) : null)
-  const resolved = query !== null && goto && resolveLine ? resolveLine(query) : null
-  const target = query !== null && goto ? (resolveLine ? (resolved?.row ?? null) : gotoLine(query, lines.length)) : null
+  const resolveTarget = (text: string) => {
+    if (resolveLine) return resolveLine(text)
+    const row = gotoLine(text, lines.length)
+    return row === null ? null : { row, label: String(row + 1) }
+  }
+  const target = query !== null && goto ? resolveTarget(query) : null
 
   const status = goto
     ? target === null
       ? lineNotFound
-      : `Go to line ${resolved?.label ?? target + 1}`
+      : `Go to line ${target.label}`
     : !query
       ? ''
       : !hits.length
@@ -71,8 +76,8 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef, resolveLine, lin
   const change = (text: string) => {
     setQuery(text)
     if (text.startsWith(':')) {
-      const to = resolveLine ? (resolveLine(text)?.row ?? null) : gotoLine(text, lines.length)
-      if (to !== null) moveTo(to)
+      const to = resolveTarget(text)
+      if (to !== null) moveTo(to.row)
       return
     }
     const found = findHits(lines, text)
@@ -87,7 +92,7 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef, resolveLine, lin
   const enter = (backwards: boolean) => {
     if (goto) {
       if (target === null) return
-      moveTo(target)
+      moveTo(target.row)
       return close()
     }
     const n = hits.length
