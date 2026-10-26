@@ -563,7 +563,7 @@ function buildCommands({
     {
       id: 'focus-graph',
       revealsPanes: true,
-      title: 'Focus commit graph',
+      title: 'Focus History commit list (graph)',
       category: 'View',
       keys: 'Ctrl+Shift+2',
       run: () => {
@@ -585,7 +585,8 @@ function buildCommands({
     {
       id: 'restore-workspace-layout',
       title: 'Restore previous layout',
-      detail: 'Escape, when nothing else is selected',
+      help: 'Restore expanded code after dismissing overlays and line selection',
+      detail: 'Escape, after dismissing transient UI and line selection',
       category: 'View',
       keys: 'Escape',
       widgetFallback: true,
@@ -596,7 +597,7 @@ function buildCommands({
     {
       id: 'toggle-changes-tree',
       title: getSettings().changesTree ? 'Show changed files as a list' : 'Show changed files as a tree',
-      detail: 'V in a file list',
+      detail: 'V in a changed-file list or diff',
       category: 'View',
       run: toggleChangesTree
     },
