@@ -12,9 +12,10 @@ Windows 11 is the primary platform. Linux is experimental and macOS has not been
 ## Features
 
 - Review and stage changes by file, hunk or single line. A click selects exactly the line shown, and Oak never guesses at replacement pairs.
-- Inline or side-by-side diffs with syntax colours, word-level highlighting and adjustable context.
+- Inline or side-by-side diffs with syntax colours, word-level highlighting, adjustable context and find (Ctrl+F) in diffs and commit file previews.
 - Compare a branch with a target without checking it out, or review the branch at an earlier commit.
 - History scope: only the current branch's own commits, its full ancestry, or the branch plus a target.
+- File history: filter the graph to the commits that touched one file, following renames. Escape or Show all commits returns to the full graph.
 - Blame: see who last changed each line, step back to the version before a line's commit, find text in the file, and open the commit in History at the file and line it changed. Open it from a file's menu or the palette (Blame file…); Ctrl+3 returns to it.
 - Optional markers for spaces and tabs in diffs and Blame (Preferences, the diff toolbar, or the palette).
 - Changed files as a list or a folder tree (press V in a file list or the diff).
@@ -39,8 +40,9 @@ Press **Ctrl+/** for the searchable list of shortcuts.
 - **/** or **Ctrl+F** searches the focused list. In the branch and history search fields, Enter and Shift+Enter jump to the next and previous match, and Escape returns to the list.
 - **F6** and **Shift+F6** switch panes. Tab moves through the controls inside a pane.
 - In lists, the arrow keys move, **Space** selects, **Enter** acts (stage, unstage or open) and **Delete** discards.
-- In a diff, **N** and **P** jump between hunks, **Shift+Left/Right** scrolls long lines and **Ctrl+Shift+D** switches between inline and side by side.
+- In a diff, **N** and **P** jump between hunks, **Shift+Left/Right** scrolls long lines and **Ctrl+Shift+D** switches between inline and side by side. **Ctrl+F** finds text in the diff or file preview (type `:120` to go to a line) and Escape closes find.
 - In Blame, **N** and **P** jump between commit blocks, **B** shows the line as it was before its commit and **Backspace** returns, **/** or **Ctrl+F** finds text (type `:120` to go to a line), **Space** shows the full commit message and **Enter** opens the commit in History. **Escape** only closes a popover, menu or the find bar; the Close button closes Blame.
+- **Escape** closes the top menu, popover or find bar, then clears line selection. In History it also exits a comparison or file history from the graph or its banner.
 - **F11** expands the focused history graph or code area. Press it again to restore the layout.
 - Optional Vim-style navigation (Preferences > General) adds h/j/k/l alongside the arrow keys. It also works in menus.
 
