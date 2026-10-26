@@ -34,7 +34,9 @@ export function useRevealFindMatch(ref: RefObject<HTMLElement | null>, key: stri
       const boxes = marks.map((mark) => mark.getBoundingClientRect())
       const start = Math.min(...boxes.map((box) => box.left))
       const end = Math.max(...boxes.map((box) => box.right))
-      scroller.scrollLeft += findScrollDelta(left, right, start, end)
+      // Use the spacing token for breathing room beside both the gutter and the viewport edge.
+      const inset = parseFloat(getComputedStyle(scroller).getPropertyValue('--space-4')) || 0
+      scroller.scrollLeft += findScrollDelta(left, right, start, end, inset)
       revealed.current = { key, node: marks[0], width: scroller.clientWidth }
     }
     const schedule = () => {

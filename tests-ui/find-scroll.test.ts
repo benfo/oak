@@ -34,7 +34,7 @@ for (const view of ['inline', 'split', 'blame'] as const) {
         const left = Math.max(bounds.left, gutter?.right ?? bounds.left)
         return hits.every((hit) => {
           const box = hit.getBoundingClientRect()
-          return box.left >= left && box.right <= bounds.left + scroller.clientLeft + scroller.clientWidth && box.top >= bounds.top && box.bottom <= bounds.bottom
+          return box.left >= left + 16 && box.right <= bounds.left + scroller.clientLeft + scroller.clientWidth - 16 && box.top >= bounds.top && box.bottom <= bounds.bottom
         })
       })).toBe(true)
       await expect(input).toBeFocused()
