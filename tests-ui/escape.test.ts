@@ -66,7 +66,7 @@ test('Escape from Blame code closes find before restoring expanded code and pres
   await expect(page.locator('.blame-view')).toBeVisible()
 })
 
-test('Escape exits comparison from its graph, preserves it in code, and keeps file scope', async ({ open, small }) => {
+test('Escape exits comparison from its graph, preserves it in code, and exits file history the same way', async ({ open, small }) => {
   commitAll(small, 'Second commit')
   const page = await open(small, 'history')
   const graph = page.locator('.commit-list')
@@ -105,11 +105,16 @@ test('Escape exits comparison from its graph, preserves it in code, and keeps fi
   await expect(all).toBeVisible()
   await graph.focus()
   await page.keyboard.press('Escape')
-  await page.keyboard.press('Escape')
+  await expect(all).toHaveCount(0)
+  await expect(graph).toBeFocused()
+  await page.locator('.details-files').getByText('app.ts', { exact: true }).click({ button: 'right' })
+  await page.getByRole('menuitem', { name: 'Show file history', exact: true }).click()
   await expect(all).toBeVisible()
   await expect(graph).toBeFocused()
-  await all.click()
+  await all.focus()
+  await page.keyboard.press('Escape')
   await expect(all).toHaveCount(0)
+  await expect(graph).toBeFocused()
 })
 
 test('Escape clears the All files filter without backing out of the tree', async ({ open, small }) => {
