@@ -5,7 +5,7 @@ import { Tip } from '../components/Tip'
 import { PaneFrame, PaneSearch } from '../components/Pane'
 import { SearchFeedback } from '../components/SearchFeedback'
 import { usePane } from '../lib/usePane'
-import { handleNavigation } from '../lib/navigation'
+import { handleDismissNavigation, handleNavigation } from '../lib/navigation'
 import { useSearchMatches } from '../lib/useSearchMatches'
 import { ancestors, buildFileTree, filesInOrder, prepareSearch, searchPrepared, type TreeEntry } from './fileTreeModel'
 import { fileListCopy, registerListCopy } from '../lib/listCopy'
@@ -24,7 +24,6 @@ export function FileTree({
   onExpandedChange,
   onSelect,
   onOpen,
-  onBack,
   onMenu,
   onSwitch,
   focusRequest,
@@ -39,8 +38,6 @@ export function FileTree({
   onExpandedChange: (expanded: Set<string>) => void
   onSelect: (path: string) => void
   onOpen: () => void
-  /** Escape with nothing to clear; arrows never call it. */
-  onBack?: () => void
   onMenu: (path: string) => void
   onSwitch: () => void
   /** Focus the selected row (or the first) and scroll it into view, then report it handled. */
@@ -147,7 +144,7 @@ export function FileTree({
 
   /**
    * Arrows never leave the tree: → opens a folder, then enters it; ← closes a folder, then climbs to its parent.
-   * At a root row or on a file they do nothing. Enter opens a file; Escape clears the filter, then goes back.
+   * At a root row or on a file they do nothing. Enter opens a file; Escape only clears the filter.
    */
   const onTreeArrow = (e: React.KeyboardEvent, key: string, isFile: boolean) => {
     if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.nativeEvent.isComposing) return false
@@ -182,9 +179,9 @@ export function FileTree({
     const key = focusedKey()
     const isFile = !!key && !folderPaths.has(key)
     if (key && !e.defaultPrevented && onTreeArrow(e, key, isFile)) return
+    if (handleDismissNavigation(e, [query ? () => setQuery('') : undefined])) return
     handleNavigation(e, {
       switchList: onSwitch,
-      dismiss: query ? () => setQuery('') : onBack,
       menu: key && isFile ? () => onMenu(key) : undefined,
       activate: key ? (isFile ? onOpen : () => toggle(key)) : undefined
     })

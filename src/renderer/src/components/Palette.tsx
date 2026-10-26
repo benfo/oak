@@ -1,5 +1,5 @@
-import { fuzzyPositions, prepareFuzzy, rankFuzzy, type FuzzyTarget } from '../lib/fuzzy'
-import { useDeferredValue, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { prepareFuzzy, rankFuzzy, type FuzzyTarget } from '../lib/fuzzy'
+import { useDeferredValue, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { flushSync } from 'react-dom'
 import {
   Autocomplete,
@@ -19,7 +19,9 @@ import {
   type Key
 } from 'react-aria-components'
 import { Icon } from './Icon'
+import { PaletteRow } from './PaletteRow'
 import { handleNavigation } from '../lib/navigation'
+import { readRecent, remember } from '../lib/recents'
 import { createStore } from '../ui'
 import { ShortcutsDialog } from './ShortcutsDialog'
 import { displayKeys, matchKeys, type Command } from '../commands'
@@ -52,6 +54,8 @@ export interface PaletteAction {
 
 interface PaletteReq {
   placeholder: string
+  /** Commands use aligned category and shortcut columns; pickers keep their compact row layout. */
+  kind?: 'commands'
   /** Text the search box starts with (e.g. the sidebar filter). */
   query?: string
   items: PaletteItem[]
@@ -106,24 +110,8 @@ const MAX_RESULTS = 2000
 const ROW_H = 32
 const VISIBLE_ROWS = 12
 const HEADING_H = 28
-
-function readRecent(key?: string): string[] {
-  if (!key) return []
-  try {
-    return JSON.parse(localStorage.getItem(key) ?? '[]')
-  } catch {
-    return []
-  }
-}
-
-function remember(key: string | undefined, id: string) {
-  if (!key) return
-  try {
-    localStorage.setItem(key, JSON.stringify([id, ...readRecent(key).filter((x) => x !== id)].slice(0, 10)))
-  } catch {
-    // recents just won't be remembered
-  }
-}
+/** Breathing room under the last row. */
+const LIST_PAD = 8
 
 // ---------- components ----------
 
@@ -153,6 +141,7 @@ interface Group {
  */
 function Palette({ req }: { req: PaletteReq }) {
   useShortcutOverlay('picker')
+  const isCommands = req.kind === 'commands'
   const [query, setQuery] = useState(req.query ?? '')
   const opener = useRef(document.activeElement as HTMLElement | null)
 
@@ -227,8 +216,12 @@ function Palette({ req }: { req: PaletteReq }) {
     return out.filter((g) => g.rows.length)
   }, [q, text, prepared, recentIds])
 
-  const rowCount = groups.reduce((n, g) => n + g.rows.length, 0)
   const headings = groups.filter((g) => g.title).length
+  const rowCount = groups.reduce((count, group) => count + group.rows.length, 0)
+  // "No matches" gets the height of one row, so going from one match to none doesn't move the edge.
+  const resultHeight = Math.min(Math.max(rowCount, 1) * ROW_H + headings * HEADING_H, VISIBLE_ROWS * ROW_H) + LIST_PAD
+  const showChecks = req.items.some((item) => item.current)
+  const showCategories = req.items.some((item) => item.category)
   const floatRecent = !q && !req.recentGroup ? new Set(recentIds) : new Set<string>()
   const findRow = (key: Key) => {
     for (const g of groups) for (const row of g.rows) if (row.key === key) return row
@@ -286,6 +279,7 @@ function Palette({ req }: { req: PaletteReq }) {
       <div className="palette-body" onKeyDownCapture={onFooterShortcut}>
         <Autocomplete inputValue={query} onInputChange={setQuery}>
           <TextField className="palette-field" aria-label={req.placeholder} autoFocus>
+            <Icon name="search" size={16} />
             <Input className="palette-input" placeholder={req.placeholder} spellCheck={false} onKeyDownCapture={onKeyDownCapture} />
           </TextField>
           {/* Virtualized: only the rows in view are drawn, however many items match. */}
@@ -293,7 +287,7 @@ function Palette({ req }: { req: PaletteReq }) {
             <ListBox
               className="palette-list"
               // Virtualized rows are absolutely positioned, so the list can't size to them.
-              style={{ height: rowCount ? Math.min(rowCount * ROW_H + headings * HEADING_H, VISIBLE_ROWS * ROW_H) + 8 : undefined }}
+              style={{ height: resultHeight }}
               aria-label="Results"
               items={groups}
               dependencies={[q]}
@@ -307,25 +301,17 @@ function Palette({ req }: { req: PaletteReq }) {
                     {(row) => (
                       <ListBoxItem id={row.key} textValue={row.match.text} className="palette-item">
                         {({ isFocused }) => (
-                          <div className="palette-row">
-                            <span className="palette-check">{row.match.item.current && <Icon name="check" size={14} />}</span>
-                            <span className="palette-label">
-                              <Highlighted
-                                text={row.match.text}
-                                query={q}
-                                dimTo={row.match.item.category ? row.match.item.category.length + 1 : 0}
-                              />
-                            </span>
-                            {row.match.item.badges?.map((b) => (
-                              <span key={b.text} className={`pill ${b.warn ? 'warn' : ''}`}>
-                                {b.text}
-                              </span>
-                            ))}
-                            {row.match.item.detail && <span className="palette-detail">{row.match.item.detail}</span>}
-                            {floatRecent.has(row.match.item.id) && <span className="palette-recent">recent</span>}
-                            {row.match.item.hint && <kbd>{displayKeys(row.match.item.hint)}</kbd>}
-                            {req.onHighlight && <OnHighlight focused={isFocused} id={row.match.item.id} run={req.onHighlight} />}
-                          </div>
+                          <PaletteRow
+                            item={row.match.item}
+                            text={row.match.text}
+                            query={q}
+                            commands={isCommands}
+                            showChecks={showChecks}
+                            showCategories={showCategories}
+                            recent={floatRecent.has(row.match.item.id)}
+                            focused={isFocused}
+                            onHighlight={req.onHighlight}
+                          />
                         )}
                       </ListBoxItem>
                     )}
@@ -356,6 +342,8 @@ function Palette({ req }: { req: PaletteReq }) {
         className="palette dropdown"
         triggerRef={{ current: req.anchor }}
         placement="bottom start"
+        // Shrinking while searching must never flip the panel above its button.
+        shouldFlip={false}
         offset={6}
         isOpen
         onOpenChange={cancel}
@@ -366,29 +354,7 @@ function Palette({ req }: { req: PaletteReq }) {
 
   return (
     <ModalOverlay className={`palette-backdrop ${req.seeThrough ? 'see-through' : ''}`} isOpen isDismissable onOpenChange={cancel}>
-      <AriaModal className="palette">{body}</AriaModal>
+      <AriaModal className={`palette${isCommands ? ' command-palette' : ''}`}>{body}</AriaModal>
     </ModalOverlay>
-  )
-}
-
-/** Inside a ListBoxItem: reports when that item gets the (virtual) cursor. */
-function OnHighlight({ focused, id, run }: { focused: boolean; id: string; run: (id: string) => void }) {
-  useEffect(() => {
-    if (focused) run(id)
-  }, [focused])
-  return null
-}
-
-/** The label with matched letters emphasised; only rendered for rows in view. */
-function Highlighted({ text, query, dimTo }: { text: string; query: string; dimTo: number }) {
-  const hits = useMemo(() => (query ? fuzzyPositions(query, text) : new Set<number>()), [query, text])
-  return (
-    <>
-      {[...text].map((ch, i) => (
-        <span key={i} className={`${hits.has(i) ? 'hit' : ''} ${i < dimTo ? 'dim-part' : ''}`}>
-          {ch}
-        </span>
-      ))}
-    </>
   )
 }

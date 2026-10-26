@@ -1,6 +1,7 @@
 import { Button, Input, TextField } from 'react-aria-components'
 import { Icon } from './Icon'
 import { Tip } from './Tip'
+import { handleDismissNavigation } from '../lib/navigation'
 
 interface Props {
   query: string
@@ -11,24 +12,21 @@ interface Props {
   /** Enter goes to the next match (Shift+Enter, the previous); for a ":120" query it goes to the line and closes. */
   onEnter: (backwards: boolean) => void
   onClose: () => void
+  scopeHint?: string
 }
 
 /** The find bar for a code view (see useFindInFile): drawn over the top right of the nearest positioned ancestor, so the code never moves. */
-export function FindBar({ query, status, inputRef, onChange, onEnter, onClose }: Props) {
+export function FindBar({ query, status, inputRef, onChange, onEnter, onClose, scopeHint }: Props) {
   // A ":120" query goes to a line, so stepping does not apply; the buttons stay (disabled) so the bar never changes size.
   const goto = query.startsWith(':')
   return (
-    <div className="find-bar" role="search">
+    <div className="find-bar" role="search" onKeyDownCapture={(e) => handleDismissNavigation(e, [onClose], { allowTextInput: true })}>
       <TextField className="find-bar-field" aria-label="Find in file" value={query} onChange={onChange} autoFocus>
         <Input
           ref={inputRef}
           placeholder="Find, or :120 for a line"
           onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              e.preventDefault()
-              e.stopPropagation()
-              onClose()
-            } else if (e.key === 'Enter') {
+            if (e.key === 'Enter') {
               e.preventDefault()
               onEnter(e.shiftKey)
             }
@@ -72,6 +70,7 @@ export function FindBar({ query, status, inputRef, onChange, onEnter, onClose }:
           <Icon name="x" size={14} />
         </Button>
       </Tip>
+      {scopeHint && <span className="find-bar-hint">{scopeHint}</span>}
     </div>
   )
 }

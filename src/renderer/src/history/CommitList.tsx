@@ -4,7 +4,7 @@ import { WORKING_HASH } from '../../../shared/working.ts'
 import type { Graph, GraphRow } from './graph'
 import { relativeTime } from '../lib/format'
 import { Avatar } from '../components/Avatar'
-import { canHandleNavigation, handleListNav, handleNavigation, movementDelta } from '../lib/navigation'
+import { canHandleNavigation, handleDismissNavigation, handleListNav, handleNavigation, movementDelta } from '../lib/navigation'
 import { widgetAction } from '../lib/keymap'
 import { shortcutPlatform } from '../lib/shortcuts'
 import { usePane } from '../lib/usePane'
@@ -34,11 +34,9 @@ interface Props {
   onDisplayMenu?: (e: React.SyntheticEvent) => void
   selected: string | null
   compareBase: string | null
-  comparing?: boolean
   onToggle: (hash: string) => void
-  onClearComparison: () => void
-  /** Escape when no comparison is active (for example, clears a file's history). */
-  onDismiss?: () => void
+  /** Only supplied while this graph owns a visibly announced comparison. */
+  onDismissComparison?: () => void
   /** Bumped whenever the selected row should be scrolled into view. */
   revealKey: number
   onSelect: (hash: string) => void
@@ -61,10 +59,8 @@ export function CommitList({
   onDisplayMenu,
   selected,
   compareBase,
-  comparing,
   onToggle,
-  onClearComparison,
-  onDismiss,
+  onDismissComparison,
   revealKey,
   onSelect,
   onContextMenu,
@@ -121,7 +117,7 @@ export function CommitList({
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (!canHandleNavigation(e)) return
-    if (handleNavigation(e, { dismiss: comparing ? onClearComparison : onDismiss })) return
+    if (handleDismissNavigation(e, [onDismissComparison])) return
     const widget = widgetAction(e.nativeEvent, 'graph', shortcutPlatform())
     if ((widget === 'select' || widget === 'toggleSelect') && cursor) {
       e.preventDefault()
@@ -184,7 +180,7 @@ export function CommitList({
         {...pane.resetProps}
         role="listbox"
         aria-multiselectable="true"
-        aria-label="Commit graph. Ctrl+click two commits to compare. Ctrl+arrows move focus, Ctrl+Space toggles selection, Escape ends comparison."
+        aria-label="Commit graph. Ctrl+click two commits to compare. Ctrl+arrows move focus, Ctrl+Space toggles selection."
         aria-activedescendant={cursorIndex >= start && cursorIndex < end ? `${id}-${cursor}` : undefined}
         onKeyDown={onKeyDown}
         onKeyDownCapture={(e) => pane.navigate(e, onSearch)}

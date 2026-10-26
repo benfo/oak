@@ -5,60 +5,9 @@ import { Modal } from '../ui'
 import { Icon } from './Icon'
 import { useSettings } from '../settings'
 import { WIDGET_KEYMAP } from '../lib/keymap'
-
-const navigation = [
-  ['Next / previous control or pane', 'Tab / Shift+Tab', 'Navigation'],
-  ['Move selection', '↑ ↓ Home End PageUp PageDown', 'Navigation'],
-  ['Open commit files / diff', '→ or Enter', 'History'],
-  ['Back out of a pane', '← or Esc', 'Navigation'],
-  ['Expand / collapse (sidebar and all files tree)', '→ / ←', 'Navigation'],
-  ['Next / previous match in search', 'Enter / Shift+Enter', 'Navigation'],
-  ['Leave search for its list', 'Esc or Tab', 'Navigation'],
-  ['Accept highlighted picker item', 'Enter', 'Navigation'],
-  ['Context menu', 'Shift+F10', 'Navigation'],
-  ['Resize the focused pane (the divider moves that way)', 'Shift+Alt+← ↑ ↓ →', 'Navigation'],
-  ['Resize a clicked divider', 'Arrow keys · Home / End', 'Navigation'],
-  ['Return from divider to previous control', 'Esc', 'Navigation'],
-  ['Select files', 'Shift+↑↓, Ctrl+A, Space', 'Files'],
-  ['Open focused file in diff', '→', 'Files'],
-  ['Return from files to sidebar', '← or Esc', 'Files'],
-  ['Stage / unstage files', 'Enter or double-click', 'Files'],
-  ['Discard files', 'Delete', 'Files'],
-  ['Compare two commits / replace After', 'Ctrl+click', 'History'],
-  ['End commit comparison (in graph)', 'Esc', 'History'],
-  ['Scroll code left / right', 'Shift+← / Shift+→', 'Diff'],
-  ['Select lines in a diff', 'Shift+↑↓, Space, Ctrl+A', 'Diff'],
-  ['Stage / unstage lines or hunk', 'Enter', 'Diff'],
-  ['Discard lines or hunk', 'Delete', 'Diff'],
-  ['Commit', 'Ctrl+Enter', 'Commit'],
-  ['Commit & push', 'Ctrl+Shift+Enter', 'Commit']
-] as const
-
-// Search written-out key names as well as the glyphs used in the cheat sheet.
-const normalize = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/^\s*\/\s*$/, 'slash')
-    .replace(/^\s*,\s*$/, 'comma')
-    .replace(/↑/g, ' arrowup up ')
-    .replace(/↓/g, ' arrowdown down ')
-    .replace(/←/g, ' arrowleft left ')
-    .replace(/→/g, ' arrowright right ')
-    .replace(/⌘/g, ' ctrl cmd command ')
-    .replace(/⇧/g, ' shift ')
-    .replace(/⌥/g, ' alt option ')
-    .replace(/control/g, 'ctrl')
-    .replace(/escape/g, 'esc')
-    .replace(/return/g, 'enter')
-    .replace(/\b(cmd|command)\b/g, 'ctrl')
-    .replace(/\bpgup\b/g, 'pageup')
-    .replace(/\bpgdn\b/g, 'pagedown')
-    .replace(/ctrl\+\//g, 'ctrl slash')
-    .replace(/ctrl\+,/g, 'ctrl comma')
-    .replace(/ctrl\+`/g, 'ctrl backtick')
-    .replace(/[+/,]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+import { handleDismissNavigation } from '../lib/navigation'
+import { shortcutNavigationHelp } from './shortcutNavigationHelp'
+import { matchesShortcutHelp, prepareShortcutHelp } from '../../../shared/shortcutHelp'
 
 export function ShortcutsDialog({ commands, onClose }: { commands: Command[]; onClose: () => void }) {
   const { vimNavigation } = useSettings()
@@ -69,44 +18,75 @@ export function ShortcutsDialog({ commands, onClose }: { commands: Command[]; on
     () =>
       [
         ...commands
-          .filter((c) => c.keys)
+          // Widget help presents list and code find as one action.
+          .filter((c) => c.keys && c.id !== 'find-in-pane')
           .map((c) => ({
             id: c.id,
-            title: c.shortcutDisabledReason ? `${c.help ?? c.title} — ${c.shortcutDisabledReason}` : (c.help ?? c.title),
-            keys: c.keys!,
-            category: c.category
+            title: c.shortcutDisabledReason ? `${c.help ?? c.title}: ${c.shortcutDisabledReason}` : (c.help ?? c.title),
+            keys: c.keys!.replace(/\bEscape\b/g, 'Esc'),
+            category: c.category,
+            bindings: [c.keys!]
           })),
-        ...navigation.map(([title, keys, category], i) => ({ id: `navigation-${i}`, title, keys, category })),
-        ...WIDGET_KEYMAP.flatMap((w) => (w.help ? [{ id: `widget-${w.action}-${w.roles[0]}`, ...w.help }] : [])),
+        ...shortcutNavigationHelp.map(([title, keys, category, bindings], i) => ({
+          id: `navigation-${i}`,
+          title,
+          keys,
+          category,
+          bindings
+        })),
+        ...WIDGET_KEYMAP.flatMap((w) => (w.help ? [{ id: `widget-${w.action}-${w.roles[0]}`, ...w.help, bindings: w.keys }] : [])),
         ...(vimNavigation
           ? [
-              { id: 'vim-move', title: 'Move down / up (Vim)', keys: 'j / k', category: 'Navigation' },
+              {
+                id: 'vim-move',
+                title: 'Lists and code: move down / up (Vim)',
+                keys: 'j / k',
+                category: 'Navigation',
+                bindings: ['j', 'k']
+              },
               {
                 id: 'vim-half-page',
                 title: 'Move half a page down / up in the focused list or diff (Vim)',
                 keys: 'Ctrl+D / Ctrl+U',
-                category: 'Navigation'
+                category: 'Navigation',
+                bindings: ['Ctrl+D', 'Ctrl+U']
               },
-              { id: 'vim-ends', title: 'First / last item or line in the focused pane (Vim)', keys: 'gg / G', category: 'Navigation' },
-              { id: 'vim-panes', title: 'Back / deeper or collapse / expand (Vim)', keys: 'h / l', category: 'Navigation' },
-              { id: 'vim-menu-move', title: 'Move down / up in menus (Vim)', keys: 'j / k', category: 'Navigation' },
-              { id: 'vim-submenus', title: 'Close / open submenu (Vim)', keys: 'h / l', category: 'Navigation' },
-              { id: 'vim-scroll', title: 'Scroll code left / right (Vim)', keys: 'Shift+H / Shift+L', category: 'Diff' }
+              {
+                id: 'vim-ends',
+                title: 'Lists and code: first / last item or line (Vim)',
+                keys: 'gg / Shift+G',
+                category: 'Navigation',
+                bindings: ['gg', 'Shift+g']
+              },
+              {
+                id: 'vim-panes',
+                title: 'Lists and code: move left / right (Vim)',
+                keys: 'h / l',
+                category: 'Navigation',
+                bindings: ['h', 'l']
+              },
+              { id: 'vim-menu-move', title: 'Menus: move down / up (Vim)', keys: 'j / k', category: 'Navigation', bindings: ['j', 'k'] },
+              {
+                id: 'vim-submenus',
+                title: 'Menus: close / open submenu (Vim)',
+                keys: 'h / l',
+                category: 'Navigation',
+                bindings: ['h', 'l']
+              },
+              {
+                id: 'vim-scroll',
+                title: 'Code: scroll left / right (Vim)',
+                keys: 'Shift+H / Shift+L',
+                category: 'Diff',
+                bindings: ['Shift+h', 'Shift+l']
+              }
             ]
           : [])
-      ].map((s) => ({
-        ...s,
-        search: normalize(`${s.title} ${s.category} ${s.keys} ${displayKeys(s.keys)}`),
-        keyWords: new Set(normalize(`${s.keys} ${displayKeys(s.keys)}`).split(' '))
-      })),
+      ].map(prepareShortcutHelp),
     [commands, vimNavigation]
   )
   const categories = [...new Set(shortcuts.map((s) => s.category))].sort()
-  const words = normalize(query).split(' ').filter(Boolean)
-  const keyQuery = /^(ctrl|control|cmd|command|alt|shift|⌘|⇧|⌥)(?:\+|\s)/i.test(query.trim())
-  const matching = shortcuts.filter(
-    (s) => (!category || s.category === category) && words.every((word) => (keyQuery ? s.keyWords.has(word) : s.search.includes(word)))
-  )
+  const matching = shortcuts.filter((s) => (!category || s.category === category) && matchesShortcutHelp(s, query))
   const groups = new Map<string, typeof matching>()
   for (const s of matching) groups.set(s.category, [...(groups.get(s.category) ?? []), s])
   useEffect(() => {
@@ -123,13 +103,7 @@ export function ShortcutsDialog({ commands, onClose }: { commands: Command[]; on
               autoFocus
               placeholder="Search actions or keys…"
               spellCheck={false}
-              onKeyDownCapture={(e) => {
-                if (e.key === 'Escape' && query) {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  setQuery('')
-                }
-              }}
+              onKeyDownCapture={(e) => handleDismissNavigation(e, [query ? () => setQuery('') : undefined], { allowTextInput: true })}
             />
             <Button className="link shortcut-clear" aria-label="Clear shortcut search">
               Clear
@@ -153,7 +127,14 @@ export function ShortcutsDialog({ commands, onClose }: { commands: Command[]; on
           {matching.length} of {shortcuts.length} shortcuts
         </div>
         <div className="pane-frame">
-          <div ref={results} className="shortcuts-results" tabIndex={0} data-pane="shortcuts" aria-label="Keyboard shortcut results">
+          <div
+            ref={results}
+            className="shortcuts-results"
+            role="region"
+            tabIndex={0}
+            data-pane="shortcuts"
+            aria-label="Keyboard shortcut results"
+          >
             {matching.length ? (
               [...groups].map(([cat, rows]) => (
                 <section key={cat} className="shortcut-group" aria-label={cat}>
@@ -161,7 +142,10 @@ export function ShortcutsDialog({ commands, onClose }: { commands: Command[]; on
                   <dl>
                     {rows.map((s) => (
                       <div key={s.id} className="shortcut-row">
-                        <dt>{s.title}</dt>
+                        <dt>
+                          {s.title}
+                          {s.description && <div className="muted small">{s.description}</div>}
+                        </dt>
                         <dd>
                           <kbd>{displayKeys(s.keys)}</kbd>
                         </dd>
@@ -176,7 +160,7 @@ export function ShortcutsDialog({ commands, onClose }: { commands: Command[]; on
           </div>
         </div>
         <div className="shortcuts-footer">
-          <span className="muted small">Esc clears search, then closes · Run actions with Ctrl+Shift+P</span>
+          <span className="muted small">In search, Esc clears the query first. Otherwise, Esc closes.</span>
           <Button className="btn" onPress={onClose}>
             Close
           </Button>

@@ -18,12 +18,12 @@ import { Split } from '../components/Split'
 import { api, showMenu } from '../api'
 import { hiddenBranchRefs } from '../sidebar/sidebarBranches'
 import * as act from '../actions'
-import { focusPane, handleNavigation, handleToolNavigation } from '../lib/navigation'
+import { focusPane, handleDismissNavigation, handleToolNavigation } from '../lib/navigation'
 import type { Branch, Commit, MenuItem } from '../../../shared/types'
 import { useSettings, updateSettings } from '../settings'
 import { useSearchMatches } from '../lib/useSearchMatches'
 import { SearchFeedback } from '../components/SearchFeedback'
-import { PaneSearch } from '../components/Pane'
+import { PaneFrame, PaneSearch } from '../components/Pane'
 import { Tip } from '../components/Tip'
 import type { WorkspaceLayout } from '../components/LayoutMenu'
 import type { CommitTarget } from '../blame/BlameView'
@@ -261,6 +261,7 @@ export function HistoryView({
     setPinned(null)
     if (focus) focusPane('.commit-list')
   }
+  const dismissComparison = pinned || compareBase ? () => endComparison() : undefined
   const pin = (targetBranch: Branch, source: Branch | null = null) => {
     const other = source && !source.current ? { fullName: source.fullName, name: source.name } : null
     setPinned({
@@ -444,7 +445,7 @@ export function HistoryView({
 
   // The list lags the file filter while Git follows the file; show that instead of the previous list as if it were current.
   const fileLoading = !pinned && r.historyFile !== r.commitsFile
-  // With no commits there is no list to hold focus, so the empty message takes it and Escape still backs out.
+  // With no commits there is no list to hold focus, so the empty message takes it.
   const emptyList = r.commits.length === 0
   useEffect(() => {
     if (!emptyList || !(pinned || r.historyFile)) return
@@ -522,7 +523,12 @@ export function HistoryView({
           <HiddenBranchesToggle r={r} />
         </div>
         {pinned && (
-          <div className="comparison-banner" role="status" data-pane-owner="graph" onKeyDown={handleToolNavigation}>
+          <div
+            className="comparison-banner"
+            role="status"
+            data-pane-owner="graph"
+            onKeyDown={(e) => handleDismissNavigation(e, [dismissComparison], { allowTextInput: true })}
+          >
             <span className="comparison-banner-text">
               Comparing <strong>{pinned.source?.name ?? r.status?.branch ?? 'HEAD'}</strong> against <strong>{pinned.name}</strong>
               <span className="muted"> · showing only commits {pinned.name} lacks</span>
@@ -544,7 +550,7 @@ export function HistoryView({
                 · following renames · {SCOPES.find((s) => s.kind === r.historyScope)!.label(!!r.status && !r.status.branch)}
               </span>
             </span>
-            <Tip label="Show all commits" keys="Esc">
+            <Tip label="Show all commits">
               <button className="btn" onClick={clearFileHistory}>
                 <Icon name="x" size={12} />
                 Show all commits
@@ -553,19 +559,20 @@ export function HistoryView({
           </div>
         )}
         {r.commits.length === 0 ? (
-          <div
-            className="pane-empty history-empty"
-            tabIndex={0}
-            onKeyDown={(e) =>
-              handleNavigation(e, { dismiss: pinned ? () => endComparison() : r.historyFile ? clearFileHistory : undefined })
-            }
-          >
-            {pinned
-              ? `Nothing on ${pinned.source?.name ?? r.status?.branch ?? 'HEAD'} that ${pinned.name} lacks`
-              : r.historyFile
-                ? 'No commits touch this file'
-                : 'No commits yet'}
-          </div>
+          <PaneFrame>
+            <div
+              className="pane-empty history-empty"
+              data-pane="graph"
+              tabIndex={0}
+              onKeyDown={(e) => handleDismissNavigation(e, [dismissComparison])}
+            >
+              {pinned
+                ? `Nothing on ${pinned.source?.name ?? r.status?.branch ?? 'HEAD'} that ${pinned.name} lacks`
+                : r.historyFile
+                  ? 'No commits touch this file'
+                  : 'No commits yet'}
+            </div>
+          </PaneFrame>
         ) : (
           <CommitList
             commits={r.commits}
@@ -584,10 +591,8 @@ export function HistoryView({
             }}
             selected={activeHash}
             compareBase={compareBase}
-            comparing={!!pinned || !!compareBase}
             onToggle={toggle}
-            onClearComparison={() => endComparison()}
-            onDismiss={r.historyFile ? clearFileHistory : undefined}
+            onDismissComparison={dismissComparison}
             revealKey={revealKey}
             onSelect={(h) => select(h, false)}
             onNearEnd={r.hasMore ? r.loadMore : undefined}

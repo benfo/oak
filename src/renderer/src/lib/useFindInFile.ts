@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { findHits, gotoLine } from '../../../shared/find'
+import { useRevealFindMatch } from './useRevealFindMatch'
 
 const NO_HITS: [number, number][] = []
 
@@ -12,6 +13,9 @@ interface Options {
   moveTo: (line: number) => void
   /** The scroller that takes focus back when the bar closes. */
   scrollerRef: React.RefObject<HTMLElement | null>
+  /** Map a source line number to a displayed row (diffs have gaps and two number columns). */
+  resolveLine?: (query: string) => { row: number; label: string } | null
+  lineNotFound?: string
 }
 
 /**
@@ -19,7 +23,7 @@ interface Options {
  * the current one, and stepping with Enter. A query that starts with ":" is a line number to go to instead.
  * The view draws `FindBar` from `query`, `status` and the handlers, and marks `hitsOn(line)` in its rows.
  */
-export function useFindInFile({ lines, at, moveTo, scrollerRef }: Options) {
+export function useFindInFile({ lines, at, moveTo, scrollerRef, resolveLine, lineNotFound = 'Line number' }: Options) {
   /** The bar's text; null while it is closed. */
   const [query, setQuery] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -37,12 +41,20 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef }: Options) {
   /** The occurrence Enter last moved to; it only counts while the cursor is still on its line. */
   const [hitIndex, setHitIndex] = useState(0)
   const current = hits[hitIndex]?.line === at ? hitIndex : (rowsWithHits.get(at)?.first ?? -1)
-  const target = query !== null && goto ? gotoLine(query, lines.length) : null
+  // Enter can reveal the same occurrence again after manual scrolling, even when its index is unchanged.
+  const [revealRequest, setRevealRequest] = useState(0)
+  useRevealFindMatch(scrollerRef, query && current >= 0 ? JSON.stringify([query, current, revealRequest]) : null)
+  const resolveTarget = (text: string) => {
+    if (resolveLine) return resolveLine(text)
+    const row = gotoLine(text, lines.length)
+    return row === null ? null : { row, label: String(row + 1) }
+  }
+  const target = query !== null && goto ? resolveTarget(query) : null
 
   const status = goto
     ? target === null
-      ? 'Line number'
-      : `Go to line ${target + 1}`
+      ? lineNotFound
+      : `Go to line ${target.label}`
     : !query
       ? ''
       : !hits.length
@@ -64,14 +76,15 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef }: Options) {
   const change = (text: string) => {
     setQuery(text)
     if (text.startsWith(':')) {
-      const to = gotoLine(text, lines.length)
-      if (to !== null) moveTo(to)
+      const to = resolveTarget(text)
+      if (to !== null) moveTo(to.row)
       return
     }
     const found = findHits(lines, text)
     const first = found.findIndex((h) => h.line >= at)
     const to = first >= 0 ? first : found.length ? 0 : -1
     if (to < 0) return
+    setRevealRequest((n) => n + 1)
     setHitIndex(to)
     moveTo(found[to].line)
   }
@@ -79,7 +92,7 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef }: Options) {
   const enter = (backwards: boolean) => {
     if (goto) {
       if (target === null) return
-      moveTo(target)
+      moveTo(target.row)
       return close()
     }
     const n = hits.length
@@ -94,6 +107,7 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef }: Options) {
       to = after >= 0 ? after : 0
     }
     setHitIndex(to)
+    setRevealRequest((n) => n + 1)
     moveTo(hits[to].line)
   }
   /** The occurrences on one line, and which of them (if any) is the current one, for drawing the row. */

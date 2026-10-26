@@ -1,0 +1,58 @@
+/* Find sits over the top right of the code, like an editor's, so opening it never moves a line. */
+.diff-wrap {
+  position: relative;
+}
+.find-bar {
+  position: absolute;
+  top: calc(var(--control-lg) + var(--space-1));
+  right: var(--space-4);
+  /* Above the cursor ring (2), which is drawn later in the page and would otherwise cross the box. */
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  width: var(--find-bar-width);
+  max-width: calc(100% - var(--space-8));
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-2);
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  font-size: var(--text-sm);
+}
+.find-bar-field input {
+  width: var(--find-input-width);
+  height: var(--control-sm);
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  outline: none;
+}
+/* A fixed width, so the bar keeps one size whatever the status says ("No matches", "12 of 345", "Go to line 1200"). */
+.find-bar-status {
+  flex: none;
+  width: 15ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* The found text itself, so it is clear which part of the line matched. */
+.find-hit {
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
+  box-shadow: 0 0 0 1px var(--warning);
+}
+/* A stronger tint and a heavier ring, with the text colour left alone: a solid fill made syntax colours unreadable. */
+.find-hit.current {
+  background: var(--warning-strong);
+  box-shadow: 0 0 0 2px var(--warning);
+}
+
+.find-bar-hint {
+  flex-basis: 100%;
+  color: var(--muted-foreground);
+}

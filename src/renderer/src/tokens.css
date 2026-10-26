@@ -61,6 +61,8 @@
   --diff-line-height: 20px;
   --diff-counter-width: 64px;
   --diff-layout-width: 104px;
+  --find-input-width: 200px;
+  --find-bar-width: 440px;
   --diff-context-width: 76px;
   --blame-info-width: 320px;
   --diff-current-overlay: color-mix(in srgb, var(--primary) 6%, transparent);

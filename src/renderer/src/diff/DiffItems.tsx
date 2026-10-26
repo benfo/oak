@@ -13,7 +13,7 @@ export interface ItemsContext {
   cursorSide: DiffSide
   cursorHunk: number
   selected: Set<string>
-  codeOf: (row: Row) => ReactNode
+  codeOf: (row: Row, currentSide: boolean) => ReactNode
   /** Measures rows of a long diff once rendered; null when the whole list is in the page. */
   measure: ((el: Element | null) => void) | null
   windowed: { index: number }[]
@@ -52,7 +52,7 @@ export function renderDiffItems(ctx: ItemsContext, targetSide?: DiffSide) {
           )}
           <span className="sign">{l.type === 'add' ? '+' : l.type === 'del' ? '-' : ''}</span>
         </span>
-        {ctx.codeOf(r)}
+        {ctx.codeOf(r, !targetSide || targetSide === cursorSide)}
       </div>
     )
   }

@@ -3,7 +3,9 @@ import assert from 'node:assert/strict'
 import type { KeyboardEvent } from 'react'
 import {
   cyclePanes,
+  focusPane,
   handleNavigation,
+  handleDismissNavigation,
   handleListNav,
   handleSearchNavigation,
   handleToolNavigation,
@@ -32,6 +34,24 @@ function event(key: string, modifiers = {}, target: unknown = null) {
   } as unknown as KeyboardEvent
   return { e, consumed: () => prevented && stopped }
 }
+
+test('Escape dismisses one active layer, ignores repeats and leaves an empty stack to the layout fallback', () => {
+  const dismissed: string[] = []
+  const layers = [undefined, () => dismissed.push('find'), () => dismissed.push('selection')]
+  const escape = event('Escape')
+  assert.equal(handleDismissNavigation(escape.e, layers), true)
+  assert.equal(escape.consumed(), true)
+  assert.deepEqual(dismissed, ['find'])
+  assert.equal(handleDismissNavigation(event('Escape', { repeat: true }).e, layers), true)
+  assert.deepEqual(dismissed, ['find'])
+  assert.equal(handleDismissNavigation(event('Escape').e, [undefined]), false)
+  for (const modifier of Object.keys(plain)) {
+    assert.equal(handleDismissNavigation(event('Escape', { [modifier]: true }).e, layers), false)
+  }
+  const input = { closest: () => ({}) }
+  assert.equal(handleDismissNavigation(event('Escape', {}, input).e, layers), false)
+  assert.equal(handleDismissNavigation(event('Escape', {}, input).e, layers, { allowTextInput: true }), true)
+})
 
 test('shared actions preserve native and modified shortcuts, including IME confirmation', () => {
   const actions = { Enter: 'activate', ArrowRight: 'deeper', ArrowLeft: 'back', Escape: 'dismiss', Delete: 'discard' }
@@ -101,6 +121,27 @@ test('Tab enters the search owner exactly once without finding or activating a r
   handleSearchNavigation(e, unexpected, () => exits++)
   assert.equal(exits, 1)
   assert.equal(consumed(), true)
+})
+
+test('pane focus skips hidden and inert matches before choosing a visible pane', (t) => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  t.after(() => (descriptor ? Object.defineProperty(globalThis, 'document', descriptor) : Reflect.deleteProperty(globalThis, 'document')))
+  const focused: string[] = []
+  const pane = (id: string, hidden = false, inert = false) => ({
+    offsetParent: hidden ? null : {},
+    closest: () => (inert ? {} : null),
+    focus: () => focused.push(id)
+  })
+  const hidden = pane('hidden', true)
+  const inert = pane('inert', false, true)
+  const visible = pane('visible')
+  let matches = [hidden, inert, visible]
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: { querySelectorAll: () => matches } })
+  assert.equal(focusPane('[data-pane="diff"]'), true)
+  assert.deepEqual(focused, ['visible'])
+  matches = [hidden, inert]
+  assert.equal(focusPane('[data-pane="diff"]'), false)
+  assert.deepEqual(focused, ['visible'])
 })
 
 test('pane cycling is relative to tools and form controls and skips unavailable panes', (t) => {

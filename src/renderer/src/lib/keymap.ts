@@ -49,7 +49,7 @@ export interface WidgetKey {
   /** Layout-sensitive keys (for example "/") override matching but still declare `keys`. */
   match?: (e: ShortcutKey) => boolean
   /** Shown in the keyboard help. Entries without it are described by pane-specific help rows. */
-  help?: { title: string; keys: string; category: string }
+  help?: { title: string; description?: string; keys: string; category: string }
 }
 
 /** Explicit list search is the same in default and Vim navigation. "/" follows the typed character. */
@@ -76,26 +76,30 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
     roles: ['list', 'graph'],
     keys: ['/', 'Mod+F'],
     match: isListSearchKey,
-    help: { title: 'Search the focused list', keys: '/ or Ctrl+F', category: 'Navigation' }
+    help: {
+      title: 'Find in focused pane',
+      description: 'Find in the focused list or code pane. In code, enter :120 to go to line 120.',
+      keys: '/ or Ctrl+F',
+      category: 'Navigation'
+    }
   },
   {
     action: 'find',
-    roles: ['blame'],
+    roles: ['blame', 'diff'],
     keys: ['/', 'Mod+F'],
-    match: isListSearchKey,
-    help: { title: 'Find in the blamed file (":120" goes to a line)', keys: '/ or Ctrl+F', category: 'Blame' }
+    match: isListSearchKey
   },
   {
     action: 'switchList',
     roles: ['list'],
     keys: ['t'],
-    help: { title: 'History file list: switch between changed and all files', keys: 'T', category: 'History' }
+    help: { title: 'History file list: switch between Changed files and All files', keys: 'T', category: 'History' }
   },
   {
     action: 'switchView',
     roles: ['list', 'diff'],
     keys: ['v'],
-    help: { title: 'Changed files: switch between list and tree', keys: 'V (file list or diff)', category: 'Navigation' }
+    help: { title: 'Changed-file list or diff: switch the file list between List and Tree', keys: 'V', category: 'Navigation' }
   },
 
   { action: 'select', roles: ['graph'], keys: ['Space', 'Shift+Space'] },
@@ -103,13 +107,17 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
     action: 'toggleSelect',
     roles: ['graph'],
     keys: ['Mod+Space'],
-    help: { title: 'Toggle comparison endpoint', keys: 'Ctrl+Space', category: 'History' }
+    help: { title: 'History commit list: toggle the focused commit in the comparison', keys: 'Ctrl+Space', category: 'History' }
   },
   {
     action: 'moveFocus',
     roles: ['graph'],
     keys: MOVE_FOCUS,
-    help: { title: 'Move commit focus without selecting', keys: 'Ctrl+↑↓, Ctrl+Home/End, Ctrl+PageUp/PageDown', category: 'History' }
+    help: {
+      title: 'History commit list: move focus without changing selection',
+      keys: 'Ctrl+↑ / Ctrl+↓ / Ctrl+Home / Ctrl+End / Ctrl+PageUp / Ctrl+PageDown',
+      category: 'History'
+    }
   },
 
   { action: 'toggleSelect', roles: ['diff'], keys: ['Space', 'Shift+Space', 'Mod+Space'] },
@@ -118,48 +126,68 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
     action: 'nextHunk',
     roles: ['diff'],
     keys: ['n', 'Shift+n', 'Alt+ArrowDown'],
-    help: { title: 'Next / previous hunk', keys: 'N / P', category: 'Diff' }
+    help: { title: 'Diff: next change (hunk)', keys: 'N or Alt+↓', category: 'Diff' }
   },
-  { action: 'prevHunk', roles: ['diff'], keys: ['p', 'Shift+p', 'Alt+ArrowUp'] },
+  {
+    action: 'prevHunk',
+    roles: ['diff'],
+    keys: ['p', 'Shift+p', 'Alt+ArrowUp'],
+    help: { title: 'Diff: previous change (hunk)', keys: 'P or Alt+↑', category: 'Diff' }
+  },
   {
     action: 'nextBlock',
     roles: ['blame'],
     keys: ['n', 'Shift+n', 'Alt+ArrowDown'],
-    help: { title: 'Next / previous blame block', keys: 'N / P', category: 'Blame' }
+    help: { title: 'Blame: next commit block', keys: 'N or Alt+↓', category: 'Blame' }
   },
-  { action: 'prevBlock', roles: ['blame'], keys: ['p', 'Shift+p', 'Alt+ArrowUp'] },
+  {
+    action: 'prevBlock',
+    roles: ['blame'],
+    keys: ['p', 'Shift+p', 'Alt+ArrowUp'],
+    help: { title: 'Blame: previous commit block', keys: 'P or Alt+↑', category: 'Blame' }
+  },
   {
     action: 'commitMessage',
     roles: ['blame'],
     keys: ['Space'],
-    help: { title: 'Show the full commit message of the line', keys: 'Space', category: 'Blame' }
+    help: { title: 'Blame: show / hide the current line’s full commit message', keys: 'Space', category: 'Blame' }
   },
   {
     action: 'blameBefore',
     roles: ['blame'],
     keys: ['b'],
-    help: { title: 'Blame the line as it was before its commit', keys: 'B', category: 'Blame' }
+    help: { title: 'Blame: show the line as it was before its commit', keys: 'B', category: 'Blame' }
   },
   {
     action: 'blameNewer',
     roles: ['blame'],
     keys: ['Backspace'],
-    help: { title: 'Back to the newer blame', keys: 'Backspace', category: 'Blame' }
+    help: { title: 'Blame: return to the newer version', keys: 'Backspace', category: 'Blame' }
   },
   {
     action: 'fileNext',
     roles: ['diff'],
     keys: ['Alt+PageDown'],
-    help: { title: 'Next / previous file (stops at ends of current list)', keys: 'Alt+PageDown / Alt+PageUp', category: 'Diff' }
+    help: { title: 'Diff: next file in the current list (stops at the end)', keys: 'Alt+PageDown', category: 'Diff' }
   },
-  { action: 'filePrev', roles: ['diff'], keys: ['Alt+PageUp'] },
+  {
+    action: 'filePrev',
+    roles: ['diff'],
+    keys: ['Alt+PageUp'],
+    help: { title: 'Diff: previous file in the current list (stops at the start)', keys: 'Alt+PageUp', category: 'Diff' }
+  },
   {
     action: 'fileFirst',
     roles: ['diff'],
     keys: ['Alt+Home'],
-    help: { title: 'First / last file in current list', keys: 'Alt+Home / Alt+End', category: 'Diff' }
+    help: { title: 'Diff: first file in the current list', keys: 'Alt+Home', category: 'Diff' }
   },
-  { action: 'fileLast', roles: ['diff'], keys: ['Alt+End'] }
+  {
+    action: 'fileLast',
+    roles: ['diff'],
+    keys: ['Alt+End'],
+    help: { title: 'Diff: last file in the current list', keys: 'Alt+End', category: 'Diff' }
+  }
 ]
 
 /** The action the focused widget gives this key, if any. Exact modifiers; IME input never matches. */

@@ -25,6 +25,9 @@ interface Props {
   counterEmpty: string
   moveFile: (direction: -1 | 1) => void
   jumpHunk: (delta: number) => void
+  onFind: () => void
+  findOpen: boolean
+  canFind: boolean
 }
 
 /** File title with the file, change, context and layout controls. */
@@ -40,7 +43,10 @@ export function DiffToolbar({
   singleChangeVisible,
   counterEmpty,
   moveFile,
-  jumpHunk
+  jumpHunk,
+  onFind,
+  findOpen,
+  canFind
 }: Props) {
   const toolsRef = useRef<HTMLDivElement>(null)
   useEffect(() => toolbarHomeEnd(toolsRef.current), [])
@@ -56,6 +62,11 @@ export function DiffToolbar({
       </span>
       {metadata}
       <Toolbar className="diff-controls" aria-label="Diff tools" ref={toolsRef}>
+        <Tip label="Find in file" keys="/ or Ctrl+F">
+          <Button className="icon-btn" aria-label="Find in file" aria-pressed={findOpen} isDisabled={!canFind} onPress={onFind}>
+            <Icon name="search" size={14} />
+          </Button>
+        </Tip>
         {files && files.count > 1 && (
           <span className="diff-navigation-group">
             <Tip label="Previous file" keys="Alt+PageUp">

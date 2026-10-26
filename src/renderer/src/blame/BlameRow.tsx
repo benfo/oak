@@ -2,7 +2,7 @@ import { Avatar } from '../components/Avatar'
 import type { Span } from '../diff/syntax'
 import { fullDate, relativeTime } from '../lib/format'
 import type { BlameCommit, BlameLine } from '../../../shared/blame'
-import { BlameCode } from './BlameCode'
+import { CodeLine } from '../components/CodeLine'
 
 interface Props {
   index: number
@@ -73,7 +73,7 @@ export function BlameRow({
         </span>
       </span>
       <span className="code">
-        <BlameCode text={line.text} tokens={tokens} whitespace={whitespace} hits={hits} currentHit={currentHit} />
+        <CodeLine text={line.text} tokens={tokens} whitespace={whitespace} hits={hits} currentHit={currentHit} />
       </span>
     </div>
   )

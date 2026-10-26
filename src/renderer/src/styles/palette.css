@@ -36,8 +36,20 @@ kbd {
   animation: pop 0.12s ease-out;
 }
 .palette-field {
+  position: relative;
+  flex: none;
   display: flex;
   flex-direction: column;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+.palette-field > .icon {
+  position: absolute;
+  left: var(--space-6);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--subtle-foreground);
+  pointer-events: none;
 }
 .palette-dialog {
   flex: 1;
@@ -49,13 +61,14 @@ kbd {
 .palette-input {
   flex: none;
   height: var(--control-lg);
-  margin: var(--space-2) var(--space-2) 0;
-  padding: 0 var(--space-3);
+  width: 100%;
+  margin: 0;
+  padding: 0 var(--space-3) 0 var(--space-10);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--surface-sunken);
   outline: none;
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
 }
 .palette-list {
   min-height: 0;
@@ -63,11 +76,19 @@ kbd {
   overflow-y: auto;
   overflow-x: hidden;
   max-height: calc(60vh - 60px);
+  scrollbar-gutter: stable;
+  /* The panel is anchored at its top, so shrinking while searching only moves the bottom edge, smoothly. */
+  transition: height 0.12s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .palette-list {
+    transition: none;
+  }
 }
 /* Virtualized rows fill their slot; the rounded highlight is on the inner row, inset from the edges. */
 .palette-item {
   height: 100%;
-  padding: var(--space-0-5) var(--space-2) 0;
+  padding: var(--space-0-5) var(--space-1) 0;
   cursor: pointer;
   outline: none;
 }
@@ -76,7 +97,7 @@ kbd {
   align-items: center;
   gap: var(--space-2-5);
   height: 100%;
-  padding: 0 var(--space-3);
+  padding: 0 var(--row-pad);
   border-radius: var(--radius-md);
   white-space: nowrap;
 }
@@ -87,15 +108,13 @@ kbd {
   background: var(--selection-strong);
 }
 .palette-label {
-  flex: none;
-  max-width: 70%;
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.palette-label .dim-part {
-  color: var(--muted-foreground);
-}
-.palette-label .hit {
+.palette-label .hit,
+.palette-category .hit {
   color: var(--primary);
   font-weight: var(--weight-bold);
 }
@@ -106,18 +125,47 @@ kbd {
   text-overflow: ellipsis;
   color: var(--subtle-foreground);
   font-size: var(--text-sm);
+  text-align: right;
+}
+.palette-row:has(.palette-detail) .palette-label {
+  flex: 0 1 auto;
+  max-width: 60%;
 }
 .palette-recent {
+  flex: none;
   font-size: var(--text-xs);
   color: var(--subtle-foreground);
 }
 .palette-item kbd {
+  flex: none;
   margin-left: auto;
 }
 .palette-empty {
-  padding: var(--space-3);
+  display: grid;
+  place-items: center;
+  height: calc(var(--row-lg) + var(--space-0-5));
+  padding: 0 var(--space-3);
   color: var(--subtle-foreground);
-  text-align: center;
+}
+
+.command-palette {
+  max-height: 60vh;
+}
+.command-palette .palette-list {
+  flex: none;
+}
+.palette-category {
+  flex: none;
+  width: var(--space-20);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--subtle-foreground);
+  font-size: var(--text-sm);
+}
+.command-palette .palette-shortcut {
+  flex: none;
+  width: calc(var(--space-16) * 2);
+  text-align: right;
 }
 
 .shortcuts-browser {
@@ -125,6 +173,7 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-height: 0;
 }
 .shortcuts-filters,
 .shortcuts-footer {
@@ -148,30 +197,46 @@ kbd {
 }
 .shortcuts-count {
   flex: none;
+  font-variant-numeric: tabular-nums;
 }
 .shortcuts-browser > .pane-frame {
   flex: 1;
   min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
 }
 .shortcuts-results {
   height: 100%;
   overflow: auto;
-  padding: var(--space-2) var(--row-pad);
   user-select: text;
   scrollbar-gutter: stable;
+  scroll-padding-top: var(--control-lg);
 }
 .shortcuts-footer {
   justify-content: space-between;
 }
+.shortcuts-footer .btn {
+  flex: none;
+}
 .shortcut-group {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+.shortcut-group:last-child {
+  margin-bottom: 0;
 }
 .shortcut-group h3 {
-  margin: 0 0 var(--space-1-5);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: var(--space-2) var(--row-pad);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-sunken);
   font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--subtle-foreground);
+  font-weight: var(--weight-semibold);
+  color: var(--muted-foreground);
 }
 .shortcut-group dl,
 .shortcut-row dd {
@@ -179,11 +244,20 @@ kbd {
 }
 .shortcut-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-1) 0;
-  font-size: var(--text-sm);
+  padding: var(--space-2) var(--row-pad);
+  font-size: var(--text-md);
+}
+.shortcut-row + .shortcut-row {
+  border-top: 1px solid var(--border);
+}
+.shortcut-row dt {
+  overflow-wrap: anywhere;
+}
+.shortcut-row dt > div {
+  margin-top: var(--space-1);
 }
 .shortcut-row dd {
   text-align: right;
@@ -200,4 +274,3 @@ kbd {
   flex-direction: column;
   outline: none;
 }
-

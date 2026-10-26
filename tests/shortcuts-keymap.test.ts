@@ -53,7 +53,9 @@ test('blame jumps between blocks with N and P, and not in the diff', () => {
   assert.equal(widgetAction(key('b'), 'diff'), undefined)
   assert.equal(widgetAction(key('/'), 'blame'), 'find')
   assert.equal(widgetAction(key('f', { ctrlKey: true, code: 'KeyF' }), 'blame'), 'find')
-  assert.equal(widgetAction(key('/'), 'diff'), undefined)
+  assert.equal(widgetAction(key('/'), 'diff'), 'find')
+  assert.equal(widgetAction(key('f', { ctrlKey: true, code: 'KeyF' }), 'diff'), 'find')
+  assert.equal(widgetAction(key('/', { isComposing: true }), 'diff'), undefined)
   assert.equal(widgetAction(key('n'), 'diff'), 'nextHunk')
 })
 
