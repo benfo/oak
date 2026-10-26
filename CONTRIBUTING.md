@@ -35,6 +35,14 @@ npm test
 
 `npm run lint` enforces design tokens: CSS must use the values in `src/renderer/src/tokens.css` rather than raw colours, spacing or sizes. Tests use a real `git` in a temporary repository.
 
+## Building and the website
+
+- To open a specific repository after building: `npm run build`, then `npx electron . "path/to/repository"`.
+- `npm run dist` writes the Windows installer to `dist/`, and `dist/win-unpacked/Oak.exe` runs without installing. On Linux, `npm run dist:linux` builds the AppImage and Debian packages, and `xvfb-run -a npm run test:linux-package` checks the installed Debian package.
+- Brand artwork lives in `build/`: `icon.svg` is the app symbol and `brand/oak-logo.svg` is the full logo. `npm run icon` renders the installer icon and syncs the website icon.
+- `website/` holds the Astro site (Tailwind CSS and daisyUI). Run `npm ci --prefix website`, then `npm run site:dev` (preview at `http://127.0.0.1:4321/oak/`), `npm run site:check` and `npm run site:build`. The public site is [www.benfourie.com/oak](https://www.benfourie.com/oak/).
+- GitHub Actions run the app checks (typecheck, lint, tests and a production build on Windows and Ubuntu), publish `website/dist/` to `gh-pages` for changes under `website/` on `main`, and build releases from `vX.Y.Z` tags. See [docs/releasing.md](docs/releasing.md).
+
 ## Branches and pull requests
 
 - Never commit to `main`. Branch from an up-to-date `main`, named with a type prefix and a short slug: `feature/`, `fix/`, `docs/`, `chore/` or `website/`, for example `fix/graph-scroll`.
