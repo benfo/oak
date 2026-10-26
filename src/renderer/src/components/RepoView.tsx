@@ -994,6 +994,7 @@ async function showThemePicker() {
 
 function showCommandPalette(commands: Command[]) {
   openPalette({
+    kind: 'commands',
     placeholder: 'Type a command…',
     recentKey: 'recentCommands',
     items: commands

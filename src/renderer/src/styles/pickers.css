@@ -3,17 +3,18 @@
 .palette-group {
   height: 100%;
   display: flex;
-  align-items: flex-end;
-  padding: 0 var(--space-5) var(--space-1);
+  align-items: center;
+  padding: var(--space-1) calc(var(--row-pad) + var(--space-1));
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--subtle-foreground);
+  color: var(--muted-foreground);
+}
+.palette:has(.palette-check) .palette-group {
+  padding-left: calc(var(--row-pad) + var(--space-1) + var(--control-xs) + var(--space-2-5));
 }
 .palette-check {
   flex: none;
-  width: 14px;
+  width: var(--control-xs);
   display: grid;
   place-items: center;
   color: var(--primary);
@@ -31,4 +32,6 @@
   height: var(--control-lg);
   font-size: var(--text-md);
 }
-
+.palette.dropdown .palette-detail {
+  text-align: left;
+}
