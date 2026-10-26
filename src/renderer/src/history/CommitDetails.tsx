@@ -12,7 +12,7 @@ import { BranchComparisonControls } from './BranchComparisonControls'
 import { Icon } from '../components/Icon'
 import { Tip } from '../components/Tip'
 import { Split } from '../components/Split'
-import { focusPane, handleListNav, handleNavigation } from '../lib/navigation'
+import { focusPane, handleDismissNavigation, handleListNav, handleNavigation, handleToolNavigation } from '../lib/navigation'
 import { usePane } from '../lib/usePane'
 import { fileMenuItems, runFileMenu } from '../lib/fileMenu'
 import { toast } from '../ui'
@@ -245,7 +245,6 @@ export function CommitDetails({
       const firstChild = row?.folder && rows[at + 1]?.parent === row.id ? rows[at + 1] : undefined
       if (
         handleNavigation(e, {
-          dismiss: back,
           switchList: !working && hash ? switchList : undefined,
           switchView,
           back: row?.folder && !closed ? toggleRow : parent ? () => selectRow(parent) : back,
@@ -261,7 +260,6 @@ export function CommitDetails({
     if (
       handleNavigation(e, {
         back,
-        dismiss: back,
         switchList: !working && hash ? switchList : undefined,
         switchView,
         menu: current ? () => fileMenu(current) : undefined
@@ -449,7 +447,21 @@ export function CommitDetails({
     <div className="commit-details-view">
       <Split id="commit-details" label="Commit files width" initial={420} min={260} max={900} collapsed={focusCode}>
         <div className="commit-info" aria-busy={pending}>
-          <div className="commit-meta" tabIndex={-1} {...pane.ownerProps}>
+          <div
+            className="commit-meta"
+            tabIndex={-1}
+            {...pane.ownerProps}
+            onKeyDown={(e) => {
+              const target = e.target as HTMLElement
+              if (
+                e.currentTarget.contains(target) &&
+                target.closest('.branch-comparison-controls') &&
+                handleDismissNavigation(e, [onClearComparison], { allowTextInput: true })
+              )
+                return
+              handleToolNavigation(e)
+            }}
+          >
             {branchComparison && (
               <BranchComparisonControls
                 comparison={branchComparison}
@@ -471,7 +483,10 @@ export function CommitDetails({
                 </p>
                 <p className="commit-body">After: {endpoint(details.hash)}</p>
                 {!preview.branchComparison && (
-                  <div className="comparison-actions">
+                  <div
+                    className="comparison-actions"
+                    onKeyDown={(e) => handleDismissNavigation(e, [onClearComparison], { allowTextInput: true })}
+                  >
                     <Button className="btn" isDisabled={!detailsCurrent || pending} onPress={onSwap}>
                       Swap
                     </Button>
@@ -577,13 +592,6 @@ export function CommitDetails({
                 onOpen={() => {
                   focusPane('.details-diff .diff')
                 }}
-                onBack={
-                  focusCode
-                    ? undefined
-                    : () => {
-                        focusPane('.commit-list')
-                      }
-                }
                 onMenu={treeMenu}
                 onSwitch={switchList}
                 focusRequest={focusTree}

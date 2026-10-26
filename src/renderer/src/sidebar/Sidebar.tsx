@@ -10,7 +10,7 @@ import { api, showMenu } from '../api'
 import * as act from '../actions'
 import { showTagPicker, tagsNewestFirst } from '../pickers'
 import { showBranchMenu, type CompareBranch } from '../lib/branchMenu'
-import { handleNavigation } from '../lib/navigation'
+import { handleDismissNavigation, handleNavigation } from '../lib/navigation'
 import { usePane } from '../lib/usePane'
 import { registerListCopy, type CopyItem } from '../lib/listCopy'
 import { PaneFrame, PaneSearch } from '../components/Pane'
@@ -469,7 +469,8 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       })
     )
       return
-    if (handleNavigation(e, { menu: focusedNode()?.menu, dismiss: filter ? () => setFilter('') : undefined })) return
+    if (handleDismissNavigation(e, [filter ? () => setFilter('') : undefined])) return
+    if (handleNavigation(e, { menu: focusedNode()?.menu })) return
     if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
       // → / ← open and close sections here: their rows aren't in React Aria's collection while
       // collapsed, so it doesn't know they can expand. Enter expanded sections explicitly as well.

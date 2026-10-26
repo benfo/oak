@@ -1,7 +1,7 @@
 import { Button, Input, TextField } from 'react-aria-components'
 import { Icon } from './Icon'
 import { Tip } from './Tip'
-import { handleNavigation } from '../lib/navigation'
+import { handleDismissNavigation } from '../lib/navigation'
 
 interface Props {
   query: string
@@ -20,7 +20,7 @@ export function FindBar({ query, status, inputRef, onChange, onEnter, onClose, s
   // A ":120" query goes to a line, so stepping does not apply; the buttons stay (disabled) so the bar never changes size.
   const goto = query.startsWith(':')
   return (
-    <div className="find-bar" role="search" onKeyDownCapture={(e) => handleNavigation(e, { dismiss: onClose }, { allowTextInput: true })}>
+    <div className="find-bar" role="search" onKeyDownCapture={(e) => handleDismissNavigation(e, [onClose], { allowTextInput: true })}>
       <TextField className="find-bar-field" aria-label="Find in file" value={query} onChange={onChange} autoFocus>
         <Input
           ref={inputRef}

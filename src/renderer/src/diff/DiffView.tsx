@@ -34,7 +34,7 @@ interface Props {
   actions?: (diff: FileDiff) => DiffActions | null
   /** For diffs without actions: why not, shown above the diff (e.g. a deleted file). */
   readOnlyReason?: (diff: FileDiff) => string | null
-  /** Escape (or ← at the left edge) — return focus to the list this diff belongs to. */
+  /** Left at the left edge returns focus to the list this diff belongs to. */
   onBack?: () => void
   /** V — switch the changed-files list between list and tree; omit when that list is hidden or not switchable. */
   onSwitchView?: () => void

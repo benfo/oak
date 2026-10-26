@@ -392,7 +392,6 @@ export function ChangesView({
           }
         : undefined,
       back: onBackToSidebar,
-      dismiss: onBackToSidebar,
       discard: section === 'unstaged' && files.length ? () => discard(files) : undefined,
       menu: files.length ? () => fileMenu(section, files) : undefined
     })

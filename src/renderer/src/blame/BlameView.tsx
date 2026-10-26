@@ -4,7 +4,7 @@ import { PaneFrame } from '../components/Pane'
 import { useFileTokens } from '../diff/highlight'
 import { copyText } from '../lib/copy'
 import { widgetAction } from '../lib/keymap'
-import { canHandleNavigation, horizontalScrollDirection, movementDelta, toolbarHomeEnd } from '../lib/navigation'
+import { canHandleNavigation, handleDismissNavigation, horizontalScrollDirection, movementDelta, toolbarHomeEnd } from '../lib/navigation'
 import { shortcutPlatform } from '../lib/shortcuts'
 import { useFindInFile } from '../lib/useFindInFile'
 import { usePane } from '../lib/usePane'
@@ -231,14 +231,7 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
         scroller.scrollBy({ left: wide ? wide * Math.max(1, Math.round(scroller.clientWidth / 4)) : plain * H_STEP, behavior: 'instant' })
       return
     }
-    // Escape only dismisses what is on top of the code. Leaving the view is never Escape, so a second press cannot lose the place.
-    if (widget === 'dismiss') {
-      if (messageOpen) {
-        e.preventDefault()
-        setMessageOpen(false)
-      }
-      return
-    }
+    if (handleDismissNavigation(e, [messageOpen ? () => setMessageOpen(false) : undefined, finding ? findInFile.close : undefined])) return
     if (!lines.length) return
     const page = Math.max(1, Math.floor((ref.current?.clientHeight ?? 400) / ROW_H) - 2)
     const move = movementDelta(e.key, page, e.nativeEvent)

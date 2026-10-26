@@ -3,6 +3,7 @@ import {
   canHandleNavigation,
   fileNavigationDirection,
   handleNavigation,
+  handleDismissNavigation,
   horizontalScrollDirection,
   movementDelta,
   navigationAction
@@ -64,11 +65,7 @@ export function useDiffNavigation({
       find.open()
       return
     }
-    if (widget === 'dismiss' && find.query !== null) {
-      e.preventDefault()
-      find.close()
-      return
-    }
+    if (handleDismissNavigation(e, [find.query !== null ? find.close : undefined, selected.size ? selection.clear : undefined])) return
     if (horizontal) {
       e.preventDefault()
       const scroller = split ? ref.current?.querySelector<HTMLElement>(`.side-column[data-side="${cursorSide}"]`) : ref.current
@@ -84,7 +81,7 @@ export function useDiffNavigation({
       return
     }
     if (!rows.length) {
-      handleNavigation(e, { back: onBack, dismiss: onBack })
+      handleNavigation(e, { back: onBack })
       return
     }
     if (widget === 'menu') {
@@ -145,14 +142,6 @@ export function useDiffNavigation({
     } else if (widget === 'selectAll' && acts) {
       e.preventDefault()
       selection.selectAllChanges()
-    } else if (action === 'dismiss') {
-      if (selected.size) {
-        e.preventDefault()
-        selection.clear()
-      } else if (onBack) {
-        e.preventDefault()
-        onBack()
-      }
     } else if (action === 'back' && ref.current?.scrollLeft === 0 && onBack) {
       e.preventDefault()
       onBack()

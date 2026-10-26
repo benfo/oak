@@ -48,6 +48,29 @@ export function handleNavigation(e: React.KeyboardEvent, actions: NavigationActi
   return true
 }
 
+/** Escape dismisses only the first active layer. With nothing to dismiss, layout
+ * restoration may handle it. Navigation and persistent scopes never belong here;
+ * an explicitly agreed contextual mode exit may be supplied by its owning view.
+ * Consume repeats while a layer is active without dismissing another layer.
+ */
+export function handleDismissNavigation(
+  e: React.KeyboardEvent,
+  layers: readonly ((() => void) | undefined)[],
+  { allowTextInput = false } = {}
+) {
+  const dismiss = layers.find((layer) => layer !== undefined)
+  if (!dismiss) return false
+  return handleNavigation(
+    e,
+    {
+      dismiss: () => {
+        if (!e.repeat) dismiss()
+      }
+    },
+    { allowTextInput }
+  )
+}
+
 /** Collection movement shared by custom lists, graph cursors and diff rows. */
 const halfPageEvents = new WeakSet<object>()
 
@@ -90,8 +113,8 @@ export function handleListNav(e: React.KeyboardEvent, count: number, index: numb
 }
 
 export function focusPane(selector: string) {
-  const el = document.querySelector<HTMLElement>(selector)
-  if (el && el.offsetParent !== null) {
+  const el = [...document.querySelectorAll<HTMLElement>(selector)].find((pane) => pane.offsetParent !== null && !pane.closest('[inert]'))
+  if (el) {
     el.focus()
     return true
   }
