@@ -36,7 +36,7 @@ Lessons for any future history rewrite or tag move:
 2. **Agent contributions (first pass done).** `AGENTS.md` is now contributor-facing (design rules, keyboard model, tokens, checks, no releases or deploys). The maintainer's personal workflow lives in gitignored `AGENTS.local.md` (plus a `CLAUDE.local.md` import, both listed in `.git/info/exclude`), which `AGENTS.md` tells any agent to read, so a fresh clone needs them recreated. Still open: decide how to check that agent-written PRs follow the rules (PR template checklist, CI), and whether `AGENTS.md` should be shorter.
 3. **Code signing.** Windows marks downloads with Mark of the Web, so users must Unblock the installer (the website explains the workarounds). The real fix is signing. SignPath Foundation is free for open-source projects and Oak is now public, so it is worth reconsidering next to Azure Artifact Signing (about $10 a month, supported by electron-builder `win.azureSignOptions`, no hardware token). SmartScreen may still warn until reputation builds. Needs the maintainer to set up the account.
 4. **Conflict handling follow-ups** (one small step at a time; the maintainer wants it kept simple): stash-pop conflict banner, ours/theirs side labels (swapped in a rebase), modify/delete conflicts, pulling conflicts from Pull/Rebase into the same flow.
-5. **Housekeeping.** Optionally ask GitHub Support to garbage-collect the old commit SHAs; add a README screenshot; confirm Linux in more real-world testing.
+5. **Housekeeping.** Optionally ask GitHub Support to garbage-collect the old commit SHAs; confirm Linux in more real-world testing.
 
 ## Shipped
 
