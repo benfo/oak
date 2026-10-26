@@ -35,8 +35,8 @@ interface Props {
   selected: string | null
   compareBase: string | null
   onToggle: (hash: string) => void
-  /** Only supplied while this graph owns a visibly announced comparison. */
-  onDismissComparison?: () => void
+  /** Only supplied while this graph owns a visibly announced mode (comparison or file history). */
+  onDismissMode?: () => void
   /** Bumped whenever the selected row should be scrolled into view. */
   revealKey: number
   onSelect: (hash: string) => void
@@ -60,7 +60,7 @@ export function CommitList({
   selected,
   compareBase,
   onToggle,
-  onDismissComparison,
+  onDismissMode,
   revealKey,
   onSelect,
   onContextMenu,
@@ -117,7 +117,7 @@ export function CommitList({
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (!canHandleNavigation(e)) return
-    if (handleDismissNavigation(e, [onDismissComparison])) return
+    if (handleDismissNavigation(e, [onDismissMode])) return
     const widget = widgetAction(e.nativeEvent, 'graph', shortcutPlatform())
     if ((widget === 'select' || widget === 'toggleSelect') && cursor) {
       e.preventDefault()

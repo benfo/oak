@@ -320,6 +320,8 @@ export function HistoryView({
     r.setHistoryFile(null, selected && selected !== WORKING_HASH ? selected : undefined)
     focusPane('.commit-list')
   }
+  // A comparison and a file history never coexist, so Escape exits whichever one is showing.
+  const dismissMode = dismissComparison ?? (r.historyFile && !pinned ? clearFileHistory : undefined)
   // Starting a file's history (menus, palette) always replaces any comparison; this is the one place that happens.
   useEffect(() => {
     if (r.historyFile && pinned) endComparison(false)
@@ -542,7 +544,12 @@ export function HistoryView({
           </div>
         )}
         {r.historyFile && !pinned && (
-          <div className="comparison-banner" role="status" data-pane-owner="graph" onKeyDown={handleToolNavigation}>
+          <div
+            className="comparison-banner"
+            role="status"
+            data-pane-owner="graph"
+            onKeyDown={(e) => handleDismissNavigation(e, [dismissMode], { allowTextInput: true })}
+          >
             <span className="comparison-banner-text">
               History of <strong>{r.historyFile}</strong>
               <span className="muted">
@@ -550,7 +557,7 @@ export function HistoryView({
                 · following renames · {SCOPES.find((s) => s.kind === r.historyScope)!.label(!!r.status && !r.status.branch)}
               </span>
             </span>
-            <Tip label="Show all commits">
+            <Tip label="Show all commits" keys="Esc">
               <button className="btn" onClick={clearFileHistory}>
                 <Icon name="x" size={12} />
                 Show all commits
@@ -564,7 +571,7 @@ export function HistoryView({
               className="pane-empty history-empty"
               data-pane="graph"
               tabIndex={0}
-              onKeyDown={(e) => handleDismissNavigation(e, [dismissComparison])}
+              onKeyDown={(e) => handleDismissNavigation(e, [dismissMode])}
             >
               {pinned
                 ? `Nothing on ${pinned.source?.name ?? r.status?.branch ?? 'HEAD'} that ${pinned.name} lacks`
@@ -592,7 +599,7 @@ export function HistoryView({
             selected={activeHash}
             compareBase={compareBase}
             onToggle={toggle}
-            onDismissComparison={dismissComparison}
+            onDismissMode={dismissMode}
             revealKey={revealKey}
             onSelect={(h) => select(h, false)}
             onNearEnd={r.hasMore ? r.loadMore : undefined}

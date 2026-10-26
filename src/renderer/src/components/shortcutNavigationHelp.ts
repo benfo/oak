@@ -29,7 +29,7 @@ export const shortcutNavigationHelp = [
   ['Changes file list: stage / unstage selected files (also by double-click)', 'Enter', 'Files', ['Enter']],
   ['Changes file list: discard selected files', 'Delete', 'Files', ['Delete']],
   ['History commit list: compare commits or replace the After commit', 'Ctrl+click', 'History', ['Ctrl+click']],
-  ['Comparison commit list (graph) or controls: exit comparison after dismissing overlays', 'Esc', 'History', ['Escape']],
+  ['Comparison or file history commit list (graph) or banner: exit it after dismissing overlays', 'Esc', 'History', ['Escape']],
   ['Code: scroll left / right', 'Shift+← / Shift+→', 'Diff', ['Shift+ArrowLeft', 'Shift+ArrowRight']],
   [
     'Editable diff: select changed lines',
