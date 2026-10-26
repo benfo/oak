@@ -1,18 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { parseDiff, type FileDiff } from './diff'
 import { resolveDiffLayout } from './diffLayout'
-import {
-  canHandleNavigation,
-  fileNavigationDirection,
-  handleNavigation,
-  horizontalScrollDirection,
-  movementDelta,
-  navigationAction
-} from '../lib/navigation'
-import { widgetAction } from '../lib/keymap'
-import { shortcutPlatform } from '../lib/shortcuts'
 import { usePane } from '../lib/usePane'
-import { Tip } from '../components/Tip'
+import { DiffLineActions } from './DiffLineActions'
 import { PaneFrame } from '../components/Pane'
 import { Icon } from '../components/Icon'
 import { useSettings } from '../settings'
@@ -28,6 +18,9 @@ import { useDiffPane } from './useDiffPane'
 import { DiffToolbar } from './DiffToolbar'
 import { renderDiffItems } from './DiffItems'
 import { SideColumns } from './SideColumns'
+import { FindBar } from '../components/FindBar'
+import { useDiffFind } from './useDiffFind'
+import { useDiffNavigation, useDiffFileNavigation } from './useDiffNavigation'
 
 export type { DiffActions }
 
@@ -85,7 +78,8 @@ export function DiffView({
   const cursorHunk = rows[cursor]?.hunk ?? 0
 
   const scroll = useDiffScroll({ ref, diff, split, cursor, cursorSide, rows, items, rowItem, posItem, positions, itemRow })
-  const codeOf = useDiffCode(diff, text, rows, syntaxHighlighting, showWhitespace)
+  const find = useDiffFind(diff, rows, cursor, ref, setCursor, setSide, () => setShowAll(true))
+  const codeOf = useDiffCode(diff, text, rows, syntaxHighlighting, showWhitespace, find)
   const selection = useDiffSelection({
     diff,
     rows,
@@ -162,116 +156,27 @@ export function DiffView({
   }
 
   const pane = usePane('diff', { kind: 'diff' })
-  const moveFile = (direction: -1 | 1 | 'first' | 'last') => {
-    if (!files || files.index < 0) return
-    const next = direction === 'first' ? 0 : direction === 'last' ? files.count - 1 : files.index + direction
-    if (next < 0 || next >= files.count || next === files.index) return
-    // Move focus before a boundary button disables itself, and retain it through loading/empty diffs.
-    ref.current?.focus({ preventScroll: true })
-    files.onSelect(next)
-  }
-  const onFileKey = (e: React.KeyboardEvent) => {
-    const direction = fileNavigationDirection(e.nativeEvent)
-    if (!files || !direction || e.defaultPrevented || (e.target as HTMLElement).closest('input, textarea, [contenteditable="true"]')) return
-    e.preventDefault()
-    e.stopPropagation()
-    moveFile(direction)
-  }
+  const { moveFile, onFileKey } = useDiffFileNavigation(files, ref)
 
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (!canHandleNavigation(e)) return
-    const action = navigationAction(e.nativeEvent)
-    const widget = widgetAction(e.nativeEvent, 'diff', shortcutPlatform())
-    const horizontal = horizontalScrollDirection(e.nativeEvent, vimNavigation)
-    if (horizontal) {
-      e.preventDefault()
-      const scroller = split ? ref.current?.querySelector<HTMLElement>(`.side-column[data-side="${cursorSide}"]`) : ref.current
-      // A quarter viewport per press; native key repeat continues scrolling while held.
-      if (scroller) scroller.scrollBy({ left: horizontal * Math.max(1, Math.round(scroller.clientWidth / 4)), behavior: 'instant' })
-      return
-    }
-    if (widget === 'switchView') {
-      if (onSwitchView) {
-        e.preventDefault()
-        onSwitchView()
-      }
-      return
-    }
-    if (!rows.length) {
-      handleNavigation(e, { back: onBack, dismiss: onBack })
-      return
-    }
-    if (widget === 'menu') {
-      e.preventDefault()
-      void showCopyMenu(true)
-      return
-    }
-    const page = Math.max(1, Math.floor((ref.current?.clientHeight ?? 400) / 20) - 2)
-    const move = movementDelta(e.key, page, e.nativeEvent)
-    if (move !== undefined && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      e.preventDefault()
-      let next = Math.max(0, Math.min(rows.length - 1, cursor + move))
-      if (split) {
-        const pos = positions.get(cursor) ?? 0
-        const pair = sideRows[Math.max(0, Math.min(sideRows.length - 1, pos + move))]
-        next = pair[cursorSide] ?? pair.old ?? pair.new ?? cursor
-        setSide(cursorSide)
-      }
-      if (e.shiftKey && acts) selection.extendTo(next)
-      setCursor(next)
-      return
-    }
-    if (split && (action === 'back' || action === 'deeper')) {
-      const targetSide = action === 'back' ? 'old' : 'new'
-      const pair = sideRows[positions.get(cursor) ?? 0]
-      if (targetSide !== cursorSide) {
-        e.preventDefault()
-        if (pair[targetSide] !== null) {
-          setSide(targetSide)
-          setCursor(pair[targetSide]!)
-        } else if (targetSide === 'old' && onBack && !ref.current?.querySelector('.side-column[data-side="new"]')?.scrollLeft) {
-          onBack()
-        }
-      } else if (targetSide === 'old' && onBack) {
-        const column = ref.current?.querySelector('.side-column')
-        if (!column?.scrollLeft) {
-          e.preventDefault()
-          onBack()
-        }
-      }
-      return
-    }
-    if (widget === 'nextHunk') {
-      e.preventDefault()
-      jumpHunk(1)
-    } else if (widget === 'prevHunk') {
-      e.preventDefault()
-      jumpHunk(-1)
-    } else if (widget === 'toggleSelect' && acts) {
-      e.preventDefault()
-      selection.toggle(cursor)
-    } else if (action === 'activate' && acts) {
-      e.preventDefault()
-      selection.runOn('primary')
-    } else if (action === 'discard' && acts?.discard) {
-      e.preventDefault()
-      selection.runOn('discard')
-    } else if (widget === 'selectAll' && acts) {
-      e.preventDefault()
-      selection.selectAllChanges()
-    } else if (action === 'dismiss') {
-      if (selected.size) {
-        e.preventDefault()
-        selection.clear()
-      } else if (onBack) {
-        e.preventDefault()
-        onBack()
-      }
-    } else if (action === 'back' && ref.current?.scrollLeft === 0 && onBack) {
-      e.preventDefault()
-      onBack()
-    }
-  }
+  const onKeyDown = useDiffNavigation({
+    ref,
+    vimNavigation,
+    split,
+    cursorSide,
+    cursor,
+    rows,
+    positions,
+    sideRows,
+    acts,
+    selection,
+    find,
+    setCursor,
+    setSide,
+    onSwitchView,
+    onBack,
+    showCopyMenu,
+    jumpHunk
+  })
 
   const paneProps = {
     ref: setPane,
@@ -310,6 +215,9 @@ export function DiffView({
       counterEmpty={loading && text === null ? 'Loading…' : 'No changes'}
       moveFile={moveFile}
       jumpHunk={jumpHunk}
+      onFind={find.open}
+      findOpen={find.query !== null}
+      canFind={rows.length > 0}
     />
   )
   const empty = (content: ReactNode) => (
@@ -330,7 +238,6 @@ export function DiffView({
     return empty(info.length ? info.map((l, i) => <div key={i}>{l}</div>) : 'No content changes')
   }
 
-  const n = selected.size
   const hint = acts
     ? `Diff. ↑↓ move${split ? ', ←→ switch sides' : ''}, Shift+↑↓ or Space select lines, Enter to ${acts.primary.label.toLowerCase()}${acts.discard ? ', Delete to discard' : ''}, N/P next/previous hunk`
     : `Diff. ↑↓ move${split ? ', ←→ switch sides' : ''}, N/P next/previous hunk`
@@ -363,14 +270,20 @@ export function DiffView({
       </button>
     </div>
   )
-  // The bar goes inert once the selection clears, so keep focus on the diff rather than losing it.
-  const fromBar = (run: () => void) => {
-    ref.current?.focus({ preventScroll: true })
-    run()
-  }
   return (
     <div className={`diff-wrap ${plain ? 'plain' : ''}`} {...pane.ownerProps} onKeyDownCapture={onFileKey}>
       {header}
+      {find.query !== null && (
+        <FindBar
+          query={find.query}
+          status={find.status}
+          inputRef={find.inputRef}
+          onChange={find.change}
+          onEnter={find.enter}
+          onClose={find.close}
+          scopeHint={plain ? undefined : 'Searches loaded diff text. Use Full file for more context.'}
+        />
+      )}
       {notice && (
         <div className="diff-notice" role="note">
           <Icon name="info" size={14} />
@@ -378,7 +291,11 @@ export function DiffView({
         </div>
       )}
       <PaneFrame>
-        <div className={`diff ${split ? 'side-mode' : ''} ${acts ? 'selectable' : ''}`} {...paneProps} aria-label={hint}>
+        <div
+          className={`diff ${split ? 'side-mode' : ''} ${acts ? 'selectable' : ''} ${find.query !== null ? 'finding' : ''}`}
+          {...paneProps}
+          aria-label={hint}
+        >
           {split ? (
             <SideColumns
               setColumn={setSideColumn}
@@ -398,31 +315,7 @@ export function DiffView({
           )}
         </div>
       </PaneFrame>
-      {/* Floats over the diff (space is reserved at the bottom), so selecting never moves the lines. */}
-      {acts && (
-        <div className={`line-actions ${n > 0 ? 'visible' : ''}`} role="status" inert={n === 0}>
-          <span>
-            {n} {n === 1 ? 'line' : 'lines'} selected
-          </span>
-          {acts.discard && (
-            <Tip label="Discard selected lines" keys="Delete" placement="top">
-              <button className="btn" onClick={() => fromBar(() => selection.runOn('discard'))}>
-                {acts.discard.label}
-              </button>
-            </Tip>
-          )}
-          <Tip label={`${acts.primary.label} selected lines`} keys="Enter" placement="top">
-            <button className="btn primary" onClick={() => fromBar(() => selection.runOn('primary'))}>
-              {acts.primary.label} lines
-            </button>
-          </Tip>
-          <Tip label="Clear selection" keys="Esc" placement="top">
-            <button className="icon-btn" aria-label="Clear selection" onClick={() => fromBar(selection.clear)}>
-              <Icon name="x" size={14} />
-            </button>
-          </Tip>
-        </div>
-      )}
+      {acts && <DiffLineActions acts={acts} selection={selection} focusPane={() => ref.current?.focus({ preventScroll: true })} />}
     </div>
   )
 }

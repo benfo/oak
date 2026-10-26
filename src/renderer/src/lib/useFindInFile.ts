@@ -12,6 +12,9 @@ interface Options {
   moveTo: (line: number) => void
   /** The scroller that takes focus back when the bar closes. */
   scrollerRef: React.RefObject<HTMLElement | null>
+  /** Map a source line number to a displayed row (diffs have gaps and two number columns). */
+  resolveLine?: (query: string) => { row: number; label: string } | null
+  lineNotFound?: string
 }
 
 /**
@@ -19,7 +22,7 @@ interface Options {
  * the current one, and stepping with Enter. A query that starts with ":" is a line number to go to instead.
  * The view draws `FindBar` from `query`, `status` and the handlers, and marks `hitsOn(line)` in its rows.
  */
-export function useFindInFile({ lines, at, moveTo, scrollerRef }: Options) {
+export function useFindInFile({ lines, at, moveTo, scrollerRef, resolveLine, lineNotFound = 'Line number' }: Options) {
   /** The bar's text; null while it is closed. */
   const [query, setQuery] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -37,12 +40,13 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef }: Options) {
   /** The occurrence Enter last moved to; it only counts while the cursor is still on its line. */
   const [hitIndex, setHitIndex] = useState(0)
   const current = hits[hitIndex]?.line === at ? hitIndex : (rowsWithHits.get(at)?.first ?? -1)
-  const target = query !== null && goto ? gotoLine(query, lines.length) : null
+  const resolved = query !== null && goto && resolveLine ? resolveLine(query) : null
+  const target = query !== null && goto ? (resolveLine ? (resolved?.row ?? null) : gotoLine(query, lines.length)) : null
 
   const status = goto
     ? target === null
-      ? 'Line number'
-      : `Go to line ${target + 1}`
+      ? lineNotFound
+      : `Go to line ${resolved?.label ?? target + 1}`
     : !query
       ? ''
       : !hits.length
@@ -64,7 +68,7 @@ export function useFindInFile({ lines, at, moveTo, scrollerRef }: Options) {
   const change = (text: string) => {
     setQuery(text)
     if (text.startsWith(':')) {
-      const to = gotoLine(text, lines.length)
+      const to = resolveLine ? (resolveLine(text)?.row ?? null) : gotoLine(text, lines.length)
       if (to !== null) moveTo(to)
       return
     }

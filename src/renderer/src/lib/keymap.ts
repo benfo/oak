@@ -80,10 +80,10 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
   },
   {
     action: 'find',
-    roles: ['blame'],
+    roles: ['blame', 'diff'],
     keys: ['/', 'Mod+F'],
     match: isListSearchKey,
-    help: { title: 'Find in the blamed file (":120" goes to a line)', keys: '/ or Ctrl+F', category: 'Blame' }
+    help: { title: 'Find in code (":120" goes to a line)', keys: '/ or Ctrl+F', category: 'Navigation' }
   },
   {
     action: 'switchList',
