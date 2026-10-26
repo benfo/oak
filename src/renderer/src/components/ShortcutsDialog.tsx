@@ -127,7 +127,14 @@ export function ShortcutsDialog({ commands, onClose }: { commands: Command[]; on
           {matching.length} of {shortcuts.length} shortcuts
         </div>
         <div className="pane-frame">
-          <div ref={results} className="shortcuts-results" tabIndex={0} data-pane="shortcuts" aria-label="Keyboard shortcut results">
+          <div
+            ref={results}
+            className="shortcuts-results"
+            role="region"
+            tabIndex={0}
+            data-pane="shortcuts"
+            aria-label="Keyboard shortcut results"
+          >
             {matching.length ? (
               [...groups].map(([cat, rows]) => (
                 <section key={cat} className="shortcut-group" aria-label={cat}>
