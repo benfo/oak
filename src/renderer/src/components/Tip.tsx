@@ -23,7 +23,9 @@ export function Tip({
   if (!label) return children
   return (
     <TooltipTrigger delay={500} closeDelay={0}>
-      <Focusable>{children as ReactElement<DOMAttributes<FocusableElement>, string>}</Focusable>
+      {/* RAC wraps the tooltip's key handler in useKeyboard, which stops propagation
+          by default. The tooltip only observes keys; the button and pane own them. */}
+      <Focusable onKeyDown={(e) => e.continuePropagation()}>{children as ReactElement<DOMAttributes<FocusableElement>, string>}</Focusable>
       <Tooltip className="tooltip" placement={placement} offset={6}>
         <span>{label}</span>
         {keys && <kbd>{displayKeys(keys)}</kbd>}
