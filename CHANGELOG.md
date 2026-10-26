@@ -2,6 +2,18 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.19
+
+### Added
+
+- Find in diffs and file previews. Press Ctrl+F in History or Changes to search inline and side-by-side diffs and commit file previews, step through matches, and jump to a line with `:N`. Escape closes find.
+- The shortcut reference (Ctrl+/) searches by the keys you press and says which view or control owns each shortcut.
+
+### Fixed
+
+- Escape exits a file's history, as it does for a comparison, from the commit list or the banner.
+- The command palette layout is tidier.
+
 ## 0.1.18
 
 ### Added

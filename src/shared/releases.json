@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.1.19",
+    "highlights": [
+      { "title": "Find in diffs and file previews", "text": "Press Ctrl+F in History or Changes to search inline and side-by-side diffs and commit file previews, step through matches, and jump to a line with :N. Escape closes find." },
+      { "title": "Better shortcut search", "text": "The shortcut reference (Ctrl+/) searches by the keys you press and says which view or control owns each shortcut." }
+    ],
+    "fixes": [
+      "Escape exits a file's history, as it does for a comparison, from the commit list or the banner.",
+      "The command palette layout is tidier."
+    ]
+  },
+  {
     "version": "0.1.18",
     "highlights": [
       { "title": "Blame", "text": "See who last changed each line, step back to the version before a line's commit, find text in the file, and open the commit in History at the file and line it changed. Open it from a file's menu or the palette (Blame file...); Ctrl+3 returns to it." },
