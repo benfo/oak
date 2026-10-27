@@ -790,12 +790,22 @@ epo`), if any. */
   // ---- remotes ----
   /** Background fetch (auto-fetch): never prompts for credentials; returns the error instead of throwing. */
   async backgroundFetch(repo: string, prune = true): Promise<string | null> {
-    try {
-      await git(repo, ['fetch', '--all', '--quiet', ...(prune ? ['--prune'] : [])], { noPrompt: true })
-      return null
-    } catch (e) {
-      return e instanceof Error ? e.message : String(e)
+    const args = ['fetch', '--all', '--quiet', ...(prune ? ['--prune'] : [])]
+    // "cannot lock ref" means another fetch (a manual one, a terminal, an IDE) updated the same remote ref
+    // mid-flight. It is transient, so retry once instead of reporting it.
+    const maxAttempts = 2
+    let message = ''
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        await git(repo, args, { noPrompt: true })
+        return null
+      } catch (e) {
+        message = e instanceof Error ? e.message : String(e)
+        if (!/cannot lock ref/.test(message)) break
+        if (attempt < maxAttempts) await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
     }
+    return message
   },
 
   async fetch(repo: string, prune = true) {
