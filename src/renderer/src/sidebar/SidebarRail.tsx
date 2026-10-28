@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Toolbar } from 'react-aria-components'
-import { toolbarHomeEnd } from '../lib/navigation'
+import { toolbarHomeEnd, vimArrow } from '../lib/navigation'
+import { useSettings } from '../settings'
 import type { View } from '../components/RepoView'
 import { VIEW_KEYS } from '../lib/viewShortcuts'
 import { Icon, type IconName } from '../components/Icon'
@@ -26,18 +27,29 @@ export function SidebarRail({ view, setView, changeCount, blameFile, onExpand, o
     ...(blameFile ? [{ view: 'blame' as const, label: `Blame: ${blameFile}`, icon: 'blame' as const }] : [])
   ]
   const ref = useRef<HTMLDivElement>(null)
+  const { vimNavigation } = useSettings()
   useEffect(() => toolbarHomeEnd(ref.current), [])
   useEffect(() => {
     const rail = ref.current
     if (!rail) return
     const onKey = (e: KeyboardEvent) => {
+      // Vim keys become the arrow they stand for, so the toolbar and the arrow handling below see one key.
+      const arrow = vimNavigation && !e.defaultPrevented ? vimArrow(e) : undefined
+      if (arrow) {
+        e.preventDefault()
+        e.stopPropagation()
+        e.target?.dispatchEvent(
+          new KeyboardEvent('keydown', { key: arrow, code: arrow, bubbles: true, cancelable: true, repeat: e.repeat })
+        )
+        return
+      }
       if (e.key !== 'ArrowRight' || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.defaultPrevented) return
       e.preventDefault()
       onEnterMain()
     }
     rail.addEventListener('keydown', onKey)
     return () => rail.removeEventListener('keydown', onKey)
-  }, [onEnterMain])
+  }, [onEnterMain, vimNavigation])
   return (
     // One Tab stop and a pane for F6, like the top toolbar; arrows move between the buttons.
     <Toolbar ref={ref} className="sidebar-rail" aria-label="Views" orientation="vertical" data-pane="rail">
