@@ -3,6 +3,7 @@ import type { Span } from '../diff/syntax'
 import { fullDate, relativeTime } from '../lib/format'
 import type { BlameCommit, BlameLine } from '../../../shared/blame'
 import { CodeLine } from '../components/CodeLine'
+import { Tip } from '../components/Tip'
 
 interface Props {
   index: number
@@ -52,25 +53,27 @@ export function BlameRow({
       }}
     >
       <span className="gutter" onDoubleClick={() => onOpen(index)}>
-        <span className="ln" title={line.ignored ? 'Blame skipped a commit on the ignore-revs list to name this one' : undefined}>
-          {index + 1}
-        </span>
-        <span
-          className="blame-info"
-          title={first && c && !c.uncommitted ? `${c.summary}\n${c.author}, ${fullDate(c.time * 1000)}, ${c.hash.slice(0, 7)}` : undefined}
+        <Tip label={line.ignored ? 'Blame skipped a commit on the ignore-revs list to name this one' : undefined} focusable={false}>
+          <span className="ln">{index + 1}</span>
+        </Tip>
+        <Tip
+          label={first && c && !c.uncommitted ? `${c.summary}\n${c.author}, ${fullDate(c.time * 1000)}, ${c.hash.slice(0, 7)}` : undefined}
+          focusable={false}
         >
-          {first &&
-            c &&
-            (c.uncommitted ? (
-              <span className="blame-uncommitted">Not committed yet</span>
-            ) : (
-              <>
-                <Avatar name={c.author} email={c.email} size={16} />
-                <span className="blame-summary">{c.summary}</span>
-                <span className="blame-date">{relativeTime(c.time * 1000)}</span>
-              </>
-            ))}
-        </span>
+          <span className="blame-info">
+            {first &&
+              c &&
+              (c.uncommitted ? (
+                <span className="blame-uncommitted">Not committed yet</span>
+              ) : (
+                <>
+                  <Avatar name={c.author} email={c.email} size={16} />
+                  <span className="blame-summary">{c.summary}</span>
+                  <span className="blame-date">{relativeTime(c.time * 1000)}</span>
+                </>
+              ))}
+          </span>
+        </Tip>
       </span>
       <span className="code">
         <CodeLine text={line.text} tokens={tokens} whitespace={whitespace} hits={hits} currentHit={currentHit} />

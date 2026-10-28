@@ -32,9 +32,9 @@ export function BlameFooter({ note, commit, ignored, messageOpen, onToggleMessag
                   <>
                     <Avatar name={commit.author} email={commit.email} size={16} />
                     <span className="blame-author">{commit.author}</span>
-                    <span className="blame-date" title={fullDate(commit.time * 1000)}>
-                      {relativeTime(commit.time * 1000)}
-                    </span>
+                    <Tip label={fullDate(commit.time * 1000)} focusable={false}>
+                      <span className="blame-date">{relativeTime(commit.time * 1000)}</span>
+                    </Tip>
                     <span className="blame-hash">{commit.hash.slice(0, 8)}</span>
                     <span className="blame-summary">{commit.summary}</span>
                     {ignored && <span className="blame-ignored">Skipped an ignored commit</span>}

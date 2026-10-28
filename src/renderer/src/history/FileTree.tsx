@@ -219,29 +219,30 @@ export function FileTree({
       >
         <TreeItemContent>
           {({ level }) => (
-            <div
-              className="tree-row-content"
-              style={{ '--indent': `${(level - 1) * INDENT_STEP}px` } as React.CSSProperties}
-              title={entry.path}
-              onClick={entry.folder ? () => toggle(entry.path) : undefined}
-            >
-              {entry.folder ? (
-                <>
-                  <span className="tree-chevron" aria-hidden="true">
-                    <Icon name={open.has(entry.path) ? 'chevronDown' : 'chevronRight'} size={14} />
-                  </span>
-                  <Icon name="folder" size={14} />
-                </>
-              ) : (
-                <span className="tree-chevron" aria-hidden="true" />
-              )}
-              <span className="tree-label">{entry.name}</span>
-              {status && (
-                <span className={`status status-${status === '?' ? 'U' : status}`} title="Changed in this commit">
-                  {status}
-                </span>
-              )}
-            </div>
+            <Tip label={entry.path} focusable={false}>
+              <div
+                className="tree-row-content"
+                style={{ '--indent': `${(level - 1) * INDENT_STEP}px` } as React.CSSProperties}
+                onClick={entry.folder ? () => toggle(entry.path) : undefined}
+              >
+                {entry.folder ? (
+                  <>
+                    <span className="tree-chevron" aria-hidden="true">
+                      <Icon name={open.has(entry.path) ? 'chevronDown' : 'chevronRight'} size={14} />
+                    </span>
+                    <Icon name="folder" size={14} />
+                  </>
+                ) : (
+                  <span className="tree-chevron" aria-hidden="true" />
+                )}
+                <span className="tree-label">{entry.name}</span>
+                {status && (
+                  <Tip label="Changed in this commit" focusable={false}>
+                    <span className={`status status-${status === '?' ? 'U' : status}`}>{status}</span>
+                  </Tip>
+                )}
+              </div>
+            </Tip>
           )}
         </TreeItemContent>
         {entry.folder && open.has(entry.path) ? entry.children.map(renderEntry) : undefined}

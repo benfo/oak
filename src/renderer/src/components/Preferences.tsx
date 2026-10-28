@@ -14,6 +14,7 @@ import { openRepoOrGlobalConfig } from '../lib/useGitConfig'
 import { GitPage } from './GitPage'
 import { RepositoryPage } from './RepositoryPage'
 import { Field } from './prefsFields'
+import { Tip } from './Tip'
 
 const openStore = createStore(false)
 
@@ -303,13 +304,11 @@ function Preferences({ repo, onClose }: { repo: string | null; onClose: () => vo
         </Section>
       </Tabs>
       <div className="modal-actions">
-        <button
-          className="btn"
-          title="Resets Oak's own settings. Your git config (name, email, signing) is left as it is."
-          onClick={() => updateSettings(DEFAULTS)}
-        >
-          Reset to defaults
-        </button>
+        <Tip label="Resets Oak's own settings. Your git config (name, email, signing) is left as it is.">
+          <button className="btn" onClick={() => updateSettings(DEFAULTS)}>
+            Reset to defaults
+          </button>
+        </Tip>
         <span className="spacer" />
         <button className="btn primary" onClick={done}>
           Close

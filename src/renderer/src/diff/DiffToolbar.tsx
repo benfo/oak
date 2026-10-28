@@ -46,9 +46,9 @@ export function DiffToolbar({
   const onlyChange = changeCount === 1
   return (
     <div className="diff-title">
-      <span className="diff-filename" title={title}>
-        {title}
-      </span>
+      <Tip label={title} focusable={false}>
+        <span className="diff-filename">{title}</span>
+      </Tip>
       {metadata}
       {!plain && <WhitespaceFilterIndicator />}
       <Toolbar className="diff-controls" aria-label="Diff tools" ref={toolsRef}>
@@ -97,17 +97,18 @@ export function DiffToolbar({
                 run: () => jumpHunk(1)
               }}
             >
-              <span
-                className="diff-counter"
-                aria-label={
-                  changeCount
-                    ? `Change ${currentChange + 1} of ${changeCount}${onlyChange && singleChangeVisible ? ', already visible' : ''}`
-                    : 'No changes'
-                }
-                title={onlyChange && singleChangeVisible ? 'The only change is already visible' : undefined}
-              >
-                {changeCount ? `${currentChange + 1} of ${changeCount}` : counterEmpty}
-              </span>
+              <Tip label={onlyChange && singleChangeVisible ? 'The only change is already visible' : undefined} focusable={false}>
+                <span
+                  className="diff-counter"
+                  aria-label={
+                    changeCount
+                      ? `Change ${currentChange + 1} of ${changeCount}${onlyChange && singleChangeVisible ? ', already visible' : ''}`
+                      : 'No changes'
+                  }
+                >
+                  {changeCount ? `${currentChange + 1} of ${changeCount}` : counterEmpty}
+                </span>
+              </Tip>
             </DiffNavigationGroup>
             <DiffOptions />
           </>

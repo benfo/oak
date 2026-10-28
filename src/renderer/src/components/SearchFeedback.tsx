@@ -1,4 +1,5 @@
 import { VisuallyHidden } from 'react-aria-components'
+import { Tip } from './Tip'
 
 /** Compact, contextual feedback inside the field; full messages remain accessible. */
 export function SearchFeedback({
@@ -33,21 +34,22 @@ export function SearchFeedback({
     ? 'No matches'
     : `${position >= 0 ? `${position + 1}/` : ''}${count}${loaded ? '+' : ''}${boundary ? (boundary === 'below' ? ' · End' : ' · Start') : ''}`
   return (
-    <div
-      id={id}
-      className="search-feedback"
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
-      data-notice={(active && !!message) || undefined}
-      title={active ? [message, count > 0 ? counter : ''].filter(Boolean).join(' · ') : undefined}
-    >
-      {active && (
-        <>
-          <VisuallyHidden>{[label, message, count > 0 ? counter : ''].filter(Boolean).join('. ')}</VisuallyHidden>
-          <span aria-hidden="true">{compact}</span>
-        </>
-      )}
-    </div>
+    <Tip label={active ? [message, count > 0 ? counter : ''].filter(Boolean).join(' · ') : undefined} focusable={false}>
+      <div
+        id={id}
+        className="search-feedback"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-notice={(active && !!message) || undefined}
+      >
+        {active && (
+          <>
+            <VisuallyHidden>{[label, message, count > 0 ? counter : ''].filter(Boolean).join('. ')}</VisuallyHidden>
+            <span aria-hidden="true">{compact}</span>
+          </>
+        )}
+      </div>
+    </Tip>
   )
 }

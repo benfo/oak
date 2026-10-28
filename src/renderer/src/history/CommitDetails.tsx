@@ -412,30 +412,30 @@ export function CommitDetails({
   ) => {
     const { dir, name } = splitPath(f.path)
     return (
-      <div
-        key={f.path}
-        className={`file-row ${selected ? 'selected' : ''}`}
-        style={style}
-        onClick={() => setFile(f)}
-        onContextMenu={(e) => {
-          e.preventDefault()
-          setFile(f)
-          fileMenu(f)
-        }}
-        title={f.oldPath ? `${f.oldPath} → ${f.path}` : f.path}
-      >
-        {spacer && <ChevronSpacer />}
-        <span className={`status status-${f.status === '?' ? 'U' : f.status}`} title={STATUS_LABEL[f.status]}>
-          {f.status}
-        </span>
-        <span className="file-name">{name}</span>
-        <span className="file-dir">{spacer ? '' : dir}</span>
-        {f.additions !== null && (
-          <span className="numstat">
-            <span className="add">+{f.additions}</span> <span className="del">−{f.deletions}</span>
-          </span>
-        )}
-      </div>
+      <Tip key={f.path} label={f.oldPath ? `${f.oldPath} → ${f.path}` : f.path} focusable={false}>
+        <div
+          className={`file-row ${selected ? 'selected' : ''}`}
+          style={style}
+          onClick={() => setFile(f)}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            setFile(f)
+            fileMenu(f)
+          }}
+        >
+          {spacer && <ChevronSpacer />}
+          <Tip label={STATUS_LABEL[f.status]} focusable={false}>
+            <span className={`status status-${f.status === '?' ? 'U' : f.status}`}>{f.status}</span>
+          </Tip>
+          <span className="file-name">{name}</span>
+          <span className="file-dir">{spacer ? '' : dir}</span>
+          {f.additions !== null && (
+            <span className="numstat">
+              <span className="add">+{f.additions}</span> <span className="del">−{f.deletions}</span>
+            </span>
+          )}
+        </div>
+      </Tip>
     )
   }
 
@@ -627,18 +627,18 @@ export function CommitDetails({
                         if (row.entry) return renderFile(row.entry, { style, spacer: true, selected: !cursorId && activePath === row.id })
                         const closed = collapsed.has(row.id)
                         return (
-                          <div
-                            key={row.id}
-                            className={`file-row folder-row ${cursorId === row.id ? 'selected' : ''}`}
-                            style={style}
-                            title={row.id}
-                            onClick={() => {
-                              selectRow(row)
-                              setCollapsed(toggled(collapsed, row.id))
-                            }}
-                          >
-                            <FolderLabel row={row} collapsed={closed} />
-                          </div>
+                          <Tip key={row.id} label={row.id} focusable={false}>
+                            <div
+                              className={`file-row folder-row ${cursorId === row.id ? 'selected' : ''}`}
+                              style={style}
+                              onClick={() => {
+                                selectRow(row)
+                                setCollapsed(toggled(collapsed, row.id))
+                              }}
+                            >
+                              <FolderLabel row={row} collapsed={closed} />
+                            </div>
+                          </Tip>
                         )
                       })
                     : details?.files.slice(windowStart, windowEnd).map((f) => renderFile(f, { selected: activePath === f.path }))}

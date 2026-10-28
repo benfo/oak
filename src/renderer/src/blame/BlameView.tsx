@@ -21,6 +21,7 @@ import { BlameToolbar } from './BlameToolbar'
 import { stepBefore } from './stepBefore'
 import { useBlameData } from './useBlameData'
 import { useCommitPopover } from './useCommitPopover'
+import { Tip } from '../components/Tip'
 
 /** Keep in sync with --diff-line-height. */
 const ROW_H = 20
@@ -269,12 +270,12 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   return (
     <div className={`diff-wrap blame-view${past ? ' stepped' : ''}`} {...pane.ownerProps}>
       <div className="diff-title">
-        <span className="diff-filename" title={file}>
-          {file}
-        </span>
-        <span className="blame-revision" title={rev ?? undefined}>
-          {revision}
-        </span>
+        <Tip label={file} focusable={false}>
+          <span className="diff-filename">{file}</span>
+        </Tip>
+        <Tip label={rev ?? undefined} focusable={false}>
+          <span className="blame-revision">{revision}</span>
+        </Tip>
         <BlameVersion steps={steps} onNewer={stepNewer} />
         <BlameToolbar
           toolsRef={toolsRef}

@@ -218,9 +218,11 @@ export function CommitBox({ r }: { r: RepoCtx }) {
         ) : failure ? (
           <>
             <Icon name="x" size={14} />
-            <span className="status-text" title={failure}>
-              <strong>Commit failed</strong> <span className="mono">{lastOutputLine(failure)}</span>
-            </span>
+            <Tip label={failure} focusable={false}>
+              <span className="status-text">
+                <strong>Commit failed</strong> <span className="mono">{lastOutputLine(failure)}</span>
+              </span>
+            </Tip>
             <button className="link" onClick={() => setShowLog((s) => !s)} aria-expanded={showLog}>
               {showLog ? 'Hide' : 'Details'}
             </button>
@@ -239,16 +241,18 @@ export function CommitBox({ r }: { r: RepoCtx }) {
       </div>
       {showLog && (committing ? r.op && <OutputLog text={r.op.output} /> : failure && <OutputLog text={failure} />)}
       <div className="commit-box-row">
-        <label className="check" title={head ? 'Nothing to amend yet' : 'Replace the last commit'}>
-          <input type="checkbox" checked={amend} disabled={head} onChange={(e) => toggleAmend(e.target.checked)} />
-          Amend
-        </label>
-        <span
-          className={`subject-len ${subjectLimit > 0 && subject.length > subjectLimit ? 'over' : ''}`}
-          title={subjectLimit ? `Subject line length (guide: ${subjectLimit}, change in Preferences)` : 'Subject line length'}
+        <Tip label={head ? 'Nothing to amend yet' : 'Replace the last commit'} focusable={false}>
+          <label className="check">
+            <input type="checkbox" checked={amend} disabled={head} onChange={(e) => toggleAmend(e.target.checked)} />
+            Amend
+          </label>
+        </Tip>
+        <Tip
+          label={subjectLimit ? `Subject line length (guide: ${subjectLimit}, change in Preferences)` : 'Subject line length'}
+          focusable={false}
         >
-          {subject.length}
-        </span>
+          <span className={`subject-len ${subjectLimit > 0 && subject.length > subjectLimit ? 'over' : ''}`}>{subject.length}</span>
+        </Tip>
         <span className="spacer" />
         <Tip label="Commit and push" keys="Ctrl+Shift+Enter" placement="top">
           <button className="btn" disabled={!canCommit} aria-describedby="commit-status" onClick={() => commit(true)}>
