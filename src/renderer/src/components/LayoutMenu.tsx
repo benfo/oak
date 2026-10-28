@@ -8,7 +8,7 @@ export interface LayoutControls {
   onToggleFocus: () => void
 }
 
-/** The focus toggle; pane sizes are dragged or resized with Shift+Alt+arrows, panes hide with Ctrl+[. */
+/** The focus toggle; pane sizes are dragged or resized with Shift+Alt+arrows. */
 export function LayoutMenu({ layout, onToggleFocus }: LayoutControls) {
   const focusLabel = layout === 'standard' ? 'Expand focused area' : 'Restore previous layout'
   return (

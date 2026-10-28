@@ -670,9 +670,8 @@ function buildCommands({
       run: toggleCommitFilesMode
     },
     {
-      id: 'toggle-left-pane',
+      id: 'toggle-sidebar',
       title: sidebarToggle.title,
-      detail: layout === 'code' ? 'The file list beside the diff' : 'The repository sidebar',
       category: 'View',
       keys: 'Ctrl+[',
       enabled: sidebarToggle.enabled,

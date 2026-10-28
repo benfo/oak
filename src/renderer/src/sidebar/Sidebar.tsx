@@ -689,7 +689,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
         onKeyDownCapture={onKeyDownCapture}
         onFocus={(e) => {
           // A recent row disappears when it becomes current. React Aria may restore focus to
-          // A recent row disappears when it becomes current. React Aria may restore focus to when it becomes current. React Aria may restore focus to          // the tree after rebuilding its collection; recover the current row cursor then.
+          // the tree after rebuilding its collection; recover the current row cursor then.
           if (e.target === treeRef.current)
             requestAnimationFrame(() => {
               if (document.activeElement === treeRef.current)

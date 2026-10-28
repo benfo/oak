@@ -30,32 +30,30 @@ export function SidebarRail({ view, setView, changeCount, blameFile, onExpand, o
   const { vimNavigation } = useSettings()
   const motions = useMemo(createVimMotions, [])
   useEffect(() => toolbarHomeEnd(ref.current), [])
+  // The listener below outlives renders, so it reads the latest props through a ref.
+  const latest = useRef({ vimNavigation, onEnterMain })
+  latest.current = { vimNavigation, onEnterMain }
   useEffect(() => {
     const rail = ref.current
     if (!rail) return
+    const redispatch = (e: KeyboardEvent, key: string) => {
+      e.preventDefault()
+      e.stopPropagation()
+      e.target?.dispatchEvent(new KeyboardEvent('keydown', { key, code: key, bubbles: true, cancelable: true, repeat: e.repeat }))
+    }
     const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return
+      const { vimNavigation, onEnterMain } = latest.current
       // Vim keys become the key they stand for (j/k/h/l are arrows, gg and G are Home and End), so the
       // toolbar and the handling below see one key.
-      const motion = vimNavigation && !e.defaultPrevented ? motions.read(e, e.target as Element) : undefined
-      if (motion) {
+      const vimKey = vimNavigation ? (motions.read(e, e.target as Element) ?? vimArrow(e)) : undefined
+      if (vimKey === 'prefix') {
         e.preventDefault()
         e.stopPropagation()
-        if (motion !== 'prefix')
-          e.target?.dispatchEvent(
-            new KeyboardEvent('keydown', { key: motion, code: motion, bubbles: true, cancelable: true, repeat: e.repeat })
-          )
         return
       }
-      const arrow = vimNavigation && !e.defaultPrevented ? vimArrow(e) : undefined
-      if (arrow) {
-        e.preventDefault()
-        e.stopPropagation()
-        e.target?.dispatchEvent(
-          new KeyboardEvent('keydown', { key: arrow, code: arrow, bubbles: true, cancelable: true, repeat: e.repeat })
-        )
-        return
-      }
-      if (e.key !== 'ArrowRight' || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.defaultPrevented) return
+      if (vimKey) return redispatch(e, vimKey)
+      if (e.key !== 'ArrowRight' || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return
       e.preventDefault()
       onEnterMain()
     }
@@ -65,7 +63,7 @@ export function SidebarRail({ view, setView, changeCount, blameFile, onExpand, o
       rail.removeEventListener('keydown', onKey)
       rail.removeEventListener('focusout', motions.reset)
     }
-  }, [onEnterMain, vimNavigation, motions])
+  }, [motions])
   return (
     // One Tab stop and a pane for F6, like the top toolbar; arrows move between the buttons.
     <Toolbar ref={ref} className="sidebar-rail" aria-label="Views" orientation="vertical" data-pane="rail">
