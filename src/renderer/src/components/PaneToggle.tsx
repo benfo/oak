@@ -6,17 +6,16 @@ interface Props {
   pane: string
   /** True while the pane is hidden, so pressing shows it. */
   collapsed: boolean
+  /** Shortcut shown in the tooltip. */
+  keys: string
   onToggle: () => void
 }
 
-/**
- * Shows or hides the left-most pane. It sits in the pane's own header while the pane is open and in
- * the nearest always-visible bar once it is collapsed, so its place is always predictable (Ctrl+[).
- */
-export function PaneToggle({ pane, collapsed, onToggle }: Props) {
+/** Shows or hides a side pane. In the sidebar it travels between the pane's header and the rail. */
+export function PaneToggle({ pane, collapsed, keys, onToggle }: Props) {
   const label = `${collapsed ? 'Show' : 'Hide'} ${pane}`
   return (
-    <Tip label={label} keys="Ctrl+[">
+    <Tip label={label} keys={keys}>
       <button className="icon-btn pane-toggle" aria-label={label} aria-expanded={!collapsed} onClick={onToggle}>
         <Icon name={collapsed ? 'panelOpen' : 'panelClose'} size={14} />
       </button>

@@ -50,6 +50,8 @@ export function CommitDetails({
   onClearComparison,
   onSelectCommit,
   focusCode,
+  filesHidden,
+  filesToggle,
   contentRevision,
   onOpenChanges,
   onFileHistory,
@@ -68,6 +70,8 @@ export function CommitDetails({
   onClearComparison: () => void
   onSelectCommit: (h: string) => void
   focusCode: boolean
+  filesHidden: boolean
+  filesToggle?: ReactNode
   contentRevision: number
   onOpenChanges: () => void
   onFileHistory: (path: string) => void
@@ -445,7 +449,7 @@ export function CommitDetails({
 
   return (
     <div className="commit-details-view">
-      <Split id="commit-details" label="Commit files width" initial={420} min={260} max={900}>
+      <Split id="commit-details" label="Commit files width" initial={420} min={260} max={900} collapsed={filesHidden}>
         <div className="commit-info" aria-busy={pending}>
           <div
             className="commit-meta"
@@ -705,10 +709,15 @@ export function CommitDetails({
                               : 'No file changes in this commit'
                         : ''
             }
-            onBack={() => {
-              focusPane('.details-files')
-            }}
-            onSwitchView={allMode ? undefined : toggleChangesTree}
+            onBack={
+              filesHidden
+                ? undefined
+                : () => {
+                    focusPane('.details-files')
+                  }
+            }
+            onSwitchView={filesHidden || allMode ? undefined : toggleChangesTree}
+            leading={filesToggle}
             plain={showContent}
             files={
               !allMode && detailsCurrent && details.files.length

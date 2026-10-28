@@ -40,6 +40,8 @@ interface Props {
   onBack?: () => void
   /** V: switch the changed-files list between list and tree; omit when that list is hidden or not switchable. */
   onSwitchView?: () => void
+  /** Leading control in the title bar, e.g. the file list toggle. Shown even with no file open. */
+  leading?: ReactNode
   files?: { index: number; count: number; onSelect: (index: number) => void }
   /** Whole-file content (a synthetic all-added diff): shown as plain numbered code, without diff markings or tools. */
   plain?: boolean
@@ -58,6 +60,7 @@ export function DiffView({
   readOnlyReason,
   onBack,
   onSwitchView,
+  leading,
   files,
   plain = false,
   revealLine,
@@ -187,8 +190,9 @@ export function DiffView({
     }
   }
 
-  const header = title && (
+  const header = title ? (
     <DiffToolbar
+      leading={leading}
       title={title}
       metadata={metadata}
       files={files}
@@ -203,6 +207,8 @@ export function DiffView({
       findOpen={find.query !== null}
       canFind={rows.length > 0}
     />
+  ) : (
+    leading && <div className="diff-title">{leading}</div>
   )
   const empty = (content: ReactNode) => (
     <div className="diff-wrap" {...pane.ownerProps} onKeyDownCapture={onFileKey}>

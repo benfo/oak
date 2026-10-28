@@ -62,12 +62,16 @@ export function ChangesView({
   r,
   onBackToSidebar,
   focusCode,
+  filesHidden,
+  filesToggle,
   onFileHistory,
   onBlame
 }: {
   r: RepoCtx
   onBackToSidebar: () => void
   focusCode: boolean
+  filesHidden: boolean
+  filesToggle?: ReactNode
   onFileHistory: (path: string) => void
   onBlame: (path: string, rev: string | null) => void
 }) {
@@ -519,7 +523,7 @@ export function ChangesView({
   )
 
   return (
-    <Split id="changes" label="Changed files width" initial={360} min={260} max={800}>
+    <Split id="changes" label="Changed files width" initial={360} min={260} max={800} collapsed={filesHidden}>
       <div className="changes-left">
         <OperationBanner r={r} />
         <div className="changes-files" ref={filesRef}>
@@ -622,10 +626,15 @@ export function ChangesView({
           }
           actions={diffActions}
           readOnlyReason={readOnlyReason}
-          onBack={() => {
-            focusFiles()
-          }}
-          onSwitchView={toggleChangesTree}
+          onBack={
+            filesHidden
+              ? undefined
+              : () => {
+                  focusFiles()
+                }
+          }
+          onSwitchView={filesHidden ? undefined : toggleChangesTree}
+          leading={filesToggle}
           files={
             lead
               ? {

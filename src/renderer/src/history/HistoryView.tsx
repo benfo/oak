@@ -98,6 +98,8 @@ export function HistoryView({
   focus,
   comparisonRequest,
   layout,
+  filesHidden,
+  filesToggle,
   onSelectedChange,
   onCompareBranch,
   onOpenChanges,
@@ -107,6 +109,8 @@ export function HistoryView({
   focus: { hash: string; n: number; target?: CommitTarget } | null
   comparisonRequest: ComparisonRequest | null
   layout: WorkspaceLayout
+  filesHidden: boolean
+  filesToggle?: ReactNode
   onSelectedChange?: (c: Commit | null) => void
   onCompareBranch: CompareBranch
   onOpenChanges: () => void
@@ -595,6 +599,8 @@ export function HistoryView({
         compareBase={compareBase ?? undefined}
         branchComparison={branchComparison}
         focusCode={layout === 'code'}
+        filesHidden={filesHidden}
+        filesToggle={filesToggle}
         contentRevision={r.contentRevision}
         onOpenChanges={onOpenChanges}
         onFileHistory={startFileHistory}

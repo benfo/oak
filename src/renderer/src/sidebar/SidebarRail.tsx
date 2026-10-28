@@ -21,7 +21,7 @@ export function SidebarRail({ view, setView, changeCount, blameFile, onExpand }:
   ]
   return (
     <nav className="sidebar-rail" aria-label="Views">
-      <PaneToggle pane="sidebar" collapsed onToggle={onExpand} />
+      <PaneToggle pane="sidebar" collapsed keys="Ctrl+[" onToggle={onExpand} />
       {items.map((item) => (
         <Tip key={item.view} label={item.label}>
           <button
