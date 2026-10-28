@@ -153,9 +153,11 @@ export const lines: Line[] = [
       {
         id: 'focus',
         name: 'Give the diff the window',
-        text: ['Expand the code area. Press F11 again, or Escape when nothing else is selected, to restore your layout, focus and pane sizes.', 'While reading a diff, Alt PageUp and Alt PageDown move between files. The toolbar\'s expand button does the same as F11.'],
+        text: ['Expand the code area. The sidebar and, in History, the commit graph step aside and the file list stays beside the diff. Press F to hide or show that list. Press F11 again, or Escape when nothing else is selected, to restore your layout, focus and pane sizes.', 'While reading a diff, Alt PageUp and Alt PageDown move between files. The toolbar\'s expand button does the same as F11. Outside focus mode, Ctrl [ collapses the sidebar to a strip of view icons.'],
         keys: [
           { label: 'Expand or restore', keys: ['F11'] },
+          { label: 'Hide or show the file list', keys: ['F'] },
+          { label: 'Collapse the sidebar to icons', keys: ['Ctrl', '['] },
           { label: 'Previous or next file', keys: ['Alt', 'PageUp / PageDown'] },
         ],
         shots: [{ image: 'oak-focus', title: 'Oak with the code area expanded to fill the window', caption: 'After pressing F11, the diff fills the window.' }],
