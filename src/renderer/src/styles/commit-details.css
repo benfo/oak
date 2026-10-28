@@ -39,8 +39,10 @@
 }
 
 .commit-info {
+  container: commit-info / size;
   display: flex;
   flex-direction: column;
+  width: 100%;
   height: 100%;
 }
 .comparison-actions {
@@ -92,6 +94,33 @@
   font: var(--text-sm)/1.5 var(--font);
   white-space: pre-wrap;
   color: var(--muted-foreground);
+}
+/* A commit scrolls as one area: the subject stays at the top, the author and hash rows at the bottom,
+   and the message body moves between them. */
+.commit-meta:has(> .commit-identity) {
+  padding-block: 0;
+}
+.commit-meta:has(> .commit-identity) > .commit-subject {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: var(--space-3) 0 var(--space-1-5);
+  background: var(--surface);
+}
+.commit-identity {
+  position: sticky;
+  bottom: 0;
+  padding-bottom: var(--space-3);
+  background: var(--surface);
+}
+/* A short pane leaves the pinned rows no room for the message: only the subject stays pinned and the
+   author and hash rows scroll with the body. About four body lines fit above this height. */
+@container commit-info (height < 440px) {
+  .commit-identity {
+    position: static;
+    padding-bottom: 0;
+  }
 }
 .author-line {
   display: flex;

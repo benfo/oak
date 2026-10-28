@@ -515,36 +515,38 @@ export function CommitDetails({
               <>
                 <h3 className="commit-subject">{subject}</h3>
                 {body && <pre className="commit-body">{body}</pre>}
-                <div className="author-line">
-                  <Avatar name={details.author} email={details.email} size={30} />
-                  <div>
+                <div className="commit-identity">
+                  <div className="author-line">
+                    <Avatar name={details.author} email={details.email} size={30} />
                     <div>
-                      <strong>{details.author}</strong> <span className="muted">&lt;{details.email}&gt;</span>
-                    </div>
-                    <div className="muted small">
-                      {fullDate(details.authorDate)}
-                      {details.committer !== details.author && ` · committed by ${details.committer}`}
+                      <div>
+                        <strong>{details.author}</strong> <span className="muted">&lt;{details.email}&gt;</span>
+                      </div>
+                      <div className="muted small">
+                        {fullDate(details.authorDate)}
+                        {details.committer !== details.author && ` · committed by ${details.committer}`}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="hash-line">
-                  <span className="mono">{details.hash.slice(0, 12)}</span>
-                  <Tip label="Copy full hash" keys="Ctrl+Shift+C">
-                    <button
-                      className="icon-btn"
-                      disabled={!detailsCurrent}
-                      aria-label="Copy full hash"
-                      onClick={() => copyText(details.hash, 'commit hash')}
-                    >
-                      <Icon name="copy" size={13} />
-                    </button>
-                  </Tip>
-                  {details.parents.length > 0 && <span className="muted small">{details.parents.length > 1 ? 'parents' : 'parent'}</span>}
-                  {details.parents.map((p) => (
-                    <button key={p} className="link mono" disabled={!detailsCurrent} onClick={() => onSelectCommit(p)}>
-                      {p.slice(0, 8)}
-                    </button>
-                  ))}
+                  <div className="hash-line">
+                    <span className="mono">{details.hash.slice(0, 12)}</span>
+                    <Tip label="Copy full hash" keys="Ctrl+Shift+C">
+                      <button
+                        className="icon-btn"
+                        disabled={!detailsCurrent}
+                        aria-label="Copy full hash"
+                        onClick={() => copyText(details.hash, 'commit hash')}
+                      >
+                        <Icon name="copy" size={13} />
+                      </button>
+                    </Tip>
+                    {details.parents.length > 0 && <span className="muted small">{details.parents.length > 1 ? 'parents' : 'parent'}</span>}
+                    {details.parents.map((p) => (
+                      <button key={p} className="link mono" disabled={!detailsCurrent} onClick={() => onSelectCommit(p)}>
+                        {p.slice(0, 8)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </>
             ) : (
