@@ -3,6 +3,8 @@ import { Button, Tree, TreeItem, TreeItemContent, Virtualizer, type Key } from '
 import type { RepoCtx } from '../useRepo'
 import type { Branch, Stash } from '../../../shared/types'
 import { changedFileCount } from '../lib/changeCount'
+import { VIEW_KEYS } from '../lib/viewShortcuts'
+import { displayKeys } from '../commands'
 import type { View } from '../components/RepoView'
 import { Icon, type IconName } from '../components/Icon'
 import { Tip } from '../components/Tip'
@@ -41,6 +43,8 @@ interface TreeNode {
   label: string
   icon?: IconName
   title?: string
+  /** Shortcut shown at the row's end while it is hovered or keyboard-focused. */
+  keys?: string
   count?: number
   navActive?: boolean
   current?: boolean
@@ -346,6 +350,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       kind: 'nav',
       label: 'Changes',
       icon: 'changes',
+      keys: VIEW_KEYS.changes,
       count: changeCount,
       navActive: view === 'changes',
       activate: () => live.current.setView('changes')
@@ -355,6 +360,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       kind: 'nav',
       label: 'History',
       icon: 'history',
+      keys: VIEW_KEYS.history,
       navActive: view === 'history',
       activate: () => live.current.setView('history')
     },
@@ -365,6 +371,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
             kind: 'nav' as const,
             label: 'Blame',
             icon: 'blame' as const,
+            keys: VIEW_KEYS.blame,
             title: blameFile,
             navActive: view === 'blame',
             activate: () => live.current.setView('blame'),
@@ -523,6 +530,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
             <Tip label={n.title} focusable={false}>
               <span className="tree-label">{n.label}</span>
             </Tip>
+            {n.keys && <kbd className="row-keys">{displayKeys(n.keys)}</kbd>}
             {n.badges?.map((b) => (
               <span key={b.text} className={`pill ${b.warn ? 'warn' : ''}`}>
                 {b.text}
