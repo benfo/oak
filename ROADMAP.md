@@ -33,6 +33,8 @@ Lessons for any future history rewrite or tag move:
 
 - **Ignore-whitespace diff review and toolbar cleanup (PR #24, merged 2026-10-28).** Session-only filter shared by Changes and History, off at startup. Hide space, tab and CRLF/LF edits while retaining blank-line additions/deletions. Line and hunk actions use exact selected text and preserve hidden whitespace-only edits; whole-file actions still include everything. Whitespace-only files remain listed with an action to reveal their changes. Diff options groups layout, context and whitespace controls; navigation remains directly accessible, and the active filter has a visible reset control. Narrow panes use two fixed toolbar rows. Lucide supplies icons through the shared component. Validation: 81 focused unit tests and 19 focused Electron UI tests pass, plus build, typecheck, lint and formatting. Included in the next release.
 
+- **Ref menus from History badges, Shift+Menu and a steadier commit details pane (PR #25, merged 2026-10-28).** Right-click a branch or tag badge in the History list for its menu (the sidebar's, now shared through `lib/tagMenu.ts` and `showBranchMenu`), with a ring in the badge's colour while it is open. `HEAD` and unmatched badges fall through to the commit menu, and the old "Manage…" items left the commit menu. Shift+Menu opens the active commit's ref menu (a picker first when it has several refs, the commit menu when none). Native `title` tooltips became `Tip`, which has a hover-only mode (`focusable={false}`) for non-interactive elements. The commit details scroll as one area with the subject and the author and hash rows pinned, and only the subject pinned when the details column is under 440px tall. Ref menus from the keyboard exist only as Shift+Menu; a Tab-through-badges idea was deferred. Included in the next release.
+
 ## Resume next
 
 0. **Website follow-ups.** The revamp has shipped. Panels have different heights, so content below the map shifts a little when a station changes; revisit if it bothers anyone. Keep the "planned" section in step with this file. Blame now has a released feature stop. Notes and rules are in `website/README.md`.
@@ -137,7 +139,7 @@ Ideas only. None is agreed, and each needs a concrete workflow and a discussion 
 
 **Diff and files**
 
-- Collapse unchanged regions.
+- Fold long unchanged regions in a diff into one expandable row ("340 unchanged lines"), so distant changes sit close together and need less scrolling. A possibility, not planned. The diff header already sets one context amount for the whole diff (3 lines up to the whole file); folding would add per-region expand and collapse. Needs a decision on how it interacts with context steps, find and line selection.
 - Optional linked horizontal scrolling in side-by-side diffs (a check item in the diff options menu); independent scrolling stays the default.
 - Mouse alternatives for the diff layout toggle, only if testing shows a need.
 - Whole-file syntax tokenizing, since a hunk that starts mid-construct can be coloured wrongly.

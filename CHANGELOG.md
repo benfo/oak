@@ -2,6 +2,18 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.20
+
+### Added
+
+- Ignore whitespace changes. Hide edits that only change spaces, tabs or line endings from the diff options menu, in Changes and in History. Added and removed blank lines stay visible, and a file with only whitespace changes stays in the list with a way to show them. The filter is off again when Oak restarts.
+- Branch and tag menus in History. Right-click a branch or tag label on a commit to open the menu for that ref, or press Shift+Menu on the selected commit. A commit with several refs offers a short list first. The commit menu no longer opens other menus.
+
+### Fixed
+
+- Long commit messages scroll on their own, with the subject and author kept in view.
+- Tooltips look and behave the same everywhere.
+
 ## 0.1.19
 
 ### Added
