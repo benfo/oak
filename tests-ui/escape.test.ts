@@ -112,6 +112,13 @@ test('Escape exits comparison from its graph, preserves it in code, and exits fi
   await expect(all).toBeVisible()
   await expect(graph).toBeFocused()
   await all.focus()
+  await expect(all).toBeFocused()
+  // Keyboard focus opens the tooltip, which owns the first Escape before the banner.
+  await expect(page.getByRole('tooltip')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('tooltip')).toHaveCount(0)
+  await expect(all).toBeVisible()
+  await expect(all).toBeFocused()
   await page.keyboard.press('Escape')
   await expect(all).toHaveCount(0)
   await expect(graph).toBeFocused()

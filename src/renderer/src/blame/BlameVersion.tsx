@@ -19,10 +19,12 @@ export function BlameVersion({ steps, onNewer }: { steps: BlameStep[]; onNewer: 
   const depth = steps.length > 1 ? ` (${steps.length} steps back)` : ''
   return (
     <span className="blame-past" role="status">
-      <span className="blame-past-text" title={`${where}${depth}`}>
-        {where}
-        {depth}
-      </span>
+      <Tip label={`${where}${depth}`} focusable={false}>
+        <span className="blame-past-text">
+          {where}
+          {depth}
+        </span>
+      </Tip>
       <Tip label="Back to the newer blame" keys="Backspace">
         <Button className="diff-full-button" onPress={onNewer}>
           Back to newer

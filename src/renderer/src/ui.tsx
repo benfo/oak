@@ -3,6 +3,7 @@ import { Dialog, Heading, Modal as AriaModal, ModalOverlay } from 'react-aria-co
 import { useShortcutOverlay, shortcutPlatform } from './lib/useShortcuts'
 import { handleShortcutBindings } from './lib/shortcuts'
 import { ZoomIndicator } from './components/ZoomIndicator'
+import { Tip } from './components/Tip'
 
 export function createStore<T>(initial: T) {
   let value = initial
@@ -75,32 +76,33 @@ function ToastView({ t }: { t: ToastItem }) {
     return () => clearTimeout(timer)
   }, [paused, t.id])
   return (
-    <div
-      className={`toast ${t.kind}`}
-      onClick={() => dismissToast(t.id)}
-      title="Click to dismiss"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-      {t.text}
-      {t.actions && (
-        <div className="toast-actions">
-          {t.actions.map((a) => (
-            <button
-              key={a.label}
-              className="btn"
-              onClick={(e) => {
-                e.stopPropagation()
-                dismissToast(t.id)
-                a.run()
-              }}
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <Tip label="Click to dismiss" focusable={false}>
+      <div
+        className={`toast ${t.kind}`}
+        onClick={() => dismissToast(t.id)}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        {t.text}
+        {t.actions && (
+          <div className="toast-actions">
+            {t.actions.map((a) => (
+              <button
+                key={a.label}
+                className="btn"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  dismissToast(t.id)
+                  a.run()
+                }}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </Tip>
   )
 }
 

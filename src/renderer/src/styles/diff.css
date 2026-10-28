@@ -103,6 +103,10 @@
   box-shadow: var(--shadow);
   pointer-events: none;
 }
+.tooltip span {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
 .tooltip kbd {
   padding: 0 var(--space-1);
   border: 1px solid color-mix(in srgb, var(--background) 40%, transparent);

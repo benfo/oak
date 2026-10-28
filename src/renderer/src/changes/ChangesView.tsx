@@ -877,15 +877,12 @@ function FileGrid(p: FileGridProps) {
                   ) : (
                     <>
                       {row && <ChevronSpacer />}
-                      <span
-                        className={`status status-${status}`}
-                        title={e!.kind === 'untracked' ? 'Untracked' : (STATUS_LABEL[e!.status] ?? e!.status)}
-                      >
-                        {e!.kind === 'untracked' ? '?' : status}
-                      </span>
-                      <span className="file-name" title={e!.oldPath ? `${e!.oldPath} → ${e!.path}` : e!.path}>
-                        {row ? row.name : name}
-                      </span>
+                      <Tip label={e!.kind === 'untracked' ? 'Untracked' : (STATUS_LABEL[e!.status] ?? e!.status)} focusable={false}>
+                        <span className={`status status-${status}`}>{e!.kind === 'untracked' ? '?' : status}</span>
+                      </Tip>
+                      <Tip label={e!.oldPath ? `${e!.oldPath} → ${e!.path}` : e!.path} focusable={false}>
+                        <span className="file-name">{row ? row.name : name}</span>
+                      </Tip>
                       <span className="file-dir">{row ? '' : dir}</span>
                     </>
                   )}

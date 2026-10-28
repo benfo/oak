@@ -1,4 +1,3 @@
-import { copyText } from '../lib/copy'
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button, Tree, TreeItem, TreeItemContent, Virtualizer, type Key } from 'react-aria-components'
 import type { RepoCtx } from '../useRepo'
@@ -6,10 +5,11 @@ import type { Branch, Stash } from '../../../shared/types'
 import type { View } from '../components/RepoView'
 import { Icon, type IconName } from '../components/Icon'
 import { Tip } from '../components/Tip'
-import { api, showMenu } from '../api'
+import { showMenu } from '../api'
 import * as act from '../actions'
 import { showTagPicker, tagsNewestFirst } from '../pickers'
 import { showBranchMenu, type CompareBranch } from '../lib/branchMenu'
+import { showTagMenu } from '../lib/tagMenu'
 import { handleDismissNavigation, handleNavigation } from '../lib/navigation'
 import { usePane } from '../lib/usePane'
 import { registerListCopy, type CopyItem } from '../lib/listCopy'
@@ -18,45 +18,6 @@ import { useSearchMatches } from '../lib/useSearchMatches'
 import { SearchFeedback } from '../components/SearchFeedback'
 import { hiddenBranchRefs, sidebarBranches } from './sidebarBranches'
 import { openPreferences } from '../components/Preferences'
-
-async function tagMenu(r: RepoCtx, b: Branch) {
-  const cur = r.status?.branch ?? 'HEAD'
-  const id = await showMenu([
-    { id: 'checkout', label: 'Checkout (detached)' },
-    { id: 'new', label: 'New branch from here…' },
-    { type: 'separator' },
-    {
-      label: 'Merge / Rebase',
-      submenu: [
-        { id: 'merge', label: `Merge into ${cur}` },
-        { id: 'rebase', label: `Rebase ${cur} onto ${b.name}` }
-      ]
-    },
-    {
-      label: 'Manage',
-      submenu: [
-        { id: 'push', label: 'Push tag' },
-        { id: 'delete', label: 'Delete…' }
-      ]
-    },
-    { type: 'separator' },
-    {
-      label: 'Copy',
-      submenu: [
-        { id: 'copy', label: 'Tag name' },
-        { id: 'copyhash', label: 'Commit hash' }
-      ]
-    }
-  ])
-  if (id === 'checkout') act.checkout(r, b.name, 'detached')
-  else if (id === 'new') act.newBranch(r, b.name, b.name)
-  else if (id === 'merge') act.merge(r, b.name)
-  else if (id === 'rebase') act.rebase(r, b.name)
-  else if (id === 'push') act.pushTag(r, b.name)
-  else if (id === 'delete') act.deleteTag(r, b.name)
-  else if (id === 'copy') copyText(b.name, 'tag name')
-  else if (id === 'copyhash') copyText(b.hash, 'commit hash')
-}
 
 async function stashMenu(r: RepoCtx, s: Stash) {
   const id = await showMenu([
@@ -332,7 +293,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       title: b.subject,
       activate: () => live.current.onFocusCommit(b.hash),
       copy: branchCopy(b, 'tag name'),
-      menu: () => tagMenu(live.current.r, b)
+      menu: () => showTagMenu(live.current.r, b)
     }))
     if (allTags.length > TAG_LIMIT)
       tags.push({
@@ -553,15 +514,12 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
     >
       <TreeItemContent>
         {({ level }) => (
-          <SearchableRow
-            nodeKey={n.key}
-            className="tree-row-content"
-            style={{ '--indent': `${indent(level)}px` } as React.CSSProperties}
-            title={n.title}
-          >
+          <SearchableRow nodeKey={n.key} className="tree-row-content" style={{ '--indent': `${indent(level)}px` } as React.CSSProperties}>
             {n.kind === 'section' && <Chevron id={n.key} />}
             {n.current ? <span className="current-dot" /> : n.icon && <Icon name={n.icon} size={n.kind === 'nav' ? 16 : 14} />}
-            <span className="tree-label">{n.label}</span>
+            <Tip label={n.title} focusable={false}>
+              <span className="tree-label">{n.label}</span>
+            </Tip>
             {n.badges?.map((b) => (
               <span key={b.text} className={`pill ${b.warn ? 'warn' : ''}`}>
                 {b.text}

@@ -13,6 +13,7 @@ import { api } from '../api'
 import { openRepoOrGlobalConfig, useGitConfig, type GitConfig } from '../lib/useGitConfig'
 import { updateSettings, useSettings } from '../settings'
 import { ConfigInput, Field } from './prefsFields'
+import { Tip } from './Tip'
 
 const CONFIG_KEYS = [
   'user.name',
@@ -324,13 +325,17 @@ function ConfigFiles({ repo }: { repo: string | null }) {
     <>
       <p className="prefs-note">Aliases and everything else not listed here live in your git config files.</p>
       <div className="prefs-row">
-        <button className="btn" title={paths?.global} onClick={() => open('global')}>
-          Open global git config
-        </button>
-        {repo && (
-          <button className="btn" title={paths?.local ?? undefined} onClick={() => open('local')}>
-            Open repository git config
+        <Tip label={paths?.global}>
+          <button className="btn" onClick={() => open('global')}>
+            Open global git config
           </button>
+        </Tip>
+        {repo && (
+          <Tip label={paths?.local ?? undefined}>
+            <button className="btn" onClick={() => open('local')}>
+              Open repository git config
+            </button>
+          </Tip>
         )}
       </div>
     </>

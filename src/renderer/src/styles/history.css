@@ -208,6 +208,27 @@
   color: var(--primary);
   border: 1px solid transparent;
 }
+.ref-badge.has-menu {
+  cursor: context-menu;
+}
+.ref-badge.has-menu:hover {
+  border-color: currentColor;
+}
+/* Drawn inside the badge: the subject cell clips anything outside it. The ring follows the badge colour:
+   blue for branches, grey for remote branches, yellow for tags. */
+.ref-badge.has-menu[data-menu-open] {
+  --ring: var(--primary);
+  border-color: var(--ring);
+  box-shadow:
+    inset 0 0 0 1px var(--background),
+    inset 0 0 0 2px var(--ring);
+}
+.ref-badge.remote.has-menu[data-menu-open] {
+  --ring: var(--muted-foreground);
+}
+.ref-badge.tag.has-menu[data-menu-open] {
+  --ring: var(--warning);
+}
 .ref-badge.current {
   background: var(--primary);
   color: var(--primary-foreground);
@@ -225,4 +246,3 @@
   background: var(--diff-del);
   color: var(--diff-del-foreground);
 }
-

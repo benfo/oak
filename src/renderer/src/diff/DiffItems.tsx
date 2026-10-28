@@ -65,9 +65,9 @@ export function renderDiffItems(ctx: ItemsContext, targetSide?: DiffSide) {
     return (
       <div key={key} {...slot(index)} className={`hunk-slot ${hi > 0 ? 'gap' : ''}`}>
         <div className={`hunk-header ${hi === cursorHunk ? 'active-hunk' : ''}`}>
-          <span className="hunk-range" title={h.header}>
-            {h.header}
-          </span>
+          <Tip label={h.header} focusable={false}>
+            <span className="hunk-range">{h.header}</span>
+          </Tip>
           {acts && targetSide !== 'old' && (
             <span className="hunk-actions">
               {acts.discard && (
