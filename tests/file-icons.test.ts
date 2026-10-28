@@ -52,5 +52,6 @@ test('every icon the pack names is vendored', () => {
     ...Object.keys(MATERIAL_PACK.light ?? {}),
     ...Object.values(MATERIAL_PACK.light ?? {})
   ])
-  for (const id of ids) assert.ok(existsSync(new URL(`../src/renderer/src/fileIcons/material/${id}.svg`, import.meta.url)), `${id}.svg is missing`)
+  for (const id of ids)
+    assert.ok(existsSync(new URL(`../src/renderer/src/fileIcons/material/${id}.svg`, import.meta.url)), `${id}.svg is missing`)
 })
