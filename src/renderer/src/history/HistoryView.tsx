@@ -11,7 +11,8 @@ import type { BranchComparison } from './commitPreview'
 import { showComparisonBranchPicker } from '../pickers'
 import { openPalette } from '../components/Palette'
 import { type CompareBranch } from '../lib/branchMenu'
-import { branchForRef, commitMenu, showRefMenu } from './commitMenu'
+import { branchForRef, commitMenu, refMenuTargets, showRefMenu } from './commitMenu'
+import { markBadgeMenu } from './refBadge'
 import { rememberCompareTarget, resolveCompareTarget } from '../lib/compareTarget'
 import { Icon } from '../components/Icon'
 import { Split } from '../components/Split'
@@ -526,6 +527,27 @@ export function HistoryView({
             refMenuHint={(c, ref) => {
               const branch = branchForRef(r, c, ref)
               return branch && `Right-click for ${branch.type === 'tag' ? 'tag' : 'branch'} actions`
+            }}
+            onRefMenuKey={(c, badgeOf) => {
+              const targets = refMenuTargets(r, c)
+              if (!targets.length) return false
+              const open = ({ ref, branch }: (typeof targets)[number]) => {
+                const badge = badgeOf(ref)
+                markBadgeMenu(badge, showRefMenu(r, branch, onCompareBranch, badge))
+              }
+              if (targets.length === 1) open(targets[0])
+              else
+                openPalette({
+                  placeholder: 'Open the menu for…',
+                  items: targets.map((t) => ({
+                    id: t.branch.fullName,
+                    label: t.ref.name,
+                    detail: t.branch.type === 'tag' ? 'Tag' : t.branch.type === 'remote' ? 'Remote branch' : 'Branch',
+                    current: t.ref.current,
+                    run: () => open(t)
+                  }))
+                })
+              return true
             }}
             onRefContextMenu={(c, ref) => {
               const branch = branchForRef(r, c, ref)

@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 're
 import type { Commit, Ref } from '../../../shared/types'
 import { WORKING_HASH } from '../../../shared/working.ts'
 import type { Graph, GraphRow } from './graph'
+import { markBadgeMenu, refBadgeKey } from './refBadge'
 import { relativeTime } from '../lib/format'
 import { Avatar } from '../components/Avatar'
 import { canHandleNavigation, handleDismissNavigation, handleListNav, handleNavigation, movementDelta } from '../lib/navigation'
@@ -46,6 +47,8 @@ interface Props {
   onRefContextMenu?: (c: Commit, ref: Ref, e: React.MouseEvent) => Promise<unknown> | undefined
   /** Tooltip for a badge that opens a ref menu; undefined leaves the badge inert. */
   refMenuHint?: (c: Commit, ref: Ref) => string | undefined
+  /** Shift+Menu on a commit. Receives a lookup for the commit's badges; returns false when it has no ref menu. */
+  onRefMenuKey?: (c: Commit, badgeOf: (ref: Ref) => HTMLElement | null) => boolean
   onNearEnd?: () => void
   /** Enter or → on the selected commit (moves focus to its files). */
   onOpen?: () => void
@@ -71,6 +74,7 @@ export function CommitList({
   onContextMenu,
   onRefContextMenu,
   refMenuHint,
+  onRefMenuKey,
   onNearEnd,
   onOpen,
   onSearch,
@@ -144,6 +148,17 @@ export function CommitList({
       }
     }
     const commitAtCursor = cursorIndex >= offset ? commits[cursorIndex - offset] : undefined
+    if (widget === 'refMenu') {
+      e.preventDefault()
+      e.stopPropagation()
+      if (!commitAtCursor) return
+      const row = document.getElementById(`${id}-${commitAtCursor.hash}`)
+      const badgeOf = (ref: Ref) =>
+        [...(row?.querySelectorAll<HTMLElement>('[data-ref]') ?? [])].find((b) => b.dataset.ref === refBadgeKey(ref)) ?? null
+      // No ref on the commit: the key still opens the commit menu rather than doing nothing.
+      if (!onRefMenuKey?.(commitAtCursor, badgeOf)) onContextMenu?.(commitAtCursor, e)
+      return
+    }
     if (
       handleNavigation(e, {
         menu:
@@ -279,16 +294,14 @@ export function CommitList({
                       return (
                         <Tip key={r.type + r.name} label={hint} focusable={false}>
                           <span
+                            data-ref={refBadgeKey(r)}
                             className={`ref-badge ${r.type} ${r.current ? 'current' : ''} ${hint ? 'has-menu' : ''}`}
                             onContextMenu={(e) => {
                               const menu = onRefContextMenu?.(c, r, e)
                               if (!menu) return
                               e.preventDefault()
                               e.stopPropagation()
-                              // Marks the badge the menu acts on until it closes.
-                              const badge = e.currentTarget
-                              badge.dataset.menuOpen = ''
-                              void menu.finally(() => delete badge.dataset.menuOpen)
+                              markBadgeMenu(e.currentTarget, menu)
                             }}
                           >
                             {r.name}

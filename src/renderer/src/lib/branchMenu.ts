@@ -30,45 +30,54 @@ export async function runCompareItem(id: string | null, r: RepoCtx, source: Bran
 }
 
 /** One definition for local and remote branch menus (sidebar and graph). */
-export async function showBranchMenu(r: RepoCtx, b: Branch, onCompare: CompareBranch, onHide?: (pattern: string) => void) {
+export async function showBranchMenu(
+  r: RepoCtx,
+  b: Branch,
+  onCompare: CompareBranch,
+  onHide?: (pattern: string) => void,
+  anchor?: Element | null
+) {
   const hide = onHide && !(b.type === 'local' && b.name === r.status?.branch) ? suggestHidePatterns(b) : null
   const remote = b.type === 'remote'
   const cur = r.status?.branch
   const compares = await compareMenuItems(r, b)
   const isCurrent = !remote && b.name === cur
-  const id = await showMenu([
-    { id: 'checkout', label: remote ? 'Checkout as local branch' : 'Checkout', enabled: !isCurrent },
-    { id: 'new', label: 'New branch from here…' },
-    ...(remote ? [] : [{ id: 'pr', label: 'Open pull request' }]),
-    { type: 'separator' },
-    ...(compares.length ? [{ label: 'Compare', submenu: compares }] : []),
-    {
-      label: 'Merge / Rebase',
-      enabled: !isCurrent,
-      submenu: [
-        { id: 'merge', label: `Merge into ${cur ?? 'HEAD'}` },
-        { id: 'rebase', label: `Rebase ${cur ?? 'HEAD'} onto ${b.name}` }
-      ]
-    },
-    {
-      label: 'Manage',
-      submenu: [
-        ...(remote ? [] : [{ id: 'rename', label: 'Rename…' }]),
-        { id: 'delete', label: remote ? 'Delete on remote…' : 'Delete…', enabled: !isCurrent },
-        ...(hide
-          ? [{ id: 'hide', label: 'Hide this branch' }, ...(hide.folder ? [{ id: 'hide-folder', label: `Hide ${hide.folder}` }] : [])]
-          : [])
-      ]
-    },
-    { type: 'separator' },
-    {
-      label: 'Copy',
-      submenu: [
-        { id: 'copy', label: 'Branch name' },
-        { id: 'copyhash', label: 'Commit hash' }
-      ]
-    }
-  ])
+  const id = await showMenu(
+    [
+      { id: 'checkout', label: remote ? 'Checkout as local branch' : 'Checkout', enabled: !isCurrent },
+      { id: 'new', label: 'New branch from here…' },
+      ...(remote ? [] : [{ id: 'pr', label: 'Open pull request' }]),
+      { type: 'separator' },
+      ...(compares.length ? [{ label: 'Compare', submenu: compares }] : []),
+      {
+        label: 'Merge / Rebase',
+        enabled: !isCurrent,
+        submenu: [
+          { id: 'merge', label: `Merge into ${cur ?? 'HEAD'}` },
+          { id: 'rebase', label: `Rebase ${cur ?? 'HEAD'} onto ${b.name}` }
+        ]
+      },
+      {
+        label: 'Manage',
+        submenu: [
+          ...(remote ? [] : [{ id: 'rename', label: 'Rename…' }]),
+          { id: 'delete', label: remote ? 'Delete on remote…' : 'Delete…', enabled: !isCurrent },
+          ...(hide
+            ? [{ id: 'hide', label: 'Hide this branch' }, ...(hide.folder ? [{ id: 'hide-folder', label: `Hide ${hide.folder}` }] : [])]
+            : [])
+        ]
+      },
+      { type: 'separator' },
+      {
+        label: 'Copy',
+        submenu: [
+          { id: 'copy', label: 'Branch name' },
+          { id: 'copyhash', label: 'Commit hash' }
+        ]
+      }
+    ],
+    anchor
+  )
   if (await runCompareItem(id, r, b, onCompare)) return
   if (id === 'checkout') act.checkout(r, b.name, remote ? 'remote' : 'local')
   else if (id === 'merge') act.merge(r, b.name)

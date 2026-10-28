@@ -67,11 +67,7 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
     },
     {
       label: 'More',
-      submenu: [
-        { id: 'detach', label: 'Checkout this commit (detached)' },
-        { id: 'tag', label: 'New tag from here…' },
-        ...pullRequests
-      ]
+      submenu: [{ id: 'detach', label: 'Checkout this commit (detached)' }, { id: 'tag', label: 'New tag from here…' }, ...pullRequests]
     },
     { type: 'separator' },
     {
@@ -104,9 +100,25 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
   else if (id === 'copymsg') copyText(c.subject, 'commit message')
 }
 
-export async function showRefMenu(r: RepoCtx, branch: Branch, onCompare: CompareBranch) {
-  if (branch.type === 'tag') return showTagMenu(r, branch)
-  return showBranchMenu(r, branch, onCompare)
+export async function showRefMenu(r: RepoCtx, branch: Branch, onCompare: CompareBranch, anchor?: Element | null) {
+  if (branch.type === 'tag') return showTagMenu(r, branch, anchor)
+  return showBranchMenu(r, branch, onCompare, undefined, anchor)
+}
+
+const REF_ORDER = { local: 0, remote: 1, tag: 2 } as const
+
+/** The commit's refs that have a menu: the current branch first, then local branches, remotes and tags. */
+export function refMenuTargets(r: RepoCtx, c: Commit) {
+  return c.refs
+    .flatMap((ref) => {
+      const branch = branchForRef(r, c, ref)
+      return branch ? [{ ref, branch }] : []
+    })
+    .sort(
+      (a, b) =>
+        Number(!!b.ref.current) - Number(!!a.ref.current) ||
+        REF_ORDER[a.branch.type as keyof typeof REF_ORDER] - REF_ORDER[b.branch.type as keyof typeof REF_ORDER]
+    )
 }
 
 export function branchForRef(r: RepoCtx, c: Commit, ref: Ref) {

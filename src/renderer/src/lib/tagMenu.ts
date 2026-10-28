@@ -5,7 +5,7 @@ import type { Branch, MenuItem } from '../../../shared/types'
 import type { RepoCtx } from '../useRepo'
 
 /** One definition for tag menus in the sidebar and History. */
-export async function showTagMenu(r: RepoCtx, b: Branch) {
+export async function showTagMenu(r: RepoCtx, b: Branch, anchor?: Element | null) {
   const cur = r.status?.branch ?? 'HEAD'
   const items: MenuItem[] = [
     { id: 'checkout', label: 'Checkout (detached)' },
@@ -34,7 +34,7 @@ export async function showTagMenu(r: RepoCtx, b: Branch) {
       ]
     }
   ]
-  const id = await showMenu(items)
+  const id = await showMenu(items, anchor)
   if (id === 'checkout') act.checkout(r, b.name, 'detached')
   else if (id === 'new') act.newBranch(r, b.name, b.name)
   else if (id === 'merge') act.merge(r, b.name)

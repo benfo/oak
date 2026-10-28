@@ -21,6 +21,7 @@ export type WidgetAction =
   | 'dismiss'
   | 'discard'
   | 'menu'
+  | 'refMenu'
   | 'select'
   | 'toggleSelect'
   | 'selectAll'
@@ -71,6 +72,16 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
   { action: 'dismiss', roles: ALL, keys: ['Escape'] },
   { action: 'discard', roles: ALL, keys: ['Delete'] },
   { action: 'menu', roles: ALL, keys: ['ContextMenu', 'Shift+F10'] },
+  {
+    action: 'refMenu',
+    roles: ['graph'],
+    keys: ['Shift+ContextMenu'],
+    help: {
+      title: 'History commit list: open the menu for a branch or tag on the selected commit',
+      keys: 'Shift+Menu',
+      category: 'History'
+    }
+  },
   {
     action: 'search',
     roles: ['list', 'graph'],
