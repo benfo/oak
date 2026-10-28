@@ -90,9 +90,14 @@
   width: 32px;
   height: 32px;
 }
-.rail-btn[aria-current] {
-  background: var(--hover);
+/* The same look as the active row in the expanded sidebar: selection fill, primary-coloured icon. */
+.rail-btn[aria-current],
+.rail-btn.icon-btn[aria-current]:hover:not(:disabled) {
+  background: var(--selection);
   color: var(--foreground);
+}
+.rail-btn[aria-current] .icon {
+  color: var(--primary);
 }
 .rail-count {
   position: absolute;

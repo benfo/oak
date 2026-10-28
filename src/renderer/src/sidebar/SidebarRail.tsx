@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Toolbar } from 'react-aria-components'
 import { toolbarHomeEnd } from '../lib/navigation'
 import type { View } from '../components/RepoView'
+import { VIEW_KEYS } from '../lib/viewShortcuts'
 import { Icon, type IconName } from '../components/Icon'
 import { PaneToggle } from '../components/PaneToggle'
 import { Tip } from '../components/Tip'
@@ -42,7 +43,7 @@ export function SidebarRail({ view, setView, changeCount, blameFile, onExpand, o
     <Toolbar ref={ref} className="sidebar-rail" aria-label="Views" orientation="vertical" data-pane="rail">
       <PaneToggle pane="sidebar" collapsed keys="Ctrl+[" onToggle={onExpand} />
       {items.map((item) => (
-        <Tip key={item.view} label={item.label}>
+        <Tip key={item.view} label={item.label} keys={VIEW_KEYS[item.view]}>
           <button
             className="icon-btn rail-btn"
             aria-label={item.label}

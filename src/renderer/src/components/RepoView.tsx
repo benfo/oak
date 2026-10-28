@@ -24,6 +24,7 @@ import { Sidebar } from '../sidebar/Sidebar'
 import { PaneToggle } from './PaneToggle'
 import { SidebarRail } from '../sidebar/SidebarRail'
 import { changedFileCount } from '../lib/changeCount'
+import { VIEW_KEYS } from '../lib/viewShortcuts'
 import { publishActiveRepo } from '../sidebar/activeRepo'
 import { HistoryView, type ComparisonRequest } from '../history/HistoryView'
 import { ChangesView } from '../changes/ChangesView'
@@ -516,7 +517,7 @@ function buildCommands({
       id: 'view-changes',
       title: 'Go to Changes',
       category: 'View',
-      keys: 'Ctrl+1',
+      keys: VIEW_KEYS.changes,
       run: () => {
         setView('changes')
         if (layout === 'code') focusLater('.changes-diff .diff')
@@ -527,7 +528,7 @@ function buildCommands({
       id: 'view-history',
       title: 'Go to History',
       category: 'View',
-      keys: 'Ctrl+2',
+      keys: VIEW_KEYS.history,
       run: () => {
         setView('history')
         focusLater(layout === 'code' ? '.details-diff .diff' : '.commit-list')
@@ -537,7 +538,7 @@ function buildCommands({
       id: 'view-blame',
       title: 'Go to Blame',
       category: 'View',
-      keys: 'Ctrl+3',
+      keys: VIEW_KEYS.blame,
       shortcutDisabledReason: blame ? undefined : 'Open a file blame first, from a file menu or Blame file…',
       run: () => {
         if (!blame) return toast.info('No blame is open. Use a file menu or Blame file…')
