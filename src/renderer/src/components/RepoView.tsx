@@ -157,6 +157,14 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     toggle: () => setSidebarVisible(sidebarHidden)
   }
   const focusSidebar = (search = false) => {
+    // Moving left onto a collapsed sidebar lands on its rail; asking for the filter expands it.
+    if (
+      !search &&
+      layout === 'standard' &&
+      sidebarHidden &&
+      (focusPane('[data-pane="rail"] [aria-current]') || focusPane('[data-pane="rail"] button'))
+    )
+      return
     setSidebarVisible(true)
     if (search) {
       focusPane('.sidebar-filter input')
@@ -266,6 +274,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
             changeCount={changedFileCount(r.status)}
             blameFile={blame?.file ?? null}
             onExpand={() => setSidebarVisible(true)}
+            onEnterMain={focusMain}
           />
         )}
         <Split id="sidebar" label="Sidebar width" initial={260} min={180} max={520} collapsed={!sidebarVisible}>
