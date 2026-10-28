@@ -23,6 +23,8 @@ function setOverride(value: number | null) {
   subs.forEach((fn) => fn())
 }
 
+export const setContextLines = (value: number) => setOverride(value)
+
 export const showMoreContext = () => setOverride(moreContext(getContextLines()))
 export const showLessContext = () => setOverride(lessContext(getContextLines()))
 export const toggleFullContext = () => setOverride(isFullContext(getContextLines()) ? null : FULL_CONTEXT)
