@@ -10,6 +10,8 @@ export interface FileIconPack {
   folderOpen: string
   /** Whole file names, lowercase: `package.json`, `dockerfile`. Checked first. */
   filenames: Record<string, string>
+  /** File name prefixes, lowercase, for families of names: `.env.` covers `.env.production`. Checked after exact names. */
+  prefixes?: Record<string, string>
   /** Extensions without the dot, lowercase; compound ones like `test.ts` and `d.ts` win over `ts`. */
   extensions: Record<string, string>
   /** Icon id -> id of its variant for light themes, for icons that read poorly on a light background. */
@@ -26,6 +28,7 @@ export function resolveFileIcon(pack: FileIconPack, path: string, kind: FileIcon
   const name = baseName(path)
   const byName = pack.filenames[name]
   if (byName) return byName
+  for (const [prefix, id] of Object.entries(pack.prefixes ?? {})) if (name.startsWith(prefix)) return id
   for (let dot = name.indexOf('.'); dot !== -1; dot = name.indexOf('.', dot + 1)) {
     const byExtension = pack.extensions[name.slice(dot + 1)]
     if (byExtension) return byExtension

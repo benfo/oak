@@ -21,6 +21,15 @@ test('exact file names win over their extension', () => {
   assert.equal(icon('vite.config.ts'), 'vite')
 })
 
+test('dotfiles match by name or by family prefix', () => {
+  assert.equal(icon('.nvmrc'), 'nodejs')
+  assert.equal(icon('.npmrc'), 'npm')
+  assert.equal(icon('.env'), 'tune')
+  assert.equal(icon('config/.env.production'), 'tune')
+  assert.equal(icon('.prettierrc.yaml'), 'prettier')
+  assert.equal(icon('.unknownrc'), 'file')
+})
+
 test('the longest compound extension wins', () => {
   assert.equal(icon('types.d.ts'), 'typescript-def')
   assert.equal(icon('app.test.ts'), 'test-ts')
@@ -50,6 +59,7 @@ test('every icon the pack names is vendored', () => {
     MATERIAL_PACK.folder,
     MATERIAL_PACK.folderOpen,
     ...Object.values(MATERIAL_PACK.filenames),
+    ...Object.values(MATERIAL_PACK.prefixes ?? {}),
     ...Object.values(MATERIAL_PACK.extensions),
     ...Object.keys(MATERIAL_PACK.light ?? {}),
     ...Object.values(MATERIAL_PACK.light ?? {})

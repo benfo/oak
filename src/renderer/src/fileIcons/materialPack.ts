@@ -42,6 +42,9 @@ export const MATERIAL_PACK: FileIconPack = {
     '.eslintrc.js': 'eslint',
     '.eslintignore': 'eslint',
     '.babelrc': 'babel',
+    '.nvmrc': 'nodejs',
+    '.node-version': 'nodejs',
+    '.npmrc': 'npm',
     '.env': 'tune',
     '.env.local': 'tune',
     '.env.example': 'tune',
@@ -68,6 +71,11 @@ export const MATERIAL_PACK: FileIconPack = {
     'build.gradle': 'gradle',
     'settings.gradle': 'gradle',
     '.vimrc': 'vim'
+  },
+  prefixes: {
+    '.env.': 'tune',
+    '.eslintrc.': 'eslint',
+    '.prettierrc.': 'prettier'
   },
   extensions: {
     'd.ts': 'typescript-def',
