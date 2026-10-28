@@ -37,6 +37,7 @@ import { stash } from '../actions'
 import { useSettings } from '../settings'
 import { buildChangeRows, changeTreeOrder, CHANGE_TREE_INDENT, expandTo, toggled, type ChangeRow } from '../lib/changeTree'
 import { ChevronSpacer, FolderLabel } from '../components/ChangeTreeRow'
+import { FileIcon } from '../components/FileIcon'
 import { TreeToggle, toggleChangesTree } from '../components/TreeToggle'
 
 /** Matches --row-md (tokens.css). */
@@ -885,6 +886,7 @@ function FileGrid(p: FileGridProps) {
                       <Tip label={e!.kind === 'untracked' ? 'Untracked' : (STATUS_LABEL[e!.status] ?? e!.status)} focusable={false}>
                         <span className={`status status-${status}`}>{e!.kind === 'untracked' ? '?' : status}</span>
                       </Tip>
+                      <FileIcon path={e!.path} kind="file" />
                       <Tip label={e!.oldPath ? `${e!.oldPath} → ${e!.path}` : e!.path} focusable={false}>
                         <span className="file-name">{row ? row.name : name}</span>
                       </Tip>
