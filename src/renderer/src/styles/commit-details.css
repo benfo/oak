@@ -282,6 +282,17 @@
 .file-icon {
   flex: none;
   display: block;
+  /* Decorative, so it recedes next to the status badge; full strength on the row you're acting on. */
+  opacity: 0.8;
+}
+.file-row:hover .file-icon,
+.file-row.selected .file-icon,
+.file-row[data-selected] .file-icon,
+.file-row[data-focus-visible] .file-icon,
+.tree-row[data-hovered] .file-icon,
+.tree-row[data-selected] .file-icon,
+.tree-row[data-focus-visible] .file-icon {
+  opacity: 1;
 }
 :root[data-theme='light'] .file-icon.for-dark,
 :root:not([data-theme='light']) .file-icon.for-light {
