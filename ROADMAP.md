@@ -2,7 +2,7 @@
 
 Done, in progress and backlog. [PRODUCT.md](PRODUCT.md) holds who Oak is for and its principles; [AGENTS.md](AGENTS.md) holds the conventions and design rules; this file records status, decisions and ideas. Keep it short: when something ships, fold it into the shipped list below.
 
-## Current status (2026-10-26)
+## Current status (2026-10-28)
 
 **Open source (done 2026-10-23).** `benfo/oak` is the single public MIT repo. The private `benfo/oak-source` is archived and `OAK_PUBLIC_TOKEN` is revoked. `main` is one root commit, "Initial open-source release", and older releases and tags were deleted on purpose. Subsequent releases use the public repository.
 
@@ -29,9 +29,9 @@ Lessons for any future history rewrite or tag move:
 
 **0.1.19 shipped (2026-10-26).** Find in diffs and file previews: History and Changes share find with Blame, covering commit file previews and inline and side-by-side diffs. Search counts occurrences in the loaded diff, including added and deleted lines. `:N` uses After line numbers, or Before for deleted files. The shortcut reference searches by actual key bindings and names the view or control that owns each shortcut. Escape now exits file history from the graph, empty results or banner, the same agreed exception as Comparison. The website downloads point to 0.1.19. Validation: 203 unit tests, typecheck, formatting and lint (11 file-size warnings, no errors). Escape test follow-up (2026-10-28): reproduced the file history banner-button failure and corrected the test to dismiss its keyboard-focus tooltip before exiting file history, asserting focus at each step. All 6 Escape UI tests pass; app behaviour is unchanged. The removed 5,000-commit scroll test still needs restoring and stabilising before adding `test:ui` to CI.
 
-## In progress
+## Merged, unreleased
 
-- **Ignore-whitespace diff review and toolbar cleanup.** Session-only filter shared by Changes and History, off at startup. Hide space, tab and CRLF/LF edits while retaining blank-line additions/deletions. Line and hunk actions use exact selected text and preserve hidden whitespace-only edits; whole-file actions still include everything. Whitespace-only files remain listed with an action to reveal their changes. Diff options groups layout, context and whitespace controls; navigation remains directly accessible, and the active filter has a visible reset control. Narrow panes use two fixed toolbar rows. Lucide supplies icons through the shared component. Validation: 81 focused unit tests and 19 focused Electron UI tests pass, plus build, typecheck, lint and formatting. Awaiting maintainer review.
+- **Ignore-whitespace diff review and toolbar cleanup (PR #24, merged 2026-10-28).** Session-only filter shared by Changes and History, off at startup. Hide space, tab and CRLF/LF edits while retaining blank-line additions/deletions. Line and hunk actions use exact selected text and preserve hidden whitespace-only edits; whole-file actions still include everything. Whitespace-only files remain listed with an action to reveal their changes. Diff options groups layout, context and whitespace controls; navigation remains directly accessible, and the active filter has a visible reset control. Narrow panes use two fixed toolbar rows. Lucide supplies icons through the shared component. Validation: 81 focused unit tests and 19 focused Electron UI tests pass, plus build, typecheck, lint and formatting. Included in the next release.
 
 ## Resume next
 
@@ -137,7 +137,7 @@ Ideas only. None is agreed, and each needs a concrete workflow and a discussion 
 
 **Diff and files**
 
-- Collapse unchanged regions. Ignore-whitespace diff review is in progress above.
+- Collapse unchanged regions.
 - Optional linked horizontal scrolling in side-by-side diffs (a check item in the diff options menu); independent scrolling stays the default.
 - Mouse alternatives for the diff layout toggle, only if testing shows a need.
 - Whole-file syntax tokenizing, since a hunk that starts mid-construct can be coloured wrongly.
