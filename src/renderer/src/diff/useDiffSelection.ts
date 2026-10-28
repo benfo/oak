@@ -95,7 +95,9 @@ export function useDiffSelection({
     const act = which === 'primary' ? acts.primary : acts.discard
     if (!act) return
     const reverse = which === 'discard' || acts.primary.reverse
-    const patch = selected.size ? linesPatch(diff, selected, reverse) : diff.hunks[cursorHunk] && hunkPatch(diff, diff.hunks[cursorHunk])
+    const patch = selected.size
+      ? linesPatch(diff, selected, reverse)
+      : diff.hunks[cursorHunk] && hunkPatch(diff, diff.hunks[cursorHunk], reverse)
     if (patch) act.run(patch)
   }
 

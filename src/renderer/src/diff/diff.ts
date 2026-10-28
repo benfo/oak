@@ -1,25 +1,5 @@
-export interface DiffLine {
-  type: 'add' | 'del' | 'ctx' | 'note'
-  text: string
-  oldNo: number | null
-  newNo: number | null
-}
-
-export interface Hunk {
-  header: string
-  lines: DiffLine[]
-  /** Raw patch lines including the @@ header, used to build partial patches. */
-  raw: string[]
-}
-
-export interface FileDiff {
-  header: string[]
-  hunks: Hunk[]
-  binary: boolean
-  isNew: boolean
-  isDeleted: boolean
-  isRename: boolean
-}
+import type { DiffLine, FileDiff, Hunk } from '../../../shared/diff.ts'
+export type { DiffLine, FileDiff, Hunk } from '../../../shared/diff.ts'
 
 export function parseDiff(text: string): FileDiff {
   const lines = text.split('\n')
@@ -84,7 +64,12 @@ export function parseDiff(text: string): FileDiff {
 }
 
 /** A standalone patch containing only one hunk, for `git apply`. */
-export function hunkPatch(diff: FileDiff, hunk: Hunk) {
+export function hunkPatch(diff: FileDiff, hunk: Hunk, reverse = false) {
+  if (hunk.lines.some((l) => l.beforeText !== undefined)) {
+    const hi = diff.hunks.indexOf(hunk)
+    const selected = new Set(hunk.lines.flatMap((l, li) => (l.type === 'add' || l.type === 'del' ? [lineKey(hi, li)] : [])))
+    return linesPatch(diff, selected, reverse)!
+  }
   return [...diff.header, ...hunk.raw].join('\n') + '\n'
 }
 
@@ -115,7 +100,7 @@ export function linesPatch(diff: FileDiff, selected: Set<string>, reverse: boole
     let keptPrevious = true
     for (const li of replacementLineOrder(h.lines)) {
       const l = h.lines[li]
-      const raw = h.raw[li + 1]
+      const raw = !reverse && l.type === 'ctx' && l.beforeText !== undefined ? ' ' + l.beforeText : h.raw[li + 1]
       const picked = selected.has(lineKey(hi, li))
       const asContext = () => {
         body.push(' ' + raw.slice(1))
