@@ -278,6 +278,15 @@
   background: none;
   color: var(--muted-foreground);
 }
+/* File-type icons: fixed size so rows never shift; variants for light themes swap by data-theme. */
+.file-icon {
+  flex: none;
+  display: block;
+}
+:root[data-theme='light'] .file-icon.for-dark,
+:root:not([data-theme='light']) .file-icon.for-light {
+  display: none;
+}
 .file-row.folder-row .file-name {
   font-weight: var(--weight-medium);
 }
