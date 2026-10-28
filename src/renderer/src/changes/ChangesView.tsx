@@ -391,7 +391,7 @@ export function ChangesView({
             focusPane('.changes-diff .diff')
           }
         : undefined,
-      back: onBackToSidebar,
+      back: focusCode ? undefined : onBackToSidebar,
       discard: section === 'unstaged' && files.length ? () => discard(files) : undefined,
       menu: files.length ? () => fileMenu(section, files) : undefined
     })
@@ -519,7 +519,7 @@ export function ChangesView({
   )
 
   return (
-    <Split id="changes" label="Changed files width" initial={360} min={260} max={800} collapsed={focusCode}>
+    <Split id="changes" label="Changed files width" initial={360} min={260} max={800}>
       <div className="changes-left">
         <OperationBanner r={r} />
         <div className="changes-files" ref={filesRef}>
@@ -622,14 +622,10 @@ export function ChangesView({
           }
           actions={diffActions}
           readOnlyReason={readOnlyReason}
-          onBack={
-            focusCode
-              ? undefined
-              : () => {
-                  focusFiles()
-                }
-          }
-          onSwitchView={focusCode ? undefined : toggleChangesTree}
+          onBack={() => {
+            focusFiles()
+          }}
+          onSwitchView={toggleChangesTree}
           files={
             lead
               ? {

@@ -21,6 +21,7 @@ import { Split } from './Split'
 import { RESIZE_KEYS, resizeFocusedPane } from '../lib/paneResize'
 import { Toolbar } from './Toolbar'
 import { Sidebar } from '../sidebar/Sidebar'
+import { PaneToggle } from './PaneToggle'
 import { publishActiveRepo } from '../sidebar/activeRepo'
 import { HistoryView, type ComparisonRequest } from '../history/HistoryView'
 import { ChangesView } from '../changes/ChangesView'
@@ -129,6 +130,12 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
       updateSettings({ sidebarHidden: !visible })
     })
   }
+  // Ctrl+[ shows or hides the sidebar; focus mode has no sidebar to toggle.
+  const sidebarToggle = {
+    title: sidebarHidden ? 'Show sidebar' : 'Hide sidebar',
+    enabled: layout === 'standard',
+    toggle: () => setSidebarVisible(sidebarHidden)
+  }
   const focusSidebar = (search = false) => {
     setSidebarVisible(true)
     if (search) {
@@ -147,8 +154,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     showFileHistory,
     blame,
     showBlame,
-    sidebarHidden: !sidebarVisible,
-    setSidebarVisible,
+    sidebarToggle,
     focusSidebar,
     layout,
     revealPanes,
@@ -245,6 +251,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
             onCompareBranch={compareBranch}
             blameFile={blame?.file ?? null}
             onCloseBlame={closeBlame}
+            headerAction={<PaneToggle pane="sidebar" collapsed={false} onToggle={() => setSidebarVisible(false)} />}
           />
           <main className="main">
             <div className="view" hidden={view !== 'changes'}>
@@ -303,8 +310,7 @@ interface CommandCtx {
   showFileHistory: (file: string) => void
   blame: BlameRequest | null
   showBlame: (file: string, rev: string | null) => void
-  sidebarHidden: boolean
-  setSidebarVisible: (visible: boolean) => void
+  sidebarToggle: { title: string; enabled: boolean; toggle: () => void }
   focusSidebar: (search?: boolean) => void
   layout: WorkspaceLayout
   revealPanes: () => void
@@ -322,8 +328,7 @@ function buildCommands({
   showFileHistory,
   blame,
   showBlame,
-  sidebarHidden,
-  setSidebarVisible,
+  sidebarToggle,
   focusSidebar,
   layout,
   revealPanes,
@@ -610,11 +615,13 @@ function buildCommands({
       run: toggleCommitFilesMode
     },
     {
-      id: 'toggle-sidebar',
-      revealsPanes: true,
-      title: sidebarHidden ? 'Show sidebar' : 'Hide sidebar',
+      id: 'toggle-left-pane',
+      title: sidebarToggle.title,
+      detail: layout === 'code' ? 'The file list beside the diff' : 'The repository sidebar',
       category: 'View',
-      run: () => setSidebarVisible(sidebarHidden)
+      keys: 'Ctrl+[',
+      enabled: sidebarToggle.enabled,
+      run: sidebarToggle.toggle
     },
     {
       id: 'copy-diff-patch',

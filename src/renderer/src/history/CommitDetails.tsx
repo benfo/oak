@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useVirtualRows } from '../lib/useVirtualRows'
 import { Button, ProgressBar } from 'react-aria-components'
 import { api, errorMessage } from '../api'
@@ -445,7 +445,7 @@ export function CommitDetails({
 
   return (
     <div className="commit-details-view">
-      <Split id="commit-details" label="Commit files width" initial={420} min={260} max={900} collapsed={focusCode}>
+      <Split id="commit-details" label="Commit files width" initial={420} min={260} max={900}>
         <div className="commit-info" aria-busy={pending}>
           <div
             className="commit-meta"
@@ -705,14 +705,10 @@ export function CommitDetails({
                               : 'No file changes in this commit'
                         : ''
             }
-            onBack={
-              focusCode
-                ? undefined
-                : () => {
-                    focusPane('.details-files')
-                  }
-            }
-            onSwitchView={focusCode || allMode ? undefined : toggleChangesTree}
+            onBack={() => {
+              focusPane('.details-files')
+            }}
+            onSwitchView={allMode ? undefined : toggleChangesTree}
             plain={showContent}
             files={
               !allMode && detailsCurrent && details.files.length

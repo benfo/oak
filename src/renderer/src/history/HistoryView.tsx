@@ -1,5 +1,5 @@
 import { registerListCopy } from '../lib/listCopy'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Button, ProgressBar } from 'react-aria-components'
 import { buildGraph } from './graph'
 import { singleLane } from '../../../shared/fileLog'

@@ -30,6 +30,18 @@
   border: 1px solid var(--border);
   color: var(--subtle-foreground);
 }
+/* The filter box and the pane toggle share a row, so the toggle never sits inside the input. */
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0 var(--space-2) var(--space-1-5);
+}
+.sidebar-head .sidebar-filter {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
 .sidebar-filter input {
   flex: 1;
   min-width: 0;

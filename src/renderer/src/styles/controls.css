@@ -48,6 +48,16 @@
   background: var(--hover);
   color: var(--foreground);
 }
+/* The pane toggle changes bar as its pane opens or closes; a short fade softens the jump. */
+.pane-toggle {
+  flex: none;
+  animation: fade 0.15s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pane-toggle {
+    animation: none;
+  }
+}
 .icon-btn:disabled,
 .icon-btn[data-disabled] {
   background: transparent;

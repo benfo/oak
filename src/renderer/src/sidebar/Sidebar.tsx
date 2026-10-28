@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Button, Tree, TreeItem, TreeItemContent, Virtualizer, type Key } from 'react-aria-components'
 import type { RepoCtx } from '../useRepo'
 import type { Branch, Stash } from '../../../shared/types'
@@ -97,6 +97,8 @@ interface Props {
   blameFile: string | null
   /** Closes the open Blame view without leaving the view that is showing. */
   onCloseBlame: () => void
+  /** Control shown at the end of the header row, e.g. the button that hides the sidebar. */
+  headerAction?: ReactNode
 }
 
 /**
@@ -104,7 +106,7 @@ interface Props {
  * expand/collapse, Enter or click activates, double-click checks out, Shift+F10 / right-click
  * opens the item's menu, and typing a letter starts filtering.
  */
-export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blameFile, onCloseBlame }: Props) {
+export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blameFile, onCloseBlame, headerAction }: Props) {
   const [filter, setFilter] = useState('')
   const branchOptions = r.branchOptions
   const branchOptionsRef = useRef(branchOptions)
@@ -623,51 +625,54 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-filter">
-        <Icon name="search" size={14} />
-        <PaneSearch
-          ref={filterRef}
-          paneId="sidebar"
-          placeholder="Filter branches…  (Ctrl+L)"
-          aria-label="Filter branches"
-          aria-describedby="branch-search-feedback"
-          value={filter}
-          spellCheck={false}
-          onChange={(e) => {
-            setFilter(e.target.value)
-            setSearchMatch(null)
-          }}
-          onFocus={(e) => {
-            setSearchFocused(true)
-            const key = (e.relatedTarget as HTMLElement | null)?.closest<HTMLElement>('[role=row]')?.dataset.key
-            if (key && matches.some((n) => n.key === key)) setSearchMatch(key)
-          }}
-          onBlur={() => setSearchFocused(false)}
-          onFind={findBranch}
-          onLeave={leaveSearch}
-        />
-        <SearchFeedback
-          id="branch-search-feedback"
-          query={filter}
-          count={matches.length}
-          position={matchIndex}
-          boundary={searchMatches.boundary}
-          label={searchFocused && matchIndex >= 0 ? matches[matchIndex].label : undefined}
-        />
-        {filter && (
-          <Tip label="Clear filter">
-            <button
-              className="icon-btn"
-              tabIndex={-1}
-              onClick={() => {
-                setFilter('')
-                setSearchMatch(null)
-              }}
-            >
-              <Icon name="x" size={12} />
-            </button>
-          </Tip>
-        )}
+      <div className="sidebar-head">
+        <div className="sidebar-filter">
+          <Icon name="search" size={14} />
+          <PaneSearch
+            ref={filterRef}
+            paneId="sidebar"
+            placeholder="Filter branches…  (Ctrl+L)"
+            aria-label="Filter branches"
+            aria-describedby="branch-search-feedback"
+            value={filter}
+            spellCheck={false}
+            onChange={(e) => {
+              setFilter(e.target.value)
+              setSearchMatch(null)
+            }}
+            onFocus={(e) => {
+              setSearchFocused(true)
+              const key = (e.relatedTarget as HTMLElement | null)?.closest<HTMLElement>('[role=row]')?.dataset.key
+              if (key && matches.some((n) => n.key === key)) setSearchMatch(key)
+            }}
+            onBlur={() => setSearchFocused(false)}
+            onFind={findBranch}
+            onLeave={leaveSearch}
+          />
+          <SearchFeedback
+            id="branch-search-feedback"
+            query={filter}
+            count={matches.length}
+            position={matchIndex}
+            boundary={searchMatches.boundary}
+            label={searchFocused && matchIndex >= 0 ? matches[matchIndex].label : undefined}
+          />
+          {filter && (
+            <Tip label="Clear filter">
+              <button
+                className="icon-btn"
+                tabIndex={-1}
+                onClick={() => {
+                  setFilter('')
+                  setSearchMatch(null)
+                }}
+              >
+                <Icon name="x" size={12} />
+              </button>
+            </Tip>
+          )}
+        </div>
+        {headerAction}
       </div>
       <PaneFrame
         className="tree-wrap"

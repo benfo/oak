@@ -12,6 +12,7 @@ import { openPreferences } from './Preferences'
 import { showBranchPicker, showRepoPicker } from '../pickers'
 import { Tip } from './Tip'
 import { LayoutMenu, type LayoutControls } from './LayoutMenu'
+import { PaneToggle } from './PaneToggle'
 
 export function Toolbar({
   r,
@@ -32,6 +33,9 @@ export function Toolbar({
 
   return (
     <AriaToolbar ref={barRef} className="toolbar" aria-label="Repository actions" data-pane="toolbar">
+      {layoutControls.layout === 'standard' && !layoutControls.sidebarVisible && (
+        <PaneToggle pane="sidebar" collapsed onToggle={layoutControls.onSidebar} />
+      )}
       <Tip label={r.path}>
         <button className="tb-btn tb-repo" onClick={(e) => showRepoPicker(r.path, onSwitch, e.currentTarget)}>
           <Icon name="folder" />

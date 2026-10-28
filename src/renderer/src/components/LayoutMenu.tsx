@@ -10,27 +10,14 @@ export interface LayoutControls {
   onToggleFocus: () => void
 }
 
-/** Two direct toggles; pane sizes are dragged or resized with Shift+Alt+arrows. */
-export function LayoutMenu({ layout, sidebarVisible, onSidebar, onToggleFocus }: LayoutControls) {
+/** The focus toggle; pane sizes are dragged or resized with Shift+Alt+arrows, panes hide with Ctrl+[. */
+export function LayoutMenu({ layout, onToggleFocus }: LayoutControls) {
   const focusLabel = layout === 'standard' ? 'Expand focused area' : 'Restore previous layout'
   return (
-    <>
-      <Tip label={focusLabel} keys="F11">
-        <button className="tb-btn" aria-label={focusLabel} data-active={layout !== 'standard' || undefined} onClick={onToggleFocus}>
-          <Icon name={layout === 'standard' ? 'expand' : 'restore'} />
-        </button>
-      </Tip>
-      <Tip label={sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}>
-        <button
-          className="tb-btn"
-          aria-label="Sidebar"
-          aria-pressed={sidebarVisible}
-          data-active={sidebarVisible || undefined}
-          onClick={onSidebar}
-        >
-          <Icon name="sidebar" />
-        </button>
-      </Tip>
-    </>
+    <Tip label={focusLabel} keys="F11">
+      <button className="tb-btn" aria-label={focusLabel} data-active={layout !== 'standard' || undefined} onClick={onToggleFocus}>
+        <Icon name={layout === 'standard' ? 'expand' : 'restore'} />
+      </button>
+    </Tip>
   )
 }
