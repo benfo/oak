@@ -223,7 +223,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
               kind: 'item',
               current: true,
               label: st.branch ?? (st.head ? `Detached HEAD · ${st.head.slice(0, 8)}` : 'No commits yet'),
-              title: st.head ? 'Current checkout — Enter to view commit' : 'No commits yet — Enter to view changes',
+              title: st.head ? 'Current checkout: Enter to view commit' : 'No commits yet: Enter to view changes',
               activate: () => {
                 const status = live.current.r.status
                 if (status?.head) live.current.onFocusCommit(status.head)
@@ -247,7 +247,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       .filter((b) => match(b.name))
       .map((b) => ({
         ...localNode(b, `recent:${b.fullName}`),
-        title: `${b.subject} — Enter to view, double-click to check out`
+        title: `${b.subject}: Enter to view, double-click to check out`
       }))
     const quick: TreeNode[] = []
     const matchingCurrent = current.filter((n) => match(n.label))
@@ -311,7 +311,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
         kind: 'item',
         label: s.message,
         icon: 'stash',
-        title: `${s.ref} — Enter for actions, double-click to apply`,
+        title: `${s.ref}: Enter for actions, double-click to apply`,
         activate: () => stashMenu(live.current.r, s),
         secondary: () => act.stashApply(live.current.r, s.ref),
         menu: () => stashMenu(live.current.r, s)

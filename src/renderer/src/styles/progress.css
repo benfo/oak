@@ -142,7 +142,7 @@
   padding: 0 var(--space-2-5);
   font-size: var(--text-sm);
 }
-/* Fixed-size badge slot: count, spinner or nothing — the button never changes width. */
+/* Fixed-size badge slot: count, spinner or nothing; the button never changes width. */
 .btn .btn-count {
   display: inline-grid;
   place-items: center;

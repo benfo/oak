@@ -1,7 +1,7 @@
 import { highlightBlocks, knownLanguage } from './highlighter'
 import { languageFor } from './syntax'
 
-/** Request: { id, path, blocks }. Reply: { id, tokens } — tokens is null for files we don't highlight. */
+/** Request: { id, path, blocks }. Reply: { id, tokens }; tokens is null for files we don't highlight. */
 export interface HighlightRequest {
   id: number
   path: string

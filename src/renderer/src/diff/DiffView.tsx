@@ -38,7 +38,7 @@ interface Props {
   readOnlyReason?: (diff: FileDiff) => string | null
   /** Left at the left edge returns focus to the list this diff belongs to. */
   onBack?: () => void
-  /** V — switch the changed-files list between list and tree; omit when that list is hidden or not switchable. */
+  /** V: switch the changed-files list between list and tree; omit when that list is hidden or not switchable. */
   onSwitchView?: () => void
   files?: { index: number; count: number; onSelect: (index: number) => void }
   /** Whole-file content (a synthetic all-added diff): shown as plain numbered code, without diff markings or tools. */
@@ -216,7 +216,7 @@ export function DiffView({
   )
 
   if (diff === null) return empty(loading ? 'Loading…' : emptyText)
-  if (diff.binary) return empty('Binary file — no preview')
+  if (diff.binary) return empty('Binary file, no preview')
   if (!diff.hunks.length) {
     if (source?.hunks.length && diff !== source)
       return empty(

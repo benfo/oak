@@ -129,7 +129,7 @@ export function Welcome({ onOpen }: { onOpen: (repo: string) => void }) {
             ref={listRef}
             tabIndex={shown.length ? 0 : -1}
             data-pane="recent"
-            aria-label="Recent repositories — Enter to open, Delete to remove"
+            aria-label="Recent repositories, Enter to open, Delete to remove"
             onKeyDownCapture={(e) =>
               paneKeys(e, () => {
                 filterRef.current?.focus()

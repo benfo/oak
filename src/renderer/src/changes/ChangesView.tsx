@@ -447,7 +447,7 @@ export function ChangesView({
   const readOnlyReason = (d: FileDiff) => {
     if (!lead || lead.kind === 'conflicted' || !(d.isDeleted || d.isRename)) return null
     const staged = lead.kind === 'staged'
-    return `${d.isDeleted ? 'Deleted' : 'Renamed'} file — use ${staged ? 'Unstage' : 'Stage or Discard'} on the file in the list. A ${d.isDeleted ? 'deletion' : 'rename'} can't be ${staged ? 'unstaged' : 'staged'} in parts.`
+    return `${d.isDeleted ? 'Deleted' : 'Renamed'} file. Use ${staged ? 'Unstage' : 'Stage or Discard'} on the file in the list. A ${d.isDeleted ? 'deletion' : 'rename'} can't be ${staged ? 'unstaged' : 'staged'} in parts.`
   }
 
   const filesRef = useRef<HTMLDivElement>(null)
@@ -944,7 +944,7 @@ function OperationBanner({ r }: { r: RepoCtx }) {
       <Icon name="warning" />
       <div className="op-text">
         <strong>{STATE_TEXT[st.state]}</strong>
-        <span>{conflicts ? `${conflicts} conflicted file(s) — resolve, then continue.` : 'All conflicts resolved.'}</span>
+        <span>{conflicts ? `${conflicts} conflicted file(s): resolve, then continue.` : 'All conflicts resolved.'}</span>
       </div>
       <div className="op-actions">
         <button

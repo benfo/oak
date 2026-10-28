@@ -92,7 +92,7 @@ export default function App() {
     if (repo) localStorage.setItem(LAST_REPO, repo)
     else if (hadRepo.current) localStorage.removeItem(LAST_REPO)
     hadRepo.current = !!repo
-    document.title = repo ? `${repoName(repo)} — Oak` : 'Oak'
+    document.title = repo ? `${repoName(repo)} - Oak` : 'Oak'
   }, [repo])
 
   return (

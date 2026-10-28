@@ -41,7 +41,7 @@ export interface OpState {
 function notifyIfSlow(label: string, ok: boolean, ms: number) {
   if (ms < NOTIFY_AFTER_MS || document.hasFocus()) return
   try {
-    new Notification(`Oak — ${label} ${ok ? 'finished' : 'failed'}`, {
+    new Notification(`Oak: ${label} ${ok ? 'finished' : 'failed'}`, {
       body: ok ? 'Done.' : 'Open Oak to see what went wrong.',
       silent: ok
     })

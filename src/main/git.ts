@@ -20,7 +20,7 @@ const ENV = {
 
 /**
  * When set (via `outputSink.run(fn, ...)`), every git process started inside that async call
- * streams its stdout/stderr — including hook output and --progress — to the function.
+ * streams its stdout/stderr, including hook output and --progress, to the function.
  */
 export const outputSink = new AsyncLocalStorage<(text: string) => void>()
 

@@ -38,7 +38,7 @@ export function OutputDialog({ op }: { op: OpState | null }) {
   if (!open) return null
   return (
     <Modal
-      title={op ? `${op.label}${op.finished ? (op.ok ? ' — done' : ' — failed') : '…'}` : 'Output'}
+      title={op ? `${op.label}${op.finished ? (op.ok ? ': done' : ': failed') : '…'}` : 'Output'}
       onClose={() => outputOpen.set(false)}
       width={720}
     >
