@@ -26,7 +26,6 @@ export interface Settings {
   diffLayout: DiffLayout
   /** Changed files (History and working tree) as a folder tree instead of a flat list. */
   changesTree: boolean
-  /** History's file list: only the files a commit changed, or every file in its snapshot. */
   /** Trace the checked-out branch's first-parent line and soften other graph lines. */
   emphasizeCurrentBranch: boolean
   /** Unchanged lines shown around each change in diffs (`git diff -U`). At least 1 so hunks stay stageable. */
