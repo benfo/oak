@@ -13,7 +13,7 @@ export interface FileIconSource {
 
 export const FILE_ICON_PACKS: { id: FileIconPackId; name: string; source?: FileIconSource }[] = [
   { id: 'none', name: 'None' },
-  { id: 'material', name: 'Material', source: { pack: MATERIAL_PACK, iconUrl: materialIconUrl } }
+  { id: 'material', name: 'Colour', source: { pack: MATERIAL_PACK, iconUrl: materialIconUrl } }
 ]
 
 export const fileIconSource = (id: FileIconPackId) => FILE_ICON_PACKS.find((p) => p.id === id)?.source

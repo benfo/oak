@@ -259,7 +259,10 @@ function Preferences({ repo, onClose }: { repo: string | null; onClose: () => vo
             <input type="checkbox" checked={s.wheelZoom} onChange={(e) => updateSettings({ wheelZoom: e.target.checked })} />
             Zoom with Ctrl+scroll
           </label>
-          <Field label="File icons" hint="Shown beside files and folders in change lists and trees. Material Icon Theme (MIT).">
+          <Field
+            label="File icons"
+            hint="Shown beside files and folders in change lists and trees. Colour is based on Material Icon Theme (MIT)."
+          >
             <select
               className="select"
               value={s.fileIcons}
