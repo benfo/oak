@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { Commit } from '../../../shared/types'
+import type { Commit, Ref } from '../../../shared/types'
 import { WORKING_HASH } from '../../../shared/working.ts'
 import type { Graph, GraphRow } from './graph'
 import { relativeTime } from '../lib/format'
@@ -10,6 +10,7 @@ import { shortcutPlatform } from '../lib/shortcuts'
 import { usePane } from '../lib/usePane'
 import { useVirtualRows } from '../lib/useVirtualRows'
 import { PaneFrame } from '../components/Pane'
+import { Tip } from '../components/Tip'
 
 /** Matches --row-md (tokens.css). */
 export const ROW_H = 28
@@ -41,6 +42,10 @@ interface Props {
   revealKey: number
   onSelect: (hash: string) => void
   onContextMenu?: (c: Commit, e: React.SyntheticEvent) => void
+  /** Returns the open menu when it opened a ref menu; otherwise the click falls through to the commit menu. */
+  onRefContextMenu?: (c: Commit, ref: Ref, e: React.MouseEvent) => Promise<unknown> | undefined
+  /** Tooltip for a badge that opens a ref menu; undefined leaves the badge inert. */
+  refMenuHint?: (c: Commit, ref: Ref) => string | undefined
   onNearEnd?: () => void
   /** Enter or → on the selected commit (moves focus to its files). */
   onOpen?: () => void
@@ -64,6 +69,8 @@ export function CommitList({
   revealKey,
   onSelect,
   onContextMenu,
+  onRefContextMenu,
+  refMenuHint,
   onNearEnd,
   onOpen,
   onSearch,
@@ -267,20 +274,39 @@ export function CommitList({
                     isHead={c.refs.some((r) => r.current || r.type === 'head')}
                   />
                   <div className="c-subject">
-                    {c.refs.map((r) => (
-                      <span key={r.type + r.name} className={`ref-badge ${r.type} ${r.current ? 'current' : ''}`}>
-                        {r.name}
-                      </span>
-                    ))}
+                    {c.refs.map((r) => {
+                      const hint = refMenuHint?.(c, r)
+                      return (
+                        <Tip key={r.type + r.name} label={hint} focusable={false}>
+                          <span
+                            className={`ref-badge ${r.type} ${r.current ? 'current' : ''} ${hint ? 'has-menu' : ''}`}
+                            onContextMenu={(e) => {
+                              const menu = onRefContextMenu?.(c, r, e)
+                              if (!menu) return
+                              e.preventDefault()
+                              e.stopPropagation()
+                              // Marks the badge the menu acts on until it closes.
+                              const badge = e.currentTarget
+                              badge.dataset.menuOpen = ''
+                              void menu.finally(() => delete badge.dataset.menuOpen)
+                            }}
+                          >
+                            {r.name}
+                          </span>
+                        </Tip>
+                      )
+                    })}
                     <span className="subject-text">{c.subject}</span>
                   </div>
-                  <div className="c-author" title={`${c.author} <${c.email}>`}>
-                    <Avatar name={c.author} email={c.email} size={16} />
-                    <span className="c-author-name">{c.author}</span>
-                  </div>
-                  <div className="c-date" title={new Date(c.date).toLocaleString()}>
-                    {relativeTime(c.date)}
-                  </div>
+                  <Tip label={`${c.author} <${c.email}>`} focusable={false}>
+                    <div className="c-author">
+                      <Avatar name={c.author} email={c.email} size={16} />
+                      <span className="c-author-name">{c.author}</span>
+                    </div>
+                  </Tip>
+                  <Tip label={new Date(c.date).toLocaleString()} focusable={false}>
+                    <div className="c-date">{relativeTime(c.date)}</div>
+                  </Tip>
                   <div className="c-hash">{c.hash.slice(0, 8)}</div>
                 </div>
               )

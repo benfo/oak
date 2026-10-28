@@ -1,5 +1,5 @@
 import { copyText } from './copy'
-import { api, showMenu } from '../api'
+import { showMenu } from '../api'
 import * as act from '../actions'
 import type { Branch, MenuItem } from '../../../shared/types'
 import type { RepoCtx } from '../useRepo'
