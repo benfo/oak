@@ -115,8 +115,13 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
   const applyLayout = (next: WorkspaceLayout) => {
     if (layout === 'standard' && next !== 'standard') restoreFocus.current = lastWorkFocus.current
     flushSync(() => setLayout(next))
-    if (next === 'code') focusPane('.view:not([hidden]) .diff') || focusPane('.view:not([hidden]) .file-list')
-    else {
+    if (next === 'code') {
+      // Focus that is still on screen stays: the visible file list keeps it, as does the diff. Only focus
+      // left in a pane that just went away (the sidebar, the commit graph, a hidden file list) moves to the code.
+      const active = document.activeElement as HTMLElement | null
+      const survives = !!active && active !== document.body && active.isConnected && !active.closest('[inert], [hidden]')
+      if (!survives) focusPane('.view:not([hidden]) .diff') || focusPane('.view:not([hidden]) .file-list')
+    } else {
       const previous = restoreFocus.current
       if (previous?.isConnected && previous.offsetParent !== null && !previous.closest('[inert]')) previous.focus({ preventScroll: true })
       else focusMain()
