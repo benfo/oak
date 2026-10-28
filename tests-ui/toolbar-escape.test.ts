@@ -78,7 +78,7 @@ test('toolbar options close on Escape and restore their trigger before returning
     [page.locator('.tb-branch'), '.palette.dropdown'],
     [page.getByRole('button', { name: 'More actions', exact: true }), '.menu-popover'],
     [page.getByRole('button', { name: 'Pull options', exact: true }), '.menu-popover'],
-    [page.getByRole('button', { name: /^Diff layout:/ }), '.menu-popover'],
+    [page.getByRole('button', { name: 'Diff options', exact: true }), '.menu-popover'],
     [page.getByRole('button', { name: 'Changes actions', exact: true }), '.menu-popover']
   ] as const
   for (const [button, selector] of cases) {

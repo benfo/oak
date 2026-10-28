@@ -29,6 +29,10 @@ Lessons for any future history rewrite or tag move:
 
 **0.1.19 shipped (2026-10-26).** Find in diffs and file previews: History and Changes share find with Blame, covering commit file previews and inline and side-by-side diffs. Search counts occurrences in the loaded diff, including added and deleted lines. `:N` uses After line numbers, or Before for deleted files. The shortcut reference searches by actual key bindings and names the view or control that owns each shortcut. Escape now exits file history from the graph, empty results or banner, the same agreed exception as Comparison. The website downloads point to 0.1.19. Validation: 203 unit tests, typecheck, formatting and lint (11 file-size warnings, no errors). The updated Escape UI test (`tests-ui/escape.test.ts`) has not passed a run yet: its last run failed at the file history banner-button step, which the maintainer hand-tested as working. Run it and fix the test setup (focus or an open tooltip) before adding `test:ui` to CI.
 
+## In progress
+
+- **Ignore-whitespace diff review and toolbar cleanup.** Session-only filter shared by Changes and History, off at startup. Hide space, tab and CRLF/LF edits while retaining blank-line additions/deletions. Line and hunk actions use exact selected text and preserve hidden whitespace-only edits; whole-file actions still include everything. Whitespace-only files remain listed with an action to reveal their changes. Diff options groups layout, context and whitespace controls; navigation remains directly accessible, and the active filter has a visible reset control. Narrow panes use two fixed toolbar rows. Lucide supplies icons through the shared component. Validation: 81 focused unit tests and 19 focused Electron UI tests pass, plus build, typecheck, lint and formatting. Awaiting maintainer review.
+
 ## Resume next
 
 0. **Website follow-ups.** The revamp has shipped. Panels have different heights, so content below the map shifts a little when a station changes; revisit if it bothers anyone. Keep the "planned" section in step with this file. Blame now has a released feature stop. Notes and rules are in `website/README.md`.
@@ -128,15 +132,17 @@ Ideas only. None is agreed, and each needs a concrete workflow and a discussion 
 - Commit details for a line while reading a diff or file, like VS Code's inline blame or hover (author, date, subject, full message on demand), without opening the Blame view. Explore a hover or key-triggered popover first; an always-on inline annotation risks the distraction people report with GitLens.
 - Pull request support: host-to-provider mapping for self-hosted remotes, fork workflows, target branch selection, and a lightweight local PR review (pass a PR URL or pick branches, fetch the refs, open the comparison in Oak; comments and approvals stay on the provider's site).
 - More preferences: default clone folder, external tools, fonts.
+- Open the repository in VS Code or the user's configured default editor.
+- Worktrees for agent workflows: discover and track them, create and remove them, and explore viewing worktrees side by side. Define the everyday workflow before choosing the UI.
 
 **Diff and files**
 
-- Ignore whitespace and CRLF/LF differences. Collapse unchanged regions.
+- Collapse unchanged regions. Ignore-whitespace diff review is in progress above.
 - Optional linked horizontal scrolling in side-by-side diffs (a check item in the diff options menu); independent scrolling stays the default.
 - Mouse alternatives for the diff layout toggle, only if testing shows a need.
 - Whole-file syntax tokenizing, since a hunk that starts mid-construct can be coloured wrongly.
 - Preview non-source files (images, PDFs, safe formats) instead of "binary file differs". Never run scripts; render SVG as an image only.
-- Open files with external apps: "Open" and "Show in folder" from file menus, using a read-only temporary copy for historical revisions. Never execute files automatically and confirm for executable and script types.
+- Open files with their associated app: "Open" and "Show in folder" from file menus, using a read-only temporary copy for historical revisions. Never execute files automatically and confirm for executable and script types.
 - Browse the repository at the working tree or a selected commit, including unchanged files, with filename search. Part of this shipped as History "All files"; a working-tree browser is not built.
 - Neighbour diff prefetch if History stepping still feels slow; a state library such as Zustand for shared selection and scope state, only if needed.
 

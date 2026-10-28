@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { parseDiff, type FileDiff } from './diff'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import type { FileDiff } from './diff'
 import { resolveDiffLayout } from './diffLayout'
 import { usePane } from '../lib/usePane'
 import { DiffLineActions } from './DiffLineActions'
 import { PaneFrame } from '../components/Pane'
 import { Icon } from '../components/Icon'
 import { useSettings } from '../settings'
-import { useContextLines } from './useDiffContext'
 import { noteDiffFocus } from './diffCopy'
 import type { DiffActions, DiffSide } from './diffTypes'
 import { useDiffRows } from './useDiffRows'
@@ -21,6 +20,9 @@ import { SideColumns } from './SideColumns'
 import { FindBar } from '../components/FindBar'
 import { useDiffFind } from './useDiffFind'
 import { useDiffNavigation, useDiffFileNavigation } from './useDiffNavigation'
+import { toggleIgnoreWhitespace } from './useIgnoreWhitespace'
+import { useDiffDocument } from './useDiffDocument'
+import { useDiffCursor } from './useDiffCursor'
 
 export type { DiffActions }
 
@@ -61,7 +63,7 @@ export function DiffView({
   revealLine,
   onRevealed
 }: Props) {
-  const diff = useMemo(() => (text === null ? null : parseDiff(text)), [text])
+  const { diff, source, displayText, reviewMode } = useDiffDocument(text, plain)
   const acts = diff && actions ? actions(diff) : null
   const notice = diff && !acts && readOnlyReason ? readOnlyReason(diff) : null
   const [showAll, setShowAll] = useState(false)
@@ -79,7 +81,7 @@ export function DiffView({
 
   const scroll = useDiffScroll({ ref, diff, split, cursor, cursorSide, rows, items, rowItem, posItem, positions, itemRow })
   const find = useDiffFind(diff, rows, cursor, ref, setCursor, setSide, () => setShowAll(true))
-  const codeOf = useDiffCode(diff, text, rows, syntaxHighlighting, showWhitespace, find)
+  const codeOf = useDiffCode(diff, displayText, rows, syntaxHighlighting, showWhitespace, find)
   const selection = useDiffSelection({
     diff,
     rows,
@@ -97,25 +99,9 @@ export function DiffView({
   const { selected } = selection
   const { copySource, showCopyMenu } = useDiffCopy({ diff, rows, cursor, selected, ref })
 
-  // A new diff (e.g. after staging) clears the selection but keeps the cursor near where it was.
-  // When the context changed instead, the cursor stays on the same file line.
-  const context = useContextLines()
-  const shownContext = useRef(context)
-  const cursorSource = useRef<number | null>(null)
-  useEffect(() => {
-    const line = rows[cursor] && diff?.hunks[rows[cursor].hunk].lines.slice(rows[cursor].line).find((l) => l.newNo !== null)
-    cursorSource.current = line?.newNo ?? null
-  }, [cursor])
-  useEffect(() => {
-    selection.clear()
-    pendingHunk.current = null
-    const source = shownContext.current !== context ? cursorSource.current : null
-    shownContext.current = context
-    const same = source === null ? undefined : rows.find((r) => diff?.hunks[r.hunk].lines[r.line].newNo === source)
-    setCursor((c) => (same ? same.index : Math.max(0, Math.min(c, rows.length - 1))))
-  }, [text])
+  useDiffCursor(diff, rows, cursor, setCursor, reviewMode, selection.clear, pendingHunk)
 
-  // After the [text] effect above, so a new diff's cursor reset doesn't undo it.
+  // Reveal after cursor restoration so a diff reset cannot undo the requested source line.
   useEffect(() => {
     if (revealLine === undefined || !diff) return
     const row = rows.find((r) => diff.hunks[r.hunk].lines[r.line].newNo === revealLine)
@@ -207,8 +193,6 @@ export function DiffView({
       metadata={metadata}
       files={files}
       plain={plain}
-      split={split}
-      diffLayout={diffLayout}
       changeCount={diff?.hunks.length ?? 0}
       currentChange={cursorHunk}
       singleChangeVisible={scroll.singleChangeVisible}
@@ -234,6 +218,15 @@ export function DiffView({
   if (diff === null) return empty(loading ? 'Loading…' : emptyText)
   if (diff.binary) return empty('Binary file — no preview')
   if (!diff.hunks.length) {
+    if (source?.hunks.length && diff !== source)
+      return empty(
+        <span>
+          Only whitespace changes.{' '}
+          <button className="link" onClick={toggleIgnoreWhitespace}>
+            Show whitespace changes
+          </button>
+        </span>
+      )
     const info = diff.header.filter((l) => !/^(diff --git|index |--- |\+\+\+ )/.test(l))
     return empty(info.length ? info.map((l, i) => <div key={i}>{l}</div>) : 'No content changes')
   }

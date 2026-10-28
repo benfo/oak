@@ -1,14 +1,66 @@
 /* ---------- diff ---------- */
 
+.diff-wrap {
+  container: diff-pane / inline-size;
+}
+
 .diff-controls {
   display: flex;
   flex: 0 1 auto;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   min-width: 0;
   align-items: center;
   gap: var(--space-0-5);
   margin-left: auto;
   font-family: var(--font);
+}
+.diff-filter-slot {
+  flex: none;
+  width: var(--diff-filter-width);
+  visibility: hidden;
+}
+.diff-filter-slot[data-active] {
+  visibility: visible;
+}
+.diff-filter.diff-full-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+.diff-options-heading {
+  padding: var(--space-1) var(--space-2);
+  color: var(--muted-foreground);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+}
+.diff-options {
+  max-height: min(var(--diff-options-max-height), var(--available-height));
+  overflow-y: auto;
+}
+
+/* A narrow pane gets two fixed rows; toggling a review filter never changes their height. */
+@container diff-pane (width < 640px) {
+  .diff-wrap:not(.plain) .diff-title {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-rows: var(--control-sm) var(--control-sm);
+    align-content: center;
+    gap: var(--space-1);
+    height: var(--diff-toolbar-compact-height);
+  }
+  .diff-wrap:not(.plain) .diff-filter-slot {
+    grid-column: 3;
+  }
+  .diff-wrap:not(.plain) .diff-controls {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-end;
+  }
+  .diff-wrap:not(.plain) .find-bar {
+    top: calc(var(--diff-toolbar-compact-height) + var(--space-1));
+  }
 }
 .diff-navigation-group {
   display: flex;
@@ -20,40 +72,6 @@
   text-align: center;
   font-variant-numeric: tabular-nums;
   font-size: var(--text-xs);
-}
-.diff-layout-button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex: none;
-  gap: var(--space-1);
-  width: var(--diff-layout-width);
-  height: var(--control-sm);
-  margin-left: var(--space-1);
-  padding: 0 var(--space-1-5);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--foreground);
-  font: inherit;
-}
-.diff-layout-button[data-hovered],
-.diff-layout-button[aria-expanded='true'] {
-  background: var(--hover);
-}
-.diff-context-group {
-  display: flex;
-  align-items: center;
-  flex: none;
-  gap: var(--space-0-5);
-  margin-left: var(--space-1);
-}
-.diff-context-value {
-  min-width: var(--diff-context-width);
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  font-size: var(--text-xs);
-  white-space: nowrap;
 }
 .diff-full-button {
   height: var(--control-sm);
@@ -299,4 +317,3 @@
   font-family: var(--font);
   color: var(--muted-foreground);
 }
-

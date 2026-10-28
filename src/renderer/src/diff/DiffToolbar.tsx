@@ -1,23 +1,17 @@
 import { useEffect, useRef, type ReactNode } from 'react'
-import { Button, Menu, MenuItem, MenuTrigger, Popover, Toolbar } from 'react-aria-components'
+import { Button, Toolbar } from 'react-aria-components'
 import { toolbarHomeEnd } from '../lib/navigation'
 import { Tip } from '../components/Tip'
-import { MenuNavigation } from '../components/MenuNavigation'
 import { Icon } from '../components/Icon'
-import { changeDiffLayout } from './changeDiffLayout'
-import { CONTEXT_STEPS, contextLabel, isFullContext } from './diffContext'
-import { DIFF_LAYOUTS, type DiffLayout } from './diffLayout'
-import { showLessContext, showMoreContext, toggleFullContext, useContextLines } from './useDiffContext'
-import { toggleWhitespace } from './toggleWhitespace'
-import { useSettings } from '../settings'
+import { DiffOptions } from './DiffOptions'
+import { WhitespaceFilterIndicator } from './WhitespaceFilterIndicator'
+import { DiffNavigationGroup } from './DiffNavigationGroup'
 
 interface Props {
   title: string
   metadata?: ReactNode
   files?: { index: number; count: number; onSelect: (index: number) => void }
   plain: boolean
-  split: boolean
-  diffLayout: DiffLayout | 'auto'
   changeCount: number
   /** 0-based hunk under the cursor. */
   currentChange: number
@@ -36,8 +30,6 @@ export function DiffToolbar({
   metadata,
   files,
   plain,
-  split,
-  diffLayout,
   changeCount,
   currentChange,
   singleChangeVisible,
@@ -50,9 +42,6 @@ export function DiffToolbar({
 }: Props) {
   const toolsRef = useRef<HTMLDivElement>(null)
   useEffect(() => toolbarHomeEnd(toolsRef.current), [])
-  const context = useContextLines()
-  const { showWhitespace } = useSettings()
-  const layoutLabel = DIFF_LAYOUTS.find((layout) => layout.id === diffLayout)!.label
   const navigationDisabled = !changeCount || (changeCount === 1 && singleChangeVisible)
   const onlyChange = changeCount === 1
   return (
@@ -61,6 +50,7 @@ export function DiffToolbar({
         {title}
       </span>
       {metadata}
+      {!plain && <WhitespaceFilterIndicator />}
       <Toolbar className="diff-controls" aria-label="Diff tools" ref={toolsRef}>
         <Tip label="Find in file" keys="/ or Ctrl+F">
           <Button className="icon-btn" aria-label="Find in file" aria-pressed={findOpen} isDisabled={!canFind} onPress={onFind}>
@@ -68,40 +58,45 @@ export function DiffToolbar({
           </Button>
         </Tip>
         {files && files.count > 1 && (
-          <span className="diff-navigation-group">
-            <Tip label="Previous file" keys="Alt+PageUp">
-              <Button className="icon-btn" aria-label="Previous file" isDisabled={files.index <= 0} onPress={() => moveFile(-1)}>
-                <Icon name="chevronLeft" size={14} />
-              </Button>
-            </Tip>
+          <DiffNavigationGroup
+            previous={{
+              label: 'Previous file',
+              keys: 'Alt+PageUp',
+              icon: 'chevronLeft',
+              disabled: files.index <= 0,
+              run: () => moveFile(-1)
+            }}
+            next={{
+              label: 'Next file',
+              keys: 'Alt+PageDown',
+              icon: 'chevronRight',
+              disabled: files.index < 0 || files.index >= files.count - 1,
+              run: () => moveFile(1)
+            }}
+          >
             <span className="diff-counter" aria-label={`File ${files.index + 1} of ${files.count}`}>
               File {files.index + 1} of {files.count}
             </span>
-            <Tip label="Next file" keys="Alt+PageDown">
-              <Button
-                className="icon-btn"
-                aria-label="Next file"
-                isDisabled={files.index < 0 || files.index >= files.count - 1}
-                onPress={() => moveFile(1)}
-              >
-                <Icon name="chevronRight" size={14} />
-              </Button>
-            </Tip>
-          </span>
+          </DiffNavigationGroup>
         )}
         {!plain && (
           <>
-            <span className="diff-navigation-group">
-              <Tip label={onlyChange ? 'Reveal change' : 'Previous change'} keys="P">
-                <Button
-                  className="icon-btn"
-                  aria-label={onlyChange ? 'Reveal change' : 'Previous change'}
-                  isDisabled={navigationDisabled}
-                  onPress={() => jumpHunk(-1)}
-                >
-                  <Icon name="arrowUp" size={14} />
-                </Button>
-              </Tip>
+            <DiffNavigationGroup
+              previous={{
+                label: onlyChange ? 'Reveal change' : 'Previous change',
+                keys: 'P',
+                icon: 'arrowUp',
+                disabled: navigationDisabled,
+                run: () => jumpHunk(-1)
+              }}
+              next={{
+                label: onlyChange ? 'Reveal change' : 'Next change',
+                keys: 'N',
+                icon: 'arrowDown',
+                disabled: navigationDisabled,
+                run: () => jumpHunk(1)
+              }}
+            >
               <span
                 className="diff-counter"
                 aria-label={
@@ -113,81 +108,8 @@ export function DiffToolbar({
               >
                 {changeCount ? `${currentChange + 1} of ${changeCount}` : counterEmpty}
               </span>
-              <Tip label={onlyChange ? 'Reveal change' : 'Next change'} keys="N">
-                <Button
-                  className="icon-btn"
-                  aria-label={onlyChange ? 'Reveal change' : 'Next change'}
-                  isDisabled={navigationDisabled}
-                  onPress={() => jumpHunk(1)}
-                >
-                  <Icon name="arrowDown" size={14} />
-                </Button>
-              </Tip>
-            </span>
-            <span className="diff-context-group">
-              <Tip label="Show less context" keys="Ctrl+Shift+-">
-                <Button
-                  className="icon-btn"
-                  aria-label="Show less context"
-                  isDisabled={context <= CONTEXT_STEPS[0]}
-                  onPress={showLessContext}
-                >
-                  <Icon name="minus" size={14} />
-                </Button>
-              </Tip>
-              <span className="diff-context-value" aria-label={`Context: ${isFullContext(context) ? 'whole file' : `${context} lines`}`}>
-                Context {contextLabel(context)}
-              </span>
-              <Tip label="Show more context" keys="Ctrl+Shift+=">
-                <Button className="icon-btn" aria-label="Show more context" isDisabled={isFullContext(context)} onPress={showMoreContext}>
-                  <Icon name="plus" size={14} />
-                </Button>
-              </Tip>
-              <Tip label="Show the whole file" keys="Ctrl+Shift+W">
-                <Button className="diff-full-button" aria-pressed={isFullContext(context)} onPress={toggleFullContext}>
-                  Full file
-                </Button>
-              </Tip>
-            </span>
-            <Tip label="Draw spaces and tabs">
-              <Button className="diff-full-button" aria-pressed={showWhitespace} onPress={toggleWhitespace}>
-                Spaces and tabs
-              </Button>
-            </Tip>
-            <MenuTrigger>
-              <Tip label="Diff layout" keys="Ctrl+Shift+D">
-                <Button
-                  className="diff-layout-button"
-                  aria-label={`Diff layout: ${layoutLabel}${diffLayout === 'auto' ? ` (currently ${split ? 'side by side' : 'inline'})` : ''}`}
-                >
-                  {layoutLabel}
-                  <Icon name="chevronDown" size={12} />
-                </Button>
-              </Tip>
-              <Popover className="menu-popover" placement="bottom end">
-                <MenuNavigation>
-                  <Menu
-                    className="menu"
-                    aria-label="Diff layout"
-                    selectionMode="single"
-                    disallowEmptySelection
-                    selectedKeys={[diffLayout]}
-                    onAction={(id) => changeDiffLayout(id as DiffLayout)}
-                  >
-                    {DIFF_LAYOUTS.map((layout) => (
-                      <MenuItem key={layout.id} id={layout.id} className="menu-item row" textValue={layout.label}>
-                        {({ isSelected }) => (
-                          <>
-                            <span className="menu-check">{isSelected && <Icon name="check" size={14} />}</span>
-                            <span className="menu-label">{layout.label}</span>
-                          </>
-                        )}
-                      </MenuItem>
-                    ))}
-                  </Menu>
-                </MenuNavigation>
-              </Popover>
-            </MenuTrigger>
+            </DiffNavigationGroup>
+            <DiffOptions />
           </>
         )}
       </Toolbar>

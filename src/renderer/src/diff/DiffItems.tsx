@@ -36,6 +36,8 @@ export function renderDiffItems(ctx: ItemsContext, targetSide?: DiffSide) {
         key={key}
         {...slot(index)}
         data-idx={i}
+        data-old-line={l.oldNo ?? undefined}
+        data-new-line={l.newNo ?? undefined}
         data-side={targetSide}
         className={`dl ${l.type} ${i === cursor && (!targetSide || targetSide === cursorSide) ? 'cursor' : ''} ${selected.has(r.key) ? 'picked' : ''} ${(hunk ?? r.hunk) === cursorHunk ? 'active-hunk' : ''}`}
         onMouseDown={(e) => ctx.onLineMouseDown(e, i, targetSide)}
@@ -59,7 +61,7 @@ export function renderDiffItems(ctx: ItemsContext, targetSide?: DiffSide) {
 
   const renderHeader = (hi: number, index: number, key: string) => {
     const h = diff.hunks[hi]
-    const patch = () => hunkPatch(diff, h)
+    const patch = (reverse: boolean) => hunkPatch(diff, h, reverse)
     return (
       <div key={key} {...slot(index)} className={`hunk-slot ${hi > 0 ? 'gap' : ''}`}>
         <div className={`hunk-header ${hi === cursorHunk ? 'active-hunk' : ''}`}>
@@ -70,14 +72,14 @@ export function renderDiffItems(ctx: ItemsContext, targetSide?: DiffSide) {
             <span className="hunk-actions">
               {acts.discard && (
                 <Tip label="Discard this hunk" placement="top">
-                  <button className="btn" tabIndex={-1} onClick={() => acts.discard!.run(patch())}>
+                  <button className="btn" tabIndex={-1} onClick={() => acts.discard!.run(patch(true))}>
                     {acts.discard.label}
                     {!targetSide && ' hunk'}
                   </button>
                 </Tip>
               )}
               <Tip label={`${acts.primary.label} this hunk`} placement="top">
-                <button className="btn primary" tabIndex={-1} onClick={() => acts.primary.run(patch())}>
+                <button className="btn primary" tabIndex={-1} onClick={() => acts.primary.run(patch(acts.primary.reverse))}>
                   {acts.primary.label}
                   {!targetSide && ' hunk'}
                 </button>
