@@ -301,6 +301,7 @@ export function FileTree({
             selectionMode="single"
             selectionBehavior="replace"
             disallowEmptySelection
+            escapeKeyBehavior="none"
             selectedKeys={selected ? new Set<Key>([selected]) : new Set<Key>()}
             onSelectionChange={onSelectionChange}
             expandedKeys={open}
