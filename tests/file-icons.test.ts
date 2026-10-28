@@ -25,6 +25,8 @@ test('the longest compound extension wins', () => {
   assert.equal(icon('types.d.ts'), 'typescript-def')
   assert.equal(icon('app.test.ts'), 'test-ts')
   assert.equal(icon('a.b.c.ts'), 'typescript')
+  assert.equal(icon('Button.stories.tsx'), 'storybook')
+  assert.equal(icon('tailwind.config.js'), 'tailwindcss')
 })
 
 test('unknown files and extensionless files fall back to the generic file', () => {
