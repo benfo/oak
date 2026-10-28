@@ -6,8 +6,13 @@
   height: 100%;
 }
 .app-body {
+  display: flex;
   flex: 1;
   min-height: 0;
+}
+.app-body > .split {
+  flex: 1;
+  width: auto;
 }
 .main {
   height: 100%;

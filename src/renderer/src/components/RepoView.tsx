@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { flushSync } from 'react-dom'
 import { api, errorMessage, repoName } from '../api'
 import * as act from '../actions'
@@ -9,7 +9,7 @@ import { activeDiffCopy } from '../diff/diffCopy'
 import { copyDiffAsPatch, copyListItem, copyText } from '../lib/copy'
 import { activeListCopy } from '../lib/listCopy'
 import { shortcutBlockReason } from '../lib/shortcutPolicy'
-import { focusFiles, focusPane } from '../lib/navigation'
+import { focusFiles, focusPane, isNavigationControl } from '../lib/navigation'
 import { WORKING_HASH, hasWorkingChanges } from '../../../shared/working.ts'
 import { useRepo, type RepoCtx } from '../useRepo'
 import { pickAndOpen } from '../repoActions'
@@ -21,6 +21,10 @@ import { Split } from './Split'
 import { RESIZE_KEYS, resizeFocusedPane } from '../lib/paneResize'
 import { Toolbar } from './Toolbar'
 import { Sidebar } from '../sidebar/Sidebar'
+import { PaneToggle } from './PaneToggle'
+import { SidebarRail } from '../sidebar/SidebarRail'
+import { changedFileCount } from '../lib/changeCount'
+import { VIEW_KEYS } from '../lib/viewShortcuts'
 import { publishActiveRepo } from '../sidebar/activeRepo'
 import { HistoryView, type ComparisonRequest } from '../history/HistoryView'
 import { ChangesView } from '../changes/ChangesView'
@@ -52,6 +56,8 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
   useEffect(() => () => publishActiveRepo(null), [])
   const [view, setViewState] = useState<View>('history')
   const [layout, setLayout] = useState<WorkspaceLayout>('standard')
+  // Session only: whether focus mode hides the file list beside the diff.
+  const [filesHidden, setFilesHidden] = useState(false)
   const lastWorkFocus = useRef<HTMLElement | null>(null)
   const restoreFocus = useRef<HTMLElement | null>(null)
   const setView = (next: View) => {
@@ -109,8 +115,13 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
   const applyLayout = (next: WorkspaceLayout) => {
     if (layout === 'standard' && next !== 'standard') restoreFocus.current = lastWorkFocus.current
     flushSync(() => setLayout(next))
-    if (next === 'code') focusPane('.view:not([hidden]) .diff') || focusPane('.view:not([hidden]) .file-list')
-    else {
+    if (next === 'code') {
+      // Focus that is still on screen stays: the visible file list keeps it, as does the diff. Only focus
+      // left in a pane that just went away (the sidebar, the commit graph, a hidden file list) moves to the code.
+      const active = document.activeElement as HTMLElement | null
+      const survives = !!active && active !== document.body && active.isConnected && !active.closest('[inert], [hidden]')
+      if (!survives) focusPane('.view:not([hidden]) .diff') || focusPane('.view:not([hidden]) .file-list')
+    } else {
       const previous = restoreFocus.current
       if (previous?.isConnected && previous.offsetParent !== null && !previous.closest('[inert]')) previous.focus({ preventScroll: true })
       else focusMain()
@@ -129,7 +140,37 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
       updateSettings({ sidebarHidden: !visible })
     })
   }
+  // Ctrl+[ shows or hides the sidebar; focus mode has no sidebar to toggle.
+  const filesCollapsed = layout === 'code' && filesHidden
+  const canToggleFiles = layout === 'code' && view !== 'blame'
+  const toggleFiles = () => {
+    // Move focus before the list goes inert, so it never lands in a hidden pane.
+    if (!filesHidden && document.activeElement?.closest('.changes-left, .commit-info')) focusPane('.view:not([hidden]) .diff')
+    flushSync(() => setFilesHidden(!filesHidden))
+  }
+  // Capture phase, so the list's type-ahead and the diff's own keys never see the F.
+  const onFilesKey = (e: KeyboardEvent) => {
+    if (!canToggleFiles || e.key !== 'f' || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return
+    if (e.nativeEvent.isComposing || isNavigationControl(e.target)) return
+    e.preventDefault()
+    e.stopPropagation()
+    toggleFiles()
+  }
+  const filesToggle = canToggleFiles ? <PaneToggle pane="file list" collapsed={filesHidden} keys="F" onToggle={toggleFiles} /> : undefined
+  const sidebarToggle = {
+    title: sidebarHidden ? 'Show sidebar' : 'Hide sidebar',
+    enabled: layout === 'standard',
+    toggle: () => setSidebarVisible(sidebarHidden)
+  }
   const focusSidebar = (search = false) => {
+    // Moving left onto a collapsed sidebar lands on its rail; asking for the filter expands it.
+    if (
+      !search &&
+      layout === 'standard' &&
+      sidebarHidden &&
+      (focusPane('[data-pane="rail"] [aria-current]') || focusPane('[data-pane="rail"] button'))
+    )
+      return
     setSidebarVisible(true)
     if (search) {
       focusPane('.sidebar-filter input')
@@ -147,8 +188,8 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     showFileHistory,
     blame,
     showBlame,
-    sidebarHidden: !sidebarVisible,
-    setSidebarVisible,
+    sidebarToggle,
+    filesToggleCommand: { title: filesHidden ? 'Show file list' : 'Hide file list', enabled: canToggleFiles, toggle: toggleFiles },
     focusSidebar,
     layout,
     revealPanes,
@@ -229,13 +270,19 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
         if (target.closest('main') && target.closest('[data-pane], [data-pane-owner], [data-search-pane]')) lastWorkFocus.current = target
       }}
     >
-      <Toolbar
-        r={r}
-        onSwitch={onSwitch}
-        layoutControls={{ layout, sidebarVisible, onSidebar: () => setSidebarVisible(!sidebarVisible), onToggleFocus: toggleFocus }}
-      />
+      <Toolbar r={r} onSwitch={onSwitch} layoutControls={{ layout, onToggleFocus: toggleFocus }} />
       <OutputDialog op={r.op} />
       <div className="app-body">
+        {layout === 'standard' && sidebarHidden && (
+          <SidebarRail
+            view={view}
+            setView={setView}
+            changeCount={changedFileCount(r.status)}
+            blameFile={blame?.file ?? null}
+            onExpand={() => setSidebarVisible(true)}
+            onEnterMain={focusMain}
+          />
+        )}
         <Split id="sidebar" label="Sidebar width" initial={260} min={180} max={520} collapsed={!sidebarVisible}>
           <Sidebar
             r={r}
@@ -245,13 +292,16 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
             onCompareBranch={compareBranch}
             blameFile={blame?.file ?? null}
             onCloseBlame={closeBlame}
+            headerAction={<PaneToggle pane="sidebar" collapsed={false} keys="Ctrl+[" onToggle={() => setSidebarVisible(false)} />}
           />
-          <main className="main">
+          <main className="main" onKeyDownCapture={onFilesKey}>
             <div className="view" hidden={view !== 'changes'}>
               <ChangesView
                 r={r}
                 onBackToSidebar={() => focusSidebar()}
                 focusCode={layout === 'code'}
+                filesHidden={filesCollapsed}
+                filesToggle={filesToggle}
                 onFileHistory={showFileHistory}
                 onBlame={showBlame}
               />
@@ -264,6 +314,8 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
                 onCompareBranch={compareBranch}
                 onSelectedChange={setSelectedCommit}
                 layout={layout}
+                filesHidden={filesCollapsed}
+                filesToggle={filesToggle}
                 onBlame={showBlame}
                 onOpenChanges={() => {
                   setView('changes')
@@ -303,8 +355,8 @@ interface CommandCtx {
   showFileHistory: (file: string) => void
   blame: BlameRequest | null
   showBlame: (file: string, rev: string | null) => void
-  sidebarHidden: boolean
-  setSidebarVisible: (visible: boolean) => void
+  sidebarToggle: { title: string; enabled: boolean; toggle: () => void }
+  filesToggleCommand: { title: string; enabled: boolean; toggle: () => void }
   focusSidebar: (search?: boolean) => void
   layout: WorkspaceLayout
   revealPanes: () => void
@@ -322,8 +374,8 @@ function buildCommands({
   showFileHistory,
   blame,
   showBlame,
-  sidebarHidden,
-  setSidebarVisible,
+  sidebarToggle,
+  filesToggleCommand,
   focusSidebar,
   layout,
   revealPanes,
@@ -470,7 +522,7 @@ function buildCommands({
       id: 'view-changes',
       title: 'Go to Changes',
       category: 'View',
-      keys: 'Ctrl+1',
+      keys: VIEW_KEYS.changes,
       run: () => {
         setView('changes')
         if (layout === 'code') focusLater('.changes-diff .diff')
@@ -481,7 +533,7 @@ function buildCommands({
       id: 'view-history',
       title: 'Go to History',
       category: 'View',
-      keys: 'Ctrl+2',
+      keys: VIEW_KEYS.history,
       run: () => {
         setView('history')
         focusLater(layout === 'code' ? '.details-diff .diff' : '.commit-list')
@@ -491,7 +543,7 @@ function buildCommands({
       id: 'view-blame',
       title: 'Go to Blame',
       category: 'View',
-      keys: 'Ctrl+3',
+      keys: VIEW_KEYS.blame,
       shortcutDisabledReason: blame ? undefined : 'Open a file blame first, from a file menu or Blame file…',
       run: () => {
         if (!blame) return toast.info('No blame is open. Use a file menu or Blame file…')
@@ -595,6 +647,14 @@ function buildCommands({
       run: toggleFocus
     },
     {
+      id: 'toggle-files-pane',
+      title: filesToggleCommand.title,
+      detail: 'F in focus mode',
+      category: 'View',
+      enabled: filesToggleCommand.enabled,
+      run: filesToggleCommand.toggle
+    },
+    {
       id: 'toggle-changes-tree',
       title: getSettings().changesTree ? 'Show changed files as a list' : 'Show changed files as a tree',
       detail: 'V in a changed-file list or diff',
@@ -611,10 +671,11 @@ function buildCommands({
     },
     {
       id: 'toggle-sidebar',
-      revealsPanes: true,
-      title: sidebarHidden ? 'Show sidebar' : 'Hide sidebar',
+      title: sidebarToggle.title,
       category: 'View',
-      run: () => setSidebarVisible(sidebarHidden)
+      keys: 'Ctrl+[',
+      enabled: sidebarToggle.enabled,
+      run: sidebarToggle.toggle
     },
     {
       id: 'copy-diff-patch',

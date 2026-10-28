@@ -8,6 +8,7 @@ import { WhitespaceFilterIndicator } from './WhitespaceFilterIndicator'
 import { DiffNavigationGroup } from './DiffNavigationGroup'
 
 interface Props {
+  leading?: ReactNode
   title: string
   metadata?: ReactNode
   files?: { index: number; count: number; onSelect: (index: number) => void }
@@ -26,6 +27,7 @@ interface Props {
 
 /** File title with the file, change, context and layout controls. */
 export function DiffToolbar({
+  leading,
   title,
   metadata,
   files,
@@ -46,6 +48,7 @@ export function DiffToolbar({
   const onlyChange = changeCount === 1
   return (
     <div className="diff-title">
+      {leading}
       <Tip label={title} focusable={false}>
         <span className="diff-filename">{title}</span>
       </Tip>

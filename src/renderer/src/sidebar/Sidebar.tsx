@@ -1,7 +1,10 @@
-import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Button, Tree, TreeItem, TreeItemContent, Virtualizer, type Key } from 'react-aria-components'
 import type { RepoCtx } from '../useRepo'
 import type { Branch, Stash } from '../../../shared/types'
+import { changedFileCount } from '../lib/changeCount'
+import { VIEW_KEYS } from '../lib/viewShortcuts'
+import { displayKeys } from '../commands'
 import type { View } from '../components/RepoView'
 import { Icon, type IconName } from '../components/Icon'
 import { Tip } from '../components/Tip'
@@ -40,6 +43,8 @@ interface TreeNode {
   label: string
   icon?: IconName
   title?: string
+  /** Shortcut shown at the row's end while it is hovered or keyboard-focused. */
+  keys?: string
   count?: number
   navActive?: boolean
   current?: boolean
@@ -97,6 +102,8 @@ interface Props {
   blameFile: string | null
   /** Closes the open Blame view without leaving the view that is showing. */
   onCloseBlame: () => void
+  /** Control shown at the end of the header row, e.g. the button that hides the sidebar. */
+  headerAction?: ReactNode
 }
 
 /**
@@ -104,7 +111,7 @@ interface Props {
  * expand/collapse, Enter or click activates, double-click checks out, Shift+F10 / right-click
  * opens the item's menu, and typing a letter starts filtering.
  */
-export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blameFile, onCloseBlame }: Props) {
+export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blameFile, onCloseBlame, headerAction }: Props) {
   const [filter, setFilter] = useState('')
   const branchOptions = r.branchOptions
   const branchOptionsRef = useRef(branchOptions)
@@ -152,7 +159,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
   const visited = useRef(false)
 
   const st = r.status
-  const changeCount = st ? new Set([...st.staged, ...st.unstaged, ...st.conflicted].map((x) => x.path)).size : 0
+  const changeCount = changedFileCount(st)
 
   // Rows are built once and reused (see renderNode), so their actions read the latest props here.
   const live = useRef({
@@ -223,7 +230,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
               kind: 'item',
               current: true,
               label: st.branch ?? (st.head ? `Detached HEAD · ${st.head.slice(0, 8)}` : 'No commits yet'),
-              title: st.head ? 'Current checkout — Enter to view commit' : 'No commits yet — Enter to view changes',
+              title: st.head ? 'Current checkout: Enter to view commit' : 'No commits yet: Enter to view changes',
               activate: () => {
                 const status = live.current.r.status
                 if (status?.head) live.current.onFocusCommit(status.head)
@@ -247,7 +254,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       .filter((b) => match(b.name))
       .map((b) => ({
         ...localNode(b, `recent:${b.fullName}`),
-        title: `${b.subject} — Enter to view, double-click to check out`
+        title: `${b.subject}: Enter to view, double-click to check out`
       }))
     const quick: TreeNode[] = []
     const matchingCurrent = current.filter((n) => match(n.label))
@@ -311,7 +318,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
         kind: 'item',
         label: s.message,
         icon: 'stash',
-        title: `${s.ref} — Enter for actions, double-click to apply`,
+        title: `${s.ref}: Enter for actions, double-click to apply`,
         activate: () => stashMenu(live.current.r, s),
         secondary: () => act.stashApply(live.current.r, s.ref),
         menu: () => stashMenu(live.current.r, s)
@@ -343,6 +350,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       kind: 'nav',
       label: 'Changes',
       icon: 'changes',
+      keys: VIEW_KEYS.changes,
       count: changeCount,
       navActive: view === 'changes',
       activate: () => live.current.setView('changes')
@@ -352,6 +360,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       kind: 'nav',
       label: 'History',
       icon: 'history',
+      keys: VIEW_KEYS.history,
       navActive: view === 'history',
       activate: () => live.current.setView('history')
     },
@@ -362,6 +371,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
             kind: 'nav' as const,
             label: 'Blame',
             icon: 'blame' as const,
+            keys: VIEW_KEYS.blame,
             title: blameFile,
             navActive: view === 'blame',
             activate: () => live.current.setView('blame'),
@@ -520,6 +530,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
             <Tip label={n.title} focusable={false}>
               <span className="tree-label">{n.label}</span>
             </Tip>
+            {n.keys && <kbd className="row-keys">{displayKeys(n.keys)}</kbd>}
             {n.badges?.map((b) => (
               <span key={b.text} className={`pill ${b.warn ? 'warn' : ''}`}>
                 {b.text}
@@ -623,51 +634,54 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-filter">
-        <Icon name="search" size={14} />
-        <PaneSearch
-          ref={filterRef}
-          paneId="sidebar"
-          placeholder="Filter branches…  (Ctrl+L)"
-          aria-label="Filter branches"
-          aria-describedby="branch-search-feedback"
-          value={filter}
-          spellCheck={false}
-          onChange={(e) => {
-            setFilter(e.target.value)
-            setSearchMatch(null)
-          }}
-          onFocus={(e) => {
-            setSearchFocused(true)
-            const key = (e.relatedTarget as HTMLElement | null)?.closest<HTMLElement>('[role=row]')?.dataset.key
-            if (key && matches.some((n) => n.key === key)) setSearchMatch(key)
-          }}
-          onBlur={() => setSearchFocused(false)}
-          onFind={findBranch}
-          onLeave={leaveSearch}
-        />
-        <SearchFeedback
-          id="branch-search-feedback"
-          query={filter}
-          count={matches.length}
-          position={matchIndex}
-          boundary={searchMatches.boundary}
-          label={searchFocused && matchIndex >= 0 ? matches[matchIndex].label : undefined}
-        />
-        {filter && (
-          <Tip label="Clear filter">
-            <button
-              className="icon-btn"
-              tabIndex={-1}
-              onClick={() => {
-                setFilter('')
-                setSearchMatch(null)
-              }}
-            >
-              <Icon name="x" size={12} />
-            </button>
-          </Tip>
-        )}
+      <div className="sidebar-head">
+        <div className="sidebar-filter">
+          <Icon name="search" size={14} />
+          <PaneSearch
+            ref={filterRef}
+            paneId="sidebar"
+            placeholder="Filter branches…  (Ctrl+L)"
+            aria-label="Filter branches"
+            aria-describedby="branch-search-feedback"
+            value={filter}
+            spellCheck={false}
+            onChange={(e) => {
+              setFilter(e.target.value)
+              setSearchMatch(null)
+            }}
+            onFocus={(e) => {
+              setSearchFocused(true)
+              const key = (e.relatedTarget as HTMLElement | null)?.closest<HTMLElement>('[role=row]')?.dataset.key
+              if (key && matches.some((n) => n.key === key)) setSearchMatch(key)
+            }}
+            onBlur={() => setSearchFocused(false)}
+            onFind={findBranch}
+            onLeave={leaveSearch}
+          />
+          <SearchFeedback
+            id="branch-search-feedback"
+            query={filter}
+            count={matches.length}
+            position={matchIndex}
+            boundary={searchMatches.boundary}
+            label={searchFocused && matchIndex >= 0 ? matches[matchIndex].label : undefined}
+          />
+          {filter && (
+            <Tip label="Clear filter">
+              <button
+                className="icon-btn"
+                tabIndex={-1}
+                onClick={() => {
+                  setFilter('')
+                  setSearchMatch(null)
+                }}
+              >
+                <Icon name="x" size={12} />
+              </button>
+            </Tip>
+          )}
+        </div>
+        {headerAction}
       </div>
       <PaneFrame
         className="tree-wrap"
@@ -675,7 +689,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
         onKeyDownCapture={onKeyDownCapture}
         onFocus={(e) => {
           // A recent row disappears when it becomes current. React Aria may restore focus to
-          // A recent row disappears when it becomes current. React Aria may restore focus to when it becomes current. React Aria may restore focus to          // the tree after rebuilding its collection; recover the current row cursor then.
+          // the tree after rebuilding its collection; recover the current row cursor then.
           if (e.target === treeRef.current)
             requestAnimationFrame(() => {
               if (document.activeElement === treeRef.current)

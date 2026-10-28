@@ -2,7 +2,7 @@
 export interface DiffActions {
   /** Stage (forward) or Unstage (reverse). Runs on Enter. */
   primary: { label: string; reverse: boolean; run: (patch: string) => void }
-  /** Discard from the working tree — always a reverse patch. Runs on Delete. */
+  /** Discard from the working tree, always a reverse patch. Runs on Delete. */
   discard?: { label: string; run: (patch: string) => void }
 }
 

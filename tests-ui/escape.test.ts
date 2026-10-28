@@ -14,6 +14,7 @@ async function compareCurrentBranchWithTarget(page: Page) {
 
 test('Escape dismisses diff find and selection before restoring code, then keeps pane focus', async ({ open, small }) => {
   const page = await open(small)
+  const layout = page.locator('[data-workspace-layout]')
   const file = page.getByRole('row', { name: /app\.ts/ })
   await file.click()
   const diff = page.locator('.changes-diff .diff')
@@ -26,12 +27,12 @@ test('Escape dismisses diff find and selection before restoring code, then keeps
   await page.keyboard.press('Escape')
   await expect(input).toHaveCount(0)
   await expect(diff.locator('.picked')).toHaveCount(1)
-  await expect(file).toBeHidden()
+  await expect(layout).toHaveAttribute('data-workspace-layout', 'code')
   await page.keyboard.press('Escape')
   await expect(diff.locator('.picked')).toHaveCount(0)
-  await expect(file).toBeHidden()
+  await expect(layout).toHaveAttribute('data-workspace-layout', 'code')
   await page.keyboard.press('Escape')
-  await expect(file).toBeVisible()
+  await expect(layout).toHaveAttribute('data-workspace-layout', 'standard')
   await diff.focus()
   await page.keyboard.press('Escape')
   await page.keyboard.press('Escape')

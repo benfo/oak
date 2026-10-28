@@ -62,12 +62,16 @@ export function ChangesView({
   r,
   onBackToSidebar,
   focusCode,
+  filesHidden,
+  filesToggle,
   onFileHistory,
   onBlame
 }: {
   r: RepoCtx
   onBackToSidebar: () => void
   focusCode: boolean
+  filesHidden: boolean
+  filesToggle?: ReactNode
   onFileHistory: (path: string) => void
   onBlame: (path: string, rev: string | null) => void
 }) {
@@ -391,7 +395,7 @@ export function ChangesView({
             focusPane('.changes-diff .diff')
           }
         : undefined,
-      back: onBackToSidebar,
+      back: focusCode ? undefined : onBackToSidebar,
       discard: section === 'unstaged' && files.length ? () => discard(files) : undefined,
       menu: files.length ? () => fileMenu(section, files) : undefined
     })
@@ -447,7 +451,7 @@ export function ChangesView({
   const readOnlyReason = (d: FileDiff) => {
     if (!lead || lead.kind === 'conflicted' || !(d.isDeleted || d.isRename)) return null
     const staged = lead.kind === 'staged'
-    return `${d.isDeleted ? 'Deleted' : 'Renamed'} file — use ${staged ? 'Unstage' : 'Stage or Discard'} on the file in the list. A ${d.isDeleted ? 'deletion' : 'rename'} can't be ${staged ? 'unstaged' : 'staged'} in parts.`
+    return `${d.isDeleted ? 'Deleted' : 'Renamed'} file. Use ${staged ? 'Unstage' : 'Stage or Discard'} on the file in the list. A ${d.isDeleted ? 'deletion' : 'rename'} can't be ${staged ? 'unstaged' : 'staged'} in parts.`
   }
 
   const filesRef = useRef<HTMLDivElement>(null)
@@ -519,7 +523,7 @@ export function ChangesView({
   )
 
   return (
-    <Split id="changes" label="Changed files width" initial={360} min={260} max={800} collapsed={focusCode}>
+    <Split id="changes" label="Changed files width" initial={360} min={260} max={800} collapsed={filesHidden}>
       <div className="changes-left">
         <OperationBanner r={r} />
         <div className="changes-files" ref={filesRef}>
@@ -623,13 +627,14 @@ export function ChangesView({
           actions={diffActions}
           readOnlyReason={readOnlyReason}
           onBack={
-            focusCode
+            filesHidden
               ? undefined
               : () => {
                   focusFiles()
                 }
           }
-          onSwitchView={focusCode ? undefined : toggleChangesTree}
+          onSwitchView={filesHidden ? undefined : toggleChangesTree}
+          leading={filesToggle}
           files={
             lead
               ? {
@@ -944,7 +949,7 @@ function OperationBanner({ r }: { r: RepoCtx }) {
       <Icon name="warning" />
       <div className="op-text">
         <strong>{STATE_TEXT[st.state]}</strong>
-        <span>{conflicts ? `${conflicts} conflicted file(s) — resolve, then continue.` : 'All conflicts resolved.'}</span>
+        <span>{conflicts ? `${conflicts} conflicted file(s): resolve, then continue.` : 'All conflicts resolved.'}</span>
       </div>
       <div className="op-actions">
         <button

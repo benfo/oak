@@ -10,6 +10,13 @@ export const shortcutNavigationHelp = [
   ['History: open commit files or the selected file diff', '→ / Enter', 'History', ['ArrowRight', 'Enter']],
   ['History changed files: return to the commit list from the top level', '←', 'History', ['ArrowLeft']],
   ['Dismiss a tooltip, menu, find bar or line selection; then restore expanded code', 'Esc', 'Navigation', ['Escape']],
+  ['Expanded code: show or hide the file list beside the diff', 'F', 'View', ['f']],
+  [
+    'Collapsed sidebar rail: move between views; → enters the main area (← from the file list lands here)',
+    '↑ / ↓ / Home / End / →',
+    'Navigation',
+    ['ArrowUp', 'ArrowDown', 'Home', 'End', 'ArrowRight']
+  ],
   ['Sidebar and All files tree: expand / collapse folders', '→ / ←', 'Navigation', ['ArrowRight', 'ArrowLeft']],
   ['Search field: next / previous match', 'Enter / Shift+Enter', 'Navigation', ['Enter', 'Shift+Enter']],
   ['List search field: return to the list, keeping the query', 'Esc / Tab', 'Navigation', ['Escape', 'Tab']],

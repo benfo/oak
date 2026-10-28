@@ -85,6 +85,16 @@
 .tree-row.nav .tree-close[data-focus-visible] {
   opacity: 1;
 }
+/* Like the close button, it always takes its room and is only drawn for a hovered or keyboard-focused row. */
+.tree-row.nav .row-keys {
+  flex: none;
+  opacity: 0;
+  color: var(--subtle-foreground);
+}
+.tree-row.nav[data-hovered] .row-keys,
+.tree-row.nav[data-focus-visible] .row-keys {
+  opacity: 1;
+}
 .tree-row.current {
   color: var(--foreground);
   font-weight: var(--weight-semibold);

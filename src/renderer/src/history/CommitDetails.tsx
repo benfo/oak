@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useVirtualRows } from '../lib/useVirtualRows'
 import { Button, ProgressBar } from 'react-aria-components'
 import { api, errorMessage } from '../api'
@@ -50,6 +50,8 @@ export function CommitDetails({
   onClearComparison,
   onSelectCommit,
   focusCode,
+  filesHidden,
+  filesToggle,
   contentRevision,
   onOpenChanges,
   onFileHistory,
@@ -68,6 +70,8 @@ export function CommitDetails({
   onClearComparison: () => void
   onSelectCommit: (h: string) => void
   focusCode: boolean
+  filesHidden: boolean
+  filesToggle?: ReactNode
   contentRevision: number
   onOpenChanges: () => void
   onFileHistory: (path: string) => void
@@ -445,7 +449,7 @@ export function CommitDetails({
 
   return (
     <div className="commit-details-view">
-      <Split id="commit-details" label="Commit files width" initial={420} min={260} max={900} collapsed={focusCode}>
+      <Split id="commit-details" label="Commit files width" initial={420} min={260} max={900} collapsed={filesHidden}>
         <div className="commit-info" aria-busy={pending}>
           <div
             className="commit-meta"
@@ -706,13 +710,14 @@ export function CommitDetails({
                         : ''
             }
             onBack={
-              focusCode
+              filesHidden
                 ? undefined
                 : () => {
                     focusPane('.details-files')
                   }
             }
-            onSwitchView={focusCode || allMode ? undefined : toggleChangesTree}
+            onSwitchView={filesHidden || allMode ? undefined : toggleChangesTree}
+            leading={filesToggle}
             plain={showContent}
             files={
               !allMode && detailsCurrent && details.files.length
