@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef,
 import { Button, Tree, TreeItem, TreeItemContent, Virtualizer, type Key } from 'react-aria-components'
 import type { RepoCtx } from '../useRepo'
 import type { Branch, Stash } from '../../../shared/types'
+import { changedFileCount } from '../lib/changeCount'
 import type { View } from '../components/RepoView'
 import { Icon, type IconName } from '../components/Icon'
 import { Tip } from '../components/Tip'
@@ -154,7 +155,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
   const visited = useRef(false)
 
   const st = r.status
-  const changeCount = st ? new Set([...st.staged, ...st.unstaged, ...st.conflicted].map((x) => x.path)).size : 0
+  const changeCount = changedFileCount(st)
 
   // Rows are built once and reused (see renderNode), so their actions read the latest props here.
   const live = useRef({

@@ -22,6 +22,8 @@ import { RESIZE_KEYS, resizeFocusedPane } from '../lib/paneResize'
 import { Toolbar } from './Toolbar'
 import { Sidebar } from '../sidebar/Sidebar'
 import { PaneToggle } from './PaneToggle'
+import { SidebarRail } from '../sidebar/SidebarRail'
+import { changedFileCount } from '../lib/changeCount'
 import { publishActiveRepo } from '../sidebar/activeRepo'
 import { HistoryView, type ComparisonRequest } from '../history/HistoryView'
 import { ChangesView } from '../changes/ChangesView'
@@ -235,13 +237,18 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
         if (target.closest('main') && target.closest('[data-pane], [data-pane-owner], [data-search-pane]')) lastWorkFocus.current = target
       }}
     >
-      <Toolbar
-        r={r}
-        onSwitch={onSwitch}
-        layoutControls={{ layout, sidebarVisible, onSidebar: () => setSidebarVisible(!sidebarVisible), onToggleFocus: toggleFocus }}
-      />
+      <Toolbar r={r} onSwitch={onSwitch} layoutControls={{ layout, onToggleFocus: toggleFocus }} />
       <OutputDialog op={r.op} />
       <div className="app-body">
+        {layout === 'standard' && sidebarHidden && (
+          <SidebarRail
+            view={view}
+            setView={setView}
+            changeCount={changedFileCount(r.status)}
+            blameFile={blame?.file ?? null}
+            onExpand={() => setSidebarVisible(true)}
+          />
+        )}
         <Split id="sidebar" label="Sidebar width" initial={260} min={180} max={520} collapsed={!sidebarVisible}>
           <Sidebar
             r={r}

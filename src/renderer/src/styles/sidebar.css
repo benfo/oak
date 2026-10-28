@@ -74,3 +74,30 @@
   box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
+
+/* The collapsed sidebar: a narrow strip of view icons on the window chrome, left of the main panel. */
+.sidebar-rail {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  width: 40px;
+  padding: var(--space-1) 0;
+}
+.rail-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+}
+.rail-btn[aria-current] {
+  background: var(--hover);
+  color: var(--foreground);
+}
+.rail-count {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  padding: 0 var(--space-1);
+  line-height: 14px;
+}

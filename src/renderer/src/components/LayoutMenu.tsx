@@ -5,8 +5,6 @@ export type WorkspaceLayout = 'standard' | 'code'
 
 export interface LayoutControls {
   layout: WorkspaceLayout
-  sidebarVisible: boolean
-  onSidebar: () => void
   onToggleFocus: () => void
 }
 
