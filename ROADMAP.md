@@ -129,7 +129,7 @@ Ideas only. None is agreed, and each needs a concrete workflow and a discussion 
 **Git features**
 
 - Interactive rebase (reorder, squash, edit), three-way merge editor, Git command log panel.
-- File type icons in file lists (VS Code style icon pack) to help spot what kind of file a row is. Small and separate; needs a licence-compatible icon set.
+- User-installable file icon packs, like custom themes. Built-in packs exist (None and a Material Icon Theme subset); user packs would be folders in an `icon-packs` folder under the app data folder, each with a `pack.json` mapping (names, extensions, folders, light variants) and SVGs. Zip import ("Import icon pack…") would validate and extract into that folder. Needs SVG sanitising (render as `<img>` only), zip-slip and size limits, and a decision on depending on the `material-icon-theme` npm package instead of vendoring its SVGs.
 - Skip for rebase, cherry-pick and revert conflicts (`git <op> --skip`). It was prototyped and removed as niche and destructive; revisit if people ask, with a confirm naming the dropped commit.
 - Conflict safeguards: ours/theirs buttons labelled with branch names, a confirm when taking one side drops the other's changes, an Undo toast. Revisit if users report lost work.
 - Compare the working tree against any selected commit.
