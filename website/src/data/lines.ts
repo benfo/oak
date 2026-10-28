@@ -196,7 +196,6 @@ export const planned: { name: string; text: string }[] = [
   { name: 'Smoother conflicts', text: 'Say which side is ours and theirs, handle modify and delete conflicts, and bring Pull and Rebase conflicts into the same flow.' },
   { name: 'Interactive rebase', text: 'Reorder, squash, edit and drop commits from the history graph.' },
   { name: 'Pull request review', text: "Fetch a pull request's branches and open the comparison in Oak. Comments and approvals would stay on the provider's website at first." },
-  { name: 'Diff readability', text: 'Hide whitespace and line-ending differences, and fold long unchanged regions so substantive edits stand out.' },
   { name: 'Open and preview more files', text: 'Preview images, PDFs and other safe files, and open anything else in its default app or show it in its folder.' },
   { name: 'Git command log', text: 'A list of every command Oak ran, with its output.' },
   { name: 'Signed installer', text: 'Code-sign the Windows installer so it no longer needs unblocking.' },
