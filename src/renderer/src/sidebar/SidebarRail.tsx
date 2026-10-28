@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Toolbar } from 'react-aria-components'
-import { toolbarHomeEnd, vimArrow } from '../lib/navigation'
+import { createVimMotions, toolbarHomeEnd, vimArrow } from '../lib/navigation'
 import { useSettings } from '../settings'
 import type { View } from '../components/RepoView'
 import { VIEW_KEYS } from '../lib/viewShortcuts'
@@ -28,12 +28,24 @@ export function SidebarRail({ view, setView, changeCount, blameFile, onExpand, o
   ]
   const ref = useRef<HTMLDivElement>(null)
   const { vimNavigation } = useSettings()
+  const motions = useMemo(createVimMotions, [])
   useEffect(() => toolbarHomeEnd(ref.current), [])
   useEffect(() => {
     const rail = ref.current
     if (!rail) return
     const onKey = (e: KeyboardEvent) => {
-      // Vim keys become the arrow they stand for, so the toolbar and the arrow handling below see one key.
+      // Vim keys become the key they stand for (j/k/h/l are arrows, gg and G are Home and End), so the
+      // toolbar and the handling below see one key.
+      const motion = vimNavigation && !e.defaultPrevented ? motions.read(e, e.target as Element) : undefined
+      if (motion) {
+        e.preventDefault()
+        e.stopPropagation()
+        if (motion !== 'prefix')
+          e.target?.dispatchEvent(
+            new KeyboardEvent('keydown', { key: motion, code: motion, bubbles: true, cancelable: true, repeat: e.repeat })
+          )
+        return
+      }
       const arrow = vimNavigation && !e.defaultPrevented ? vimArrow(e) : undefined
       if (arrow) {
         e.preventDefault()
@@ -48,8 +60,12 @@ export function SidebarRail({ view, setView, changeCount, blameFile, onExpand, o
       onEnterMain()
     }
     rail.addEventListener('keydown', onKey)
-    return () => rail.removeEventListener('keydown', onKey)
-  }, [onEnterMain, vimNavigation])
+    rail.addEventListener('focusout', motions.reset)
+    return () => {
+      rail.removeEventListener('keydown', onKey)
+      rail.removeEventListener('focusout', motions.reset)
+    }
+  }, [onEnterMain, vimNavigation, motions])
   return (
     // One Tab stop and a pane for F6, like the top toolbar; arrows move between the buttons.
     <Toolbar ref={ref} className="sidebar-rail" aria-label="Views" orientation="vertical" data-pane="rail">
