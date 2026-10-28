@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import { test } from 'node:test'
 import { MATERIAL_PACK } from '../src/renderer/src/fileIcons/materialPack.ts'
 import { lightVariant, resolveFileIcon } from '../src/renderer/src/fileIcons/pack.ts'
+import { SIMPLE_ICON_IDS, SIMPLE_PACK } from '../src/renderer/src/fileIcons/simplePack.ts'
 
 const icon = (path: string) => resolveFileIcon(MATERIAL_PACK, path, 'file')
 
@@ -51,6 +52,26 @@ test('folders use the open or closed icon whatever their name', () => {
 test('light variants apply only to icons that declare one', () => {
   assert.equal(lightVariant(MATERIAL_PACK, 'toml'), 'toml_light')
   assert.equal(lightVariant(MATERIAL_PACK, 'json'), 'json')
+})
+
+test('the Simple pack groups files by kind and only names glyphs it has', () => {
+  const simple = (path: string) => resolveFileIcon(SIMPLE_PACK, path, 'file')
+  assert.equal(simple('App.tsx'), 'code')
+  assert.equal(simple('vite.config.ts'), 'config')
+  assert.equal(simple('package.json'), 'package')
+  assert.equal(simple('.env.production'), 'key')
+  assert.equal(simple('notes.zzz'), 'file')
+  assert.equal(resolveFileIcon(SIMPLE_PACK, 'src', 'folder', true), 'folder-open')
+  const known = new Set<string>(SIMPLE_ICON_IDS)
+  const named = [
+    SIMPLE_PACK.file,
+    SIMPLE_PACK.folder,
+    SIMPLE_PACK.folderOpen,
+    ...Object.values(SIMPLE_PACK.filenames),
+    ...Object.values(SIMPLE_PACK.prefixes ?? {}),
+    ...Object.values(SIMPLE_PACK.extensions)
+  ]
+  for (const id of named) assert.ok(known.has(id), `${id} is not a Simple glyph`)
 })
 
 test('every icon the pack names is vendored', () => {
