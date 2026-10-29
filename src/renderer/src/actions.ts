@@ -3,6 +3,7 @@ import { api, errorMessage } from './api'
 import type { RepoCtx } from './useRepo'
 import { confirm, prompt, toast } from './ui'
 import type { Branch, CheckoutKind, Commit, PullMode, ResetMode } from '../../shared/types'
+import { WIP_MESSAGE, WIP_OPTIONS } from '../../shared/commitOptions'
 
 const short = (h: string) => h.slice(0, 8)
 
@@ -108,6 +109,24 @@ export async function revert(r: RepoCtx, c: Commit) {
     await runOp(r, 'Reverting', () => api.revert(r.path, c.hash, c.parents.length > 1), `Reverted ${short(c.hash)}`)
 }
 
+/** A save point instead of a stash: stages everything and commits it as "WIP" without hooks or signing, optionally pushing it as a backup. */
+export async function commitWip(r: RepoCtx, andPush = false) {
+  try {
+    await r.withBusy('Committing', async () => {
+      await api.stageAll(r.path)
+      await api.commit(r.path, `${WIP_MESSAGE}\n`, false, WIP_OPTIONS)
+    })
+  } catch (e) {
+    return toast.error(errorMessage(e))
+  }
+  if (andPush) await push(r, true)
+  else toast.success('Committed as WIP')
+}
+
+export async function undoWipCommit(r: RepoCtx) {
+  await runOp(r, 'Undoing WIP commit', () => api.undoWipCommit(r.path), 'WIP commit undone, changes are back in the working tree')
+}
+
 const RESET_TEXT: Record<ResetMode, string> = {
   soft: 'Keeps all changes staged.',
   mixed: 'Keeps all changes in the working tree, unstaged.',
@@ -172,9 +191,10 @@ export async function pull(r: RepoCtx, mode: PullMode = getSettings().pullMode) 
   }
 }
 
-export async function push(r: RepoCtx) {
+/** `noVerify` skips the pre-push hook, as for a commit that skipped its own hooks. */
+export async function push(r: RepoCtx, noVerify = false) {
   try {
-    const prUrl = await r.withBusy('Pushing', () => api.push(r.path, false))
+    const prUrl = await r.withBusy('Pushing', () => api.push(r.path, false, noVerify))
     if (prUrl && getSettings().pullRequestPrompt) {
       toast.withActions('Pushed', [
         { label: 'Open pull request', run: () => void api.openUrl(prUrl) },
@@ -197,7 +217,7 @@ export async function push(r: RepoCtx) {
       ok: 'Force push',
       danger: true
     })
-    if (force) await r.run('Force pushing', () => api.push(r.path, true))
+    if (force) await r.run('Force pushing', () => api.push(r.path, true, noVerify))
   }
 }
 

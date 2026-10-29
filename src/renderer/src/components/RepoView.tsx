@@ -385,6 +385,8 @@ function buildCommands({
   toggleFocus
 }: CommandCtx): Command[] {
   const st = r.status
+  // A WIP commit takes everything, so a merge in progress or conflicts must be settled first.
+  const canCommitWip = !!st && st.state === 'clean' && st.staged.length + st.unstaged.length > 0
   const hasRemotes = r.branches.some((b) => b.type === 'remote')
   const currentBranch = r.branches.find((b) => b.type === 'local' && b.current) ?? null
   const hasOtherBranch = r.branches.some((b) => b.type !== 'tag' && !b.current)
@@ -827,6 +829,33 @@ function buildCommands({
           placeholder: 'Apply which stash?',
           items: r.stashes.map((s) => ({ id: s.ref, label: s.message, detail: s.ref, run: () => act.stashApply(r, s.ref) }))
         })
+    },
+    {
+      id: 'commit-wip',
+      repositoryAction: true,
+      requiresIdle: true,
+      title: 'WIP commit (skip hooks)',
+      category: 'Changes',
+      enabled: canCommitWip,
+      run: () => act.commitWip(r)
+    },
+    {
+      id: 'commit-wip-push',
+      repositoryAction: true,
+      requiresIdle: true,
+      title: 'WIP commit and push (backup)',
+      category: 'Changes',
+      enabled: canCommitWip,
+      run: () => act.commitWip(r, true)
+    },
+    {
+      id: 'undo-wip',
+      repositoryAction: true,
+      requiresIdle: true,
+      title: 'Undo WIP commit (keep changes)',
+      category: 'Changes',
+      enabled: !!st?.head,
+      run: () => act.undoWipCommit(r)
     },
     {
       id: 'abort-op',

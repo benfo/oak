@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, errorMessage } from '../api'
+import { api, errorMessage, showMenu } from '../api'
 import type { RepoCtx } from '../useRepo'
 import { confirmWithChoices, toast } from '../ui'
 import * as act from '../actions'
@@ -11,6 +11,7 @@ import { Tip } from '../components/Tip'
 import { getSettings, updateSettings, useSettings } from '../settings'
 import { handleShortcutBindings } from '../lib/shortcuts'
 import { shortcutPlatform } from '../lib/useShortcuts'
+import { activeOptionLabels, chooseCommitOption, commitOptionsMenu, freshCommitOptions } from './commitOptionsMenu'
 
 const SLOW_AFTER_MS = 300
 
@@ -19,6 +20,8 @@ export function CommitBox({ r }: { r: RepoCtx }) {
   const draftKey = `draft:${r.path}`
   const [message, setMessage] = useState(() => sessionStorage.getItem(draftKey) ?? '')
   const [amend, setAmend] = useState(false)
+  // One-shot: they reset after each commit so skipping hooks is never left on by accident.
+  const [options, setOptions] = useState(() => freshCommitOptions(getSettings().signoff))
   const beforeAmend = useRef('')
   const prefilled = useRef<string | null>(null)
   const [committing, setCommitting] = useState(false)
@@ -72,11 +75,12 @@ export function CommitBox({ r }: { r: RepoCtx }) {
   const merging = st?.state === 'merging'
   const conflicts = !!st && st.conflicted.length > 0
   const hasUnstaged = !!st && st.unstaged.length > 0
-  const canCommit = !!message.trim() && !conflicts && (hasStaged || hasUnstaged || amend || merging) && !r.busy
+  const hasChanges = hasStaged || hasUnstaged || amend || merging || options.allowEmpty
+  const canCommit = !!message.trim() && !conflicts && hasChanges && !r.busy
   // Disabled buttons can't show tooltips, so explain in the box why committing isn't possible yet.
   const blocker = conflicts
     ? 'Resolve conflicts before committing.'
-    : !(hasStaged || hasUnstaged || amend || merging)
+    : !hasChanges
       ? 'No changes to commit.'
       : !message.trim()
         ? 'Write a commit message.'
@@ -84,7 +88,7 @@ export function CommitBox({ r }: { r: RepoCtx }) {
 
   // With nothing staged, Commit offers to stage the working changes first. Returns false when cancelled.
   const stageIfNeeded = async () => {
-    if (hasStaged || amend || merging || !st) return true
+    if (hasStaged || amend || merging || options.allowEmpty || !st) return true
     const tracked = st.unstaged.filter((f) => f.status !== '?').map((f) => f.path)
     const untracked = st.unstaged.filter((f) => f.status === '?').map((f) => f.path)
     const onlyNew = tracked.length === 0
@@ -128,7 +132,7 @@ export function CommitBox({ r }: { r: RepoCtx }) {
     setCommitting(true)
     const slowTimer = setTimeout(() => setSlow(true), SLOW_AFTER_MS)
     try {
-      await r.withBusy(amend ? 'Amending' : 'Committing', () => api.commit(r.path, message.trim() + '\n', amend, getSettings().signoff))
+      await r.withBusy(amend ? 'Amending' : 'Committing', () => api.commit(r.path, message.trim() + '\n', amend, options))
     } catch (e) {
       // Keep the message; the status line shows the failure, with the full output under Details.
       setFailure(errorMessage(e))
@@ -138,13 +142,20 @@ export function CommitBox({ r }: { r: RepoCtx }) {
       setSlow(false)
       setCommitting(false)
     }
+    const skippedHooks = options.noVerify
     setMessage('')
     setAmend(false)
+    setOptions(freshCommitOptions(getSettings().signoff))
     setDone(`Committed “${subjectLine}”`)
-    if (andPush) await act.push(r)
+    if (andPush) await act.push(r, skippedHooks)
   }
 
   const subject = message.split('\n')[0]
+  const activeOptions = activeOptionLabels(options, getSettings().signoff)
+  const chooseOptions = async (anchor: Element) => {
+    const id = await showMenu(commitOptionsMenu(options), anchor)
+    if (id) setOptions((o) => chooseCommitOption(o, id))
+  }
   const head = !st?.head
 
   return (
@@ -155,7 +166,7 @@ export function CommitBox({ r }: { r: RepoCtx }) {
         value={message}
         readOnly={committing}
         aria-busy={committing}
-        placeholder={hasStaged || hasUnstaged || amend || merging ? 'Commit message (Ctrl+Enter to commit)' : 'No changes to commit'}
+        placeholder={hasChanges ? 'Commit message (Ctrl+Enter to commit)' : 'No changes to commit'}
         spellCheck
         onChange={(e) => {
           setMessage(e.target.value)
@@ -247,6 +258,18 @@ export function CommitBox({ r }: { r: RepoCtx }) {
             Amend
           </label>
         </Tip>
+        <Tip label="Commit options" focusable={false}>
+          <button
+            className="icon-btn"
+            aria-label="Commit options"
+            aria-haspopup="menu"
+            disabled={committing}
+            onClick={(e) => void chooseOptions(e.currentTarget)}
+          >
+            <Icon name="options" size={14} />
+          </button>
+        </Tip>
+        {activeOptions.length > 0 && <span className="commit-option-chip">{activeOptions.join(' · ')}</span>}
         <Tip
           label={subjectLimit ? `Subject line length (guide: ${subjectLimit}, change in Preferences)` : 'Subject line length'}
           focusable={false}

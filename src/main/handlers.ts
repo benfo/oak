@@ -5,6 +5,7 @@ import path from 'path'
 import { getGitBinary, git, outputSink, setGitBinary } from './git'
 import { pullRequestUrlFromOutput, type RemotePageTarget } from '../shared/remote'
 import { defaultRemote, pullRequestPage, remotePage, unpushedCommits } from './remote'
+import { isReachable } from './reachable'
 import { homedir } from 'os'
 import { addRecent, listRecent, removeRecent } from './recent'
 import { listThemes, setWindowTheme, themesDir, type WindowTheme } from './windowTheme'
@@ -15,6 +16,7 @@ import { splitFileLogChunk } from '../shared/fileLog'
 import { blameArgs, mapLineToOlder, parseBlame, type BlameResult } from '../shared/blame'
 import { configFilePath, findExecutables, openConfigFile } from './gitConfigFiles'
 import { openInEditor, type EditorChoice } from './editor'
+import { commitFlags, isWipSubject, NO_COMMIT_OPTIONS, type CommitOptions } from '../shared/commitOptions'
 import type {
   Branch,
   ChangedFile,
@@ -274,6 +276,8 @@ epo`), if any. */
             ? ['HEAD', scope.target]
             : [`${scope.from}..${scope.to}`]
     const fields = '%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%s%x1f%D'
+    // The anchor is a commit the view navigated to; once a reset or amend orphans it, it must not keep showing.
+    const anchor = include && !file && (await isReachable(repo, include)) ? include : undefined
     let out: string
     try {
       out = await git(repo, [
@@ -296,7 +300,7 @@ epo`), if any. */
         `--max-count=${limit}`,
         // A leading separator keeps each commit's name-status lines inside its own chunk.
         ...(file ? ['--follow', '--name-status', '-M', `--format=%x1e${fields}`] : [`--format=${fields}%x1e`]),
-        ...(include && !file ? [include] : []),
+        ...(anchor ? [anchor] : []),
         ...(file ? ['--', file] : [])
       ])
     } catch (e) {
@@ -685,8 +689,15 @@ epo`), if any. */
     await git(repo, [...args, '-'], { input: patch })
   },
 
-  async commit(repo: string, message: string, amend: boolean, signoff = false) {
-    await git(repo, ['commit', '-F', '-', ...(amend ? ['--amend'] : []), ...(signoff ? ['--signoff'] : [])], { input: message })
+  async commit(repo: string, message: string, amend: boolean, options: CommitOptions = NO_COMMIT_OPTIONS) {
+    await git(repo, ['commit', '-F', '-', ...(amend ? ['--amend'] : []), ...commitFlags(options)], { input: message })
+  },
+
+  /** Takes the last commit back into the working tree, but only when it is a WIP commit (see `WIP_MESSAGE`). */
+  async undoWipCommit(repo: string) {
+    const subject = (await git(repo, ['log', '-1', '--format=%s'])).trim()
+    if (!isWipSubject(subject)) throw new Error('The last commit is not a WIP commit.')
+    await git(repo, ['reset', '-q', 'HEAD~1'])
   },
 
   // ---- branches & refs ----
@@ -794,10 +805,10 @@ epo`), if any. */
   },
 
   /** Pushes; resolves with a link to open a pull request when one is useful (see pullRequestUrlFromOutput). */
-  async push(repo: string, force: boolean): Promise<string | null> {
+  async push(repo: string, force: boolean, noVerify = false): Promise<string | null> {
     const branch = await currentBranch(repo)
     if (!branch) throw new Error('You are not on a branch (detached HEAD). Create a branch first.')
-    const forceArgs = force ? ['--force-with-lease'] : []
+    const forceArgs = [...(force ? ['--force-with-lease'] : []), ...(noVerify ? ['--no-verify'] : [])]
     let hasUpstream = true
     try {
       await git(repo, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'])
