@@ -4,10 +4,10 @@ import { Tip } from '../components/Tip'
 import { toggleIgnoreWhitespace, useIgnoreWhitespace } from './useIgnoreWhitespace'
 
 /** Reserved width keeps navigation fixed when the review filter changes. */
-export function WhitespaceFilterIndicator() {
+export function WhitespaceFilterIndicator({ hidden = false }: { hidden?: boolean }) {
   const active = useIgnoreWhitespace()
   return (
-    <span className="diff-filter-slot" data-active={active || undefined}>
+    <span className="diff-filter-slot" data-active={active || undefined} data-hidden={hidden || undefined}>
       {active && (
         <Tip label="Show whitespace changes">
           <Button className="diff-full-button diff-filter" aria-label="Show whitespace changes" onPress={toggleIgnoreWhitespace}>

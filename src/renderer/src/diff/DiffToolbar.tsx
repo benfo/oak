@@ -25,6 +25,8 @@ interface Props {
   canFind: boolean
   /** Leads the tools, e.g. the Diff | Preview switch of a previewable file. */
   modeToggle?: ReactNode
+  /** Showing a preview instead of the diff: the diff-only tools stay in place, hidden, so nothing around them moves. */
+  previewing?: boolean
 }
 
 /** File title with the file, change, context and layout controls. */
@@ -43,7 +45,8 @@ export function DiffToolbar({
   onFind,
   findOpen,
   canFind,
-  modeToggle
+  modeToggle,
+  previewing = false
 }: Props) {
   const toolsRef = useRef<HTMLDivElement>(null)
   useEffect(() => toolbarHomeEnd(toolsRef.current), [])
@@ -56,7 +59,7 @@ export function DiffToolbar({
         <span className="diff-filename">{title}</span>
       </Tip>
       {metadata}
-      {!plain && <WhitespaceFilterIndicator />}
+      {!plain && <WhitespaceFilterIndicator hidden={previewing} />}
       <Toolbar className="diff-controls" aria-label="Diff tools" ref={toolsRef}>
         {modeToggle}
         <Tip label="Find in file" keys="/ or Ctrl+F">
@@ -87,7 +90,7 @@ export function DiffToolbar({
           </DiffNavigationGroup>
         )}
         {!plain && (
-          <>
+          <div className="diff-tools-reserved" data-hidden={previewing || undefined} inert={previewing}>
             <DiffNavigationGroup
               previous={{
                 label: onlyChange ? 'Reveal change' : 'Previous change',
@@ -118,7 +121,7 @@ export function DiffToolbar({
               </Tip>
             </DiffNavigationGroup>
             <DiffOptions />
-          </>
+          </div>
         )}
       </Toolbar>
     </div>

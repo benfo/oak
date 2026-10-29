@@ -22,6 +22,17 @@
 .diff-filter-slot[data-active] {
   visibility: visible;
 }
+.diff-filter-slot[data-hidden][data-active] {
+  visibility: hidden;
+}
+.diff-tools-reserved {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+}
+.diff-tools-reserved[data-hidden] {
+  visibility: hidden;
+}
 .diff-filter.diff-full-button {
   display: flex;
   align-items: center;

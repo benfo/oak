@@ -83,3 +83,34 @@ test('a very large SVG is scaled to fit inside its side of the pane', async ({ o
     expect(await pane.evaluate((el) => el.scrollHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth)).toBe(true)
   }
 })
+
+test('switching between Diff and Preview moves nothing, so the same spot can be clicked again, at any pane width', async ({
+  open,
+  small
+}) => {
+  write(small, 'a.svg', svg('red'))
+  commitAll(small, 'Add icon')
+  write(small, 'a.svg', svg('blue'))
+  const page = await open(small)
+  const pane = page.locator('.changes-diff')
+  await page.getByRole('row', { name: /a\.svg/ }).click()
+  const toggle = pane.getByRole('group', { name: 'View' })
+  const layout = async () => ({
+    toggle: await toggle.boundingBox(),
+    title: await pane.locator('.diff-title').boundingBox(),
+    filename: await pane.locator('.diff-filename').boundingBox()
+  })
+  for (const width of [null, 480]) {
+    if (width) await pane.evaluate((el, w) => Object.assign(el.style, { flex: 'none', width: `${w}px` }), width)
+    await expect(pane.locator('.preview-side')).toHaveCount(2)
+    const preview = await layout()
+    await toggle.getByRole('button', { name: 'Diff', exact: true }).click()
+    await expect(pane.locator('.dl.add')).toHaveCount(1)
+    expect(await layout()).toEqual(preview)
+    // The same spot works again without moving the pointer.
+    const spot = preview.toggle!
+    await page.mouse.click(spot.x + spot.width - 10, spot.y + spot.height / 2)
+    await expect(pane.locator('.preview-side')).toHaveCount(2)
+    expect(await layout()).toEqual(preview)
+  }
+})

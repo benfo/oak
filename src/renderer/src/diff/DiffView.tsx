@@ -219,7 +219,8 @@ export function DiffView({
       title={title}
       metadata={metadata}
       files={files}
-      plain={plain || filePreview.previewing}
+      plain={plain}
+      previewing={filePreview.previewing}
       modeToggle={
         filePreview.previewer && (
           <PreviewModeToggle previewLabel={filePreview.previewer.label} mode={filePreview.mode} onChange={filePreview.setMode} />
@@ -251,7 +252,7 @@ export function DiffView({
 
   if (filePreview.previewing && filePreview.previewer && preview)
     return (
-      <div className="diff-wrap plain" {...pane.ownerProps} onKeyDownCapture={onFileKey}>
+      <div className="diff-wrap" {...pane.ownerProps} onKeyDownCapture={onFileKey}>
         {header}
         <PaneFrame>
           <div
