@@ -100,7 +100,6 @@ test('switching between Diff and Preview moves nothing, so the same spot can be 
   const toggle = pane.getByRole('group', { name: 'View' })
   const layout = async () => ({
     toggle: await toggle.boundingBox(),
-    title: await pane.locator('.diff-title').boundingBox(),
     filenameX: (await pane.locator('.diff-filename').boundingBox())?.x
   })
   for (const width of [null, 480, 160]) {
@@ -112,6 +111,7 @@ test('switching between Diff and Preview moves nothing, so the same spot can be 
     expect(group.x + group.width).toBeLessThanOrEqual(preview.filenameX!)
     await toggle.getByRole('button', { name: 'Diff', exact: true }).click()
     await expect(pane.locator('.dl.add')).toHaveCount(1)
+    // Narrow panes may wrap the tools onto a second row in Diff, so only the switch and filename are held still.
     expect(await layout()).toEqual(preview)
     // The same spot works again without moving the pointer.
     const spot = preview.toggle!

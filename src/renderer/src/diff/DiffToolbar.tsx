@@ -6,6 +6,7 @@ import { Icon } from '../components/Icon'
 import { DiffOptions } from './DiffOptions'
 import { WhitespaceFilterIndicator } from './WhitespaceFilterIndicator'
 import { DiffNavigationGroup } from './DiffNavigationGroup'
+import { usePublishToolbarHeight } from './usePublishToolbarHeight'
 
 interface Props {
   leading?: ReactNode
@@ -48,12 +49,14 @@ export function DiffToolbar({
   modeToggle,
   previewing = false
 }: Props) {
+  const titleRef = useRef<HTMLDivElement>(null)
+  usePublishToolbarHeight(titleRef)
   const toolsRef = useRef<HTMLDivElement>(null)
   useEffect(() => toolbarHomeEnd(toolsRef.current), [])
   const navigationDisabled = !changeCount || (changeCount === 1 && singleChangeVisible)
   const onlyChange = changeCount === 1
   return (
-    <div className="diff-title">
+    <div className="diff-title" ref={titleRef}>
       {leading}
       <div className="diff-heading">
         {modeToggle}
