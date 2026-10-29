@@ -47,5 +47,5 @@ const SIMPLE_GLYPHS: Record<SimpleIconId, LucideIcon> = {
 
 export function SimpleIcon({ id, size }: { id: string; size: number }) {
   const Glyph = SIMPLE_GLYPHS[id as SimpleIconId] ?? File
-  return <Glyph className="icon file-icon" size={size} strokeWidth={2} aria-hidden />
+  return <Glyph className="file-icon mono" size={size} strokeWidth={1.5} aria-hidden />
 }
