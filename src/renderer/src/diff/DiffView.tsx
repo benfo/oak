@@ -27,7 +27,7 @@ import { useFilePreview } from '../preview/useFilePreview'
 import type { PreviewTarget } from '../../../shared/filePreview'
 import { PreviewModeToggle } from '../preview/PreviewModeToggle'
 import { PreviewContent } from '../preview/PreviewContent'
-import { handleNavigation } from '../lib/navigation'
+import { PreviewPane } from '../preview/PreviewPane'
 
 export type { DiffActions }
 
@@ -252,26 +252,21 @@ export function DiffView({
 
   if (filePreview.previewing && filePreview.previewer && preview)
     return (
-      <div className="diff-wrap" {...pane.ownerProps} onKeyDownCapture={onFileKey}>
-        {header}
-        <PaneFrame>
-          <div
-            className="diff preview-pane"
-            {...paneProps}
-            onKeyDown={(e) => handleNavigation(e, { back: onBack })}
-            onContextMenu={undefined}
-            aria-label={`${filePreview.previewer.label} of the file`}
-          >
-            <PreviewContent
-              view={filePreview.previewer.view}
-              path={preview.source.file}
-              versions={filePreview.versions}
-              error={filePreview.error}
-              onShowDiff={() => filePreview.setMode('diff')}
-            />
-          </div>
-        </PaneFrame>
-      </div>
+      <PreviewPane
+        header={header}
+        wrapProps={{ ...pane.ownerProps, onKeyDownCapture: onFileKey }}
+        paneProps={paneProps}
+        onBack={onBack}
+        label={`${filePreview.previewer.label} of the file`}
+      >
+        <PreviewContent
+          view={filePreview.previewer.view}
+          path={preview.source.file}
+          versions={filePreview.versions}
+          error={filePreview.error}
+          onShowDiff={() => filePreview.setMode('diff')}
+        />
+      </PreviewPane>
     )
   if (diff === null) return empty(loading ? 'Loading…' : emptyText)
   if (diff.binary) return empty('Binary file, no preview')
