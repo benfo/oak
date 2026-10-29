@@ -22,7 +22,7 @@ Lessons for a future history rewrite or tag move:
 
 ## Resume next
 
-0. **Website follow-ups.** Panels differ in height, so content below the map shifts a little when a station changes; revisit if it bothers anyone. The `oak-focus` screenshot still shows the old diff-only focus mode and needs recapturing. Keep "planned" in step with this file. Notes and rules are in `website/README.md`.
+0. **Website follow-ups.** Panels differ in height, so content below the map shifts a little when a station changes; revisit if it bothers anyone. Keep "planned" in step with this file. Notes and rules are in `website/README.md`.
 1. **Refactor.** Add the `test:ui` job to `checks.yml` once the suite is stable (needs a display on Linux, for example xvfb). Work down the `max-lines` warnings when touching those files.
 2. **Agent contributions.** `AGENTS.md` is contributor-facing; the maintainer's workflow lives in gitignored `AGENTS.local.md` (plus a `CLAUDE.local.md` import, both in `.git/info/exclude`), so a fresh clone must recreate them. Open: how to check that agent-written PRs follow the rules (PR template checklist, CI).
 3. **Code signing.** Windows marks downloads with Mark of the Web, so users must Unblock the installer (the website explains). The fix is signing: SignPath Foundation is free for open source and Oak is now public; compare Azure Artifact Signing (about $10 a month, `win.azureSignOptions`, no hardware token). SmartScreen may warn until reputation builds. Needs the maintainer to set up the account.
