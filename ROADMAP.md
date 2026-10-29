@@ -71,12 +71,16 @@ Ideas only. None is agreed, and each needs a concrete workflow and a discussion 
 - Shared find options for diffs and Blame: case, whole word, regular expression.
 - Commit details for a line while reading, like inline blame or hover, without opening Blame; try a hover or key-triggered popover first (always-on annotation risks the GitLens distraction).
 - Pull request support: host-to-provider mapping for self-hosted remotes, forks, target branch selection, and a lightweight local PR review (pass a URL or pick branches, fetch the refs, open the comparison; comments and approvals stay on the provider).
-- More preferences (default clone folder, external tools, fonts); open the repository in VS Code or the default editor.
+- More preferences (default clone folder, external tools, fonts).
+- Open the remote in the browser (repository, branch, commit, file and line) from the palette and menus, reusing `parseRemoteUrl` in `shared/pullRequest.ts`; unknown hosts fall back to the remote URL.
+- Open a file or repository with an external editor (VS Code with `--goto path:line`, auto-detected, set in Preferences > External tools), the default app, or Explorer.
+- `oak://open?remote=…&ref=<sha>&path=…&line=N` links: "Copy Oak link" on a diff or blame line; opening one matches the remote against recent repositories (offer to clone or fetch a missing commit, each with a confirm) and lands in Blame at the line. Registered through the installer's protocol and handled beside the single-instance `second-instance` path (argv on Windows and Linux, `open-url` on macOS). Treat links as untrusted input. Optional website redirect page for people without Oak, only with approval.
+- Full text search: `git grep` over the working tree or a commit, commit messages (`git log --grep`) and changed text (`git log -S` or `-G`) in one palette-style panel with a scope switch; results open Blame at the line.
 - Worktrees for agent workflows (discover, track, create, remove, view side by side); define the everyday workflow before the UI.
 
 **Diff and files**
 
-- Fold long unchanged regions into one expandable row ("340 unchanged lines"); a possibility, not planned. It would add per-region expand and collapse on top of the single context amount, and needs a decision on context steps, find and line selection.
+- Partial code expansion: show hidden unchanged regions as gap rows with expand up, expand down and expand all (about 20 lines a click, like GitHub), reading the file at that revision. Expanded lines become ordinary context rows so find and line selection keep working; the context steps set the initial gap. Replaces the older "fold long unchanged regions" idea.
 - Optional linked horizontal scrolling in side-by-side diffs (a diff options check item; independent stays the default); mouse alternatives for the layout toggle, only if testing shows a need.
 - Whole-file syntax tokenizing (a hunk that starts mid-construct can be mis-coloured).
 - Preview non-source files (images, PDFs, safe formats) instead of "binary file differs"; never run scripts, render SVG as an image only.
