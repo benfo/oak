@@ -57,3 +57,29 @@ test('an SVG that cannot be drawn explains itself and offers the diff, and scrip
   await expect(pane.locator('.preview-side img')).toBeVisible()
   expect(await page.evaluate(() => (window as unknown as { pwned?: number }).pwned)).toBeUndefined()
 })
+
+test('a very large SVG is scaled to fit inside its side of the pane', async ({ open, small }) => {
+  write(
+    small,
+    'big.svg',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="6000" height="4000"><rect width="6000" height="4000" fill="red"/></svg>\n'
+  )
+  write(
+    small,
+    'tall.svg',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="9000"><rect width="300" height="9000" fill="red"/></svg>\n'
+  )
+  const page = await open(small)
+  const pane = page.locator('.changes-diff .preview-pane')
+  for (const name of [/big\.svg/, /tall\.svg/]) {
+    await page.getByRole('row', { name }).click()
+    const img = pane.locator('.preview-image')
+    await expect(img).toBeVisible()
+    const [outer, inner] = [await pane.boundingBox(), await img.boundingBox()]
+    expect(inner!.x).toBeGreaterThanOrEqual(outer!.x)
+    expect(inner!.y).toBeGreaterThanOrEqual(outer!.y)
+    expect(inner!.x + inner!.width).toBeLessThanOrEqual(outer!.x + outer!.width)
+    expect(inner!.y + inner!.height).toBeLessThanOrEqual(outer!.y + outer!.height)
+    expect(await pane.evaluate((el) => el.scrollHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth)).toBe(true)
+  }
+})
