@@ -76,7 +76,8 @@ Ideas only. None is agreed, and each needs a concrete workflow and a discussion 
 - Open a file or repository with an external editor (VS Code with `--goto path:line`, auto-detected, set in Preferences > External tools), the default app, or Explorer.
 - `oak://open?remote=…&ref=<sha>&path=…&line=N` links: "Copy Oak link" on a diff or blame line; opening one matches the remote against recent repositories (offer to clone or fetch a missing commit, each with a confirm) and lands in Blame at the line. Registered through the installer's protocol and handled beside the single-instance `second-instance` path (argv on Windows and Linux, `open-url` on macOS). Treat links as untrusted input. Optional website redirect page for people without Oak, only with approval.
 - Full text search: `git grep` over the working tree or a commit, commit messages (`git log --grep`) and changed text (`git log -S` or `-G`) in one palette-style panel with a scope switch; results open Blame at the line.
-- Worktrees for agent workflows (discover, track, create, remove, view side by side); define the everyday workflow before the UI.
+- Manage worktrees: create (new branch or existing), view (path, branch, dirty state, locked or prunable), switch between them, and clean up (remove, prune stale entries, flag merged branches). Also for agent workflows, including viewing two side by side; define the everyday workflow before the UI.
+- Built-in terminal panel in the repository folder (or the selected worktree), instead of only launching an external terminal (`openTerminal` today). Needs a decision on a pty library (`node-pty` is a native module, which complicates packaging for Windows and Linux), shells, and layout without shifting content; keep it optional.
 
 **Diff and files**
 
