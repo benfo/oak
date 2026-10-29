@@ -1,3 +1,5 @@
+import { hasExtension } from './previewRegistry.ts'
+
 /** Extensions of files a code editor can't usefully edit: images, documents, media, archives, binaries. */
 const NOT_EDITABLE = new Set([
   ...['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'icns', 'tif', 'tiff', 'heic', 'avif', 'psd'],
@@ -10,7 +12,5 @@ const NOT_EDITABLE = new Set([
 
 /** Whether the system's default app is a better way to open this file than a code editor (decided by extension alone). */
 export function opensBetterInDefaultApp(path: string): boolean {
-  const name = path.split('/').pop() ?? path
-  const dot = name.lastIndexOf('.')
-  return dot > 0 && NOT_EDITABLE.has(name.slice(dot + 1).toLowerCase())
+  return hasExtension(path, NOT_EDITABLE)
 }
