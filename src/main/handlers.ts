@@ -3,6 +3,9 @@ import { spawn } from 'child_process'
 import { existsSync, promises as fs } from 'fs'
 import path from 'path'
 import { getGitBinary, git, outputSink, setGitBinary } from './git'
+import { readBlob } from './blob'
+import { fileVersions as readFileVersions } from './fileVersions'
+import type { FileVersions, PreviewSource } from '../shared/filePreview'
 import { pullRequestUrlFromOutput, type RemotePageTarget } from '../shared/remote'
 import { defaultRemote, pullRequestPage, remotePage, unpushedCommits } from './remote'
 import { isReachable } from './reachable'
@@ -50,46 +53,6 @@ const RS = '\x1e'
 const MAX_PREVIEW_BYTES = 2 * 1024 * 1024
 
 // ---------- helpers ----------
-
-/**
- * One `git cat-file --batch` process reads a blob and its size together (process start-up dominates on Windows).
- * Stops reading as soon as the header shows the blob is over `limit`. Resolves null when the object is missing.
- */
-function readBlob(repo: string, spec: string, limit: number): Promise<{ size: number; data: Buffer } | null> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(getGitBinary(), ['cat-file', '--batch'], { cwd: repo, windowsHide: true })
-    const chunks: Buffer[] = []
-    let received = 0
-    let done = false
-    const finish = (result: { size: number; data: Buffer } | null, error?: Error) => {
-      if (done) return
-      done = true
-      child.kill()
-      if (error) reject(error)
-      else resolve(result)
-    }
-    const check = () => {
-      const buf = Buffer.concat(chunks)
-      const end = buf.indexOf(10)
-      if (end < 0) return
-      const header = buf.subarray(0, end).toString('utf8')
-      const match = /^\S+ \S+ (\d+)$/.exec(header)
-      if (!match) return finish(null)
-      const size = Number(match[1])
-      if (size > limit) return finish({ size, data: Buffer.alloc(0) })
-      if (received - end - 1 >= size) finish({ size, data: buf.subarray(end + 1, end + 1 + size) })
-    }
-    child.stdout.on('data', (d: Buffer) => {
-      chunks.push(d)
-      received += d.length
-      check()
-    })
-    child.on('error', (e) => finish(null, new Error(`Could not run git: ${e.message}`)))
-    child.on('close', () => finish(null))
-    child.stdin.on('error', () => {})
-    child.stdin.end(`${spec}\n`)
-  })
-}
 
 const gitDirs = new Map<string, string>()
 
@@ -531,6 +494,9 @@ epo`), if any. */
       (noEol ? '\\ No newline at end of file\n' : '')
     )
   },
+
+  /** Both sides of a file a diff compares, as bytes, for previews. */
+  fileVersions: (repo: string, source: PreviewSource): Promise<FileVersions> => readFileVersions(repo, source),
 
   /** Saves a file as it was at a commit to a location the user picks. Returns the path, or null if cancelled. */
   async saveFileCopy(repo: string, hash: string, file: string): Promise<string | null> {
