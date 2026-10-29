@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createCommitPreviewLoader } from '../src/renderer/src/history/commitPreview.ts'
+import { commitPreviewTarget, createCommitPreviewLoader, type CommitPreview } from '../src/renderer/src/history/commitPreview.ts'
 import { comparisonSummary } from '../src/renderer/src/history/comparisonModes.ts'
 import type { CommitDetails } from '../src/shared/types.ts'
 
@@ -240,4 +240,20 @@ test('working file list is reused within a refresh revision so picking a file on
   assert.equal(listings, 1)
   await load('repo', 'working-changes', 'b.ts', 3, undefined, undefined, 2)
   assert.equal(listings, 2)
+})
+
+test('a commit preview reads the file against its first parent, or against the comparison base', () => {
+  const file = { path: 'b.svg', oldPath: 'a.svg', status: 'R', additions: null, deletions: null }
+  const preview = { repo: 'r', details: info('C1'), file, diff: '' } satisfies CommitPreview
+  assert.deepEqual(commitPreviewTarget('r', false, preview)?.source, {
+    kind: 'commit',
+    hash: 'C1',
+    parent: 'parent',
+    file: 'b.svg',
+    oldPath: 'a.svg'
+  })
+  assert.equal(commitPreviewTarget('r', false, { ...preview, compareBase: 'base' })?.source.kind === 'commit' && 'base', 'base')
+  assert.deepEqual(commitPreviewTarget('r', true, preview)?.source, { kind: 'headToWorking', file: 'b.svg', oldPath: 'a.svg' })
+  assert.equal(commitPreviewTarget('r', false, { ...preview, file: null }), undefined)
+  assert.equal(commitPreviewTarget('r', false, null), undefined)
 })

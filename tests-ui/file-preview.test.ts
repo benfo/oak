@@ -1,0 +1,59 @@
+import { expect, test } from './fixtures'
+import { commitAll, write } from './repos'
+
+const svg = (fill: string) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="${fill}"/></svg>\n`
+
+test('an SVG opens as a before and after preview, switches to the diff and back, and remembers the choice', async ({ open, small }) => {
+  write(small, 'icons/a.svg', svg('red'))
+  write(small, 'icons/b.svg', svg('green'))
+  commitAll(small, 'Add icons')
+  write(small, 'icons/a.svg', svg('blue'))
+  write(small, 'icons/b.svg', svg('black'))
+  const page = await open(small)
+  const pane = page.locator('.changes-diff')
+  await page.getByRole('row', { name: /a\.svg/ }).click()
+  await expect(pane.locator('.preview-side')).toHaveCount(2)
+  await expect(pane.locator('.preview-side[aria-label="Before"] img')).toHaveAttribute('src', /^data:image\/svg\+xml/)
+  await expect(pane.locator('.preview-side[aria-label="After"] img')).toBeVisible()
+  const toggle = pane.getByRole('group', { name: 'View' })
+  await expect(toggle.getByRole('button', { name: 'Preview', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  const titleBox = await pane.locator('.diff-title').boundingBox()
+
+  await toggle.getByRole('button', { name: 'Diff', exact: true }).click()
+  await expect(pane.locator('.dl.add')).toHaveCount(1)
+  expect(await pane.locator('.diff-title').boundingBox()).toEqual(titleBox)
+
+  // The choice is kept for the next SVG.
+  await page.getByRole('row', { name: /b\.svg/ }).click()
+  await expect(pane.locator('.dl.add')).toHaveCount(1)
+  await toggle.getByRole('button', { name: 'Preview', exact: true }).click()
+  await expect(pane.locator('.preview-side')).toHaveCount(2)
+})
+
+test('an added SVG shows one labelled side, and other files have no switch', async ({ open, small }) => {
+  write(small, 'new.svg', svg('red'))
+  const page = await open(small)
+  const pane = page.locator('.changes-diff')
+  await page.getByRole('row', { name: /new\.svg/ }).click()
+  await expect(pane.locator('.preview-side')).toHaveCount(1)
+  await expect(pane.locator('.preview-side[aria-label="Added"] img')).toBeVisible()
+  await page.getByRole('row', { name: /\.ts/ }).first().click()
+  await expect(pane.locator('.dl').first()).toBeVisible()
+  await expect(pane.getByRole('group', { name: 'View' })).toHaveCount(0)
+})
+
+test('an SVG that cannot be drawn explains itself and offers the diff, and scripts in it never run', async ({ open, small }) => {
+  write(small, 'bad.svg', 'this is not an svg\n')
+  write(small, 'evil.svg', '<svg xmlns="http://www.w3.org/2000/svg" onload="window.pwned=1"><script>window.pwned=1</script></svg>\n')
+  const page = await open(small)
+  const pane = page.locator('.changes-diff')
+  await page.getByRole('row', { name: /bad\.svg/ }).click()
+  await expect(pane.locator('.preview-notice')).toContainText("Can't draw this file")
+  await pane.getByRole('button', { name: 'Show diff' }).click()
+  await expect(pane.locator('.dl.add')).toHaveCount(1)
+  await pane.getByRole('button', { name: 'Preview', exact: true }).click()
+  await page.getByRole('row', { name: /evil\.svg/ }).click()
+  await expect(pane.locator('.preview-side img')).toBeVisible()
+  expect(await page.evaluate(() => (window as unknown as { pwned?: number }).pwned)).toBeUndefined()
+})

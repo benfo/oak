@@ -23,6 +23,8 @@ interface Props {
   onFind: () => void
   findOpen: boolean
   canFind: boolean
+  /** Leads the tools, e.g. the Diff | Preview switch of a previewable file. */
+  modeToggle?: ReactNode
 }
 
 /** File title with the file, change, context and layout controls. */
@@ -40,7 +42,8 @@ export function DiffToolbar({
   jumpHunk,
   onFind,
   findOpen,
-  canFind
+  canFind,
+  modeToggle
 }: Props) {
   const toolsRef = useRef<HTMLDivElement>(null)
   useEffect(() => toolbarHomeEnd(toolsRef.current), [])
@@ -55,6 +58,7 @@ export function DiffToolbar({
       {metadata}
       {!plain && <WhitespaceFilterIndicator />}
       <Toolbar className="diff-controls" aria-label="Diff tools" ref={toolsRef}>
+        {modeToggle}
         <Tip label="Find in file" keys="/ or Ctrl+F">
           <Button className="icon-btn" aria-label="Find in file" aria-pressed={findOpen} isDisabled={!canFind} onPress={onFind}>
             <Icon name="search" size={14} />

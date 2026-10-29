@@ -23,6 +23,11 @@ import { useDiffNavigation, useDiffFileNavigation } from './useDiffNavigation'
 import { toggleIgnoreWhitespace } from './useIgnoreWhitespace'
 import { useDiffDocument } from './useDiffDocument'
 import { useDiffCursor } from './useDiffCursor'
+import { useFilePreview } from '../preview/useFilePreview'
+import type { PreviewTarget } from '../../../shared/filePreview'
+import { PreviewModeToggle } from '../preview/PreviewModeToggle'
+import { PreviewContent } from '../preview/PreviewContent'
+import { handleNavigation } from '../lib/navigation'
 
 export type { DiffActions }
 
@@ -52,6 +57,8 @@ interface Props {
   onOpenInEditor?: (line?: number) => void
   /** Offers "Open in browser" and "Line link" in the line menu, at the cursor's line. */
   remote?: RemoteLineActions
+  /** Where this diff's file can be read from. A file with a previewer then gets a Diff | Preview switch; omit for diffs that can't be previewed. */
+  preview?: PreviewTarget
 }
 
 export function DiffView({
@@ -70,9 +77,11 @@ export function DiffView({
   revealLine,
   onRevealed,
   onOpenInEditor,
-  remote
+  remote,
+  preview
 }: Props) {
   const { diff, source, displayText, reviewMode } = useDiffDocument(text, plain)
+  const filePreview = useFilePreview(preview, text)
   const acts = diff && actions ? actions(diff) : null
   const notice = diff && !acts && readOnlyReason ? readOnlyReason(diff) : null
   const [showAll, setShowAll] = useState(false)
@@ -210,7 +219,12 @@ export function DiffView({
       title={title}
       metadata={metadata}
       files={files}
-      plain={plain}
+      plain={plain || filePreview.previewing}
+      modeToggle={
+        filePreview.previewer && (
+          <PreviewModeToggle previewLabel={filePreview.previewer.label} mode={filePreview.mode} onChange={filePreview.setMode} />
+        )
+      }
       changeCount={diff?.hunks.length ?? 0}
       currentChange={cursorHunk}
       singleChangeVisible={scroll.singleChangeVisible}
@@ -219,7 +233,7 @@ export function DiffView({
       jumpHunk={jumpHunk}
       onFind={find.open}
       findOpen={find.query !== null}
-      canFind={rows.length > 0}
+      canFind={rows.length > 0 && !filePreview.previewing}
     />
   ) : (
     leading && <div className="diff-title">{leading}</div>
@@ -235,6 +249,29 @@ export function DiffView({
     </div>
   )
 
+  if (filePreview.previewing && filePreview.previewer && preview)
+    return (
+      <div className="diff-wrap plain" {...pane.ownerProps} onKeyDownCapture={onFileKey}>
+        {header}
+        <PaneFrame>
+          <div
+            className="diff preview-pane"
+            {...paneProps}
+            onKeyDown={(e) => handleNavigation(e, { back: onBack })}
+            onContextMenu={undefined}
+            aria-label={`${filePreview.previewer.label} of the file`}
+          >
+            <PreviewContent
+              view={filePreview.previewer.view}
+              path={preview.source.file}
+              versions={filePreview.versions}
+              error={filePreview.error}
+              onShowDiff={() => filePreview.setMode('diff')}
+            />
+          </div>
+        </PaneFrame>
+      </div>
+    )
   if (diff === null) return empty(loading ? 'Loading…' : emptyText)
   if (diff.binary) return empty('Binary file, no preview')
   if (!diff.hunks.length) {

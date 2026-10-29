@@ -620,6 +620,9 @@ export function ChangesView({
             )
           }
           text={diff}
+          preview={
+            lead ? { repo: r.path, source: { kind: 'working', diffKind: lead.kind, file: lead.path, oldPath: lead.oldPath } } : undefined
+          }
           loading={!!lead}
           emptyText={
             total ? (

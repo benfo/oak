@@ -1,5 +1,6 @@
 import type { ChangedFile, Commit, CommitDetails } from '../../../shared/types'
 import { WORKING_HASH } from '../../../shared/working.ts'
+import type { PreviewTarget } from '../../../shared/filePreview.ts'
 
 interface Source {
   mergeBase?(repo: string, before: string, after: string): Promise<string | null>
@@ -139,4 +140,13 @@ export function createCommitPreviewLoader(source: Source) {
       : null
     return { repo, compareBase, branchComparison, comparisonMode, details: info, file, diff }
   }
+}
+
+/** Where the shown file's two sides can be read from: the working tree against HEAD, or the commit against its parent (or the comparison base). */
+export function commitPreviewTarget(repo: string, working: boolean, preview: CommitPreview | null): PreviewTarget | undefined {
+  const file = preview?.file
+  if (!preview || !file) return undefined
+  if (working) return { repo, source: { kind: 'headToWorking', file: file.path, oldPath: file.oldPath } }
+  const parent = preview.compareBase ?? preview.details.parents[0] ?? null
+  return { repo, source: { kind: 'commit', hash: preview.details.hash, parent, file: file.path, oldPath: file.oldPath } }
 }

@@ -6,7 +6,7 @@ import { useContextLines } from '../diff/useDiffContext'
 import { fullDate, splitPath, STATUS_LABEL } from '../lib/format'
 import { Avatar } from '../components/Avatar'
 import type { ChangedFile, Commit } from '../../../shared/types'
-import { createCommitPreviewLoader, type BranchComparison, type CommitPreview } from './commitPreview'
+import { commitPreviewTarget, createCommitPreviewLoader, type BranchComparison, type CommitPreview } from './commitPreview'
 import { DiffView } from '../diff/DiffView'
 import { BranchComparisonControls } from './BranchComparisonControls'
 import { Icon } from '../components/Icon'
@@ -131,6 +131,7 @@ export function CommitDetails({
   const file = preview?.file ?? null
   const activePath = selectedFile?.key === selectionKey ? selectedFile.path : file?.path
   const diff = preview?.diff ?? null
+  const previewTarget = commitPreviewTarget(repo, working, preview)
   const currentError = error?.key === key ? error.message : null
   const pending = !!hash && view?.key !== key && !currentError
   const detailsCurrent =
@@ -710,6 +711,7 @@ export function CommitDetails({
                   : undefined
             }
             text={treeMissing ? null : showContent ? (currentContent?.text ?? null) : diff}
+            preview={showContent || treeMissing ? undefined : previewTarget}
             loading={showContent ? !currentContent : !!file}
             emptyText={
               treeMissing
