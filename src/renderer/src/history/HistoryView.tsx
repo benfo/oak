@@ -28,6 +28,7 @@ import { Tip } from '../components/Tip'
 import type { WorkspaceLayout } from '../components/LayoutMenu'
 import type { CommitTarget } from '../blame/BlameView'
 import { WORKING_HASH, hasWorkingChanges, workingFileCount } from '../../../shared/working.ts'
+import { DETAILS_MIN } from '../lib/layoutMinimums'
 
 export interface ComparisonRequest {
   source: Branch
@@ -401,7 +402,16 @@ export function HistoryView({
   }
 
   return (
-    <Split id="history" label="Commit graph height" dir="column" initial={380} min={120} max={2000} collapsed={layout === 'code'}>
+    <Split
+      id="history"
+      label="Commit graph height"
+      dir="column"
+      initial={380}
+      min={120}
+      max={2000}
+      restMin={DETAILS_MIN}
+      collapsed={layout === 'code'}
+    >
       <div className="history-top">
         <div className="pane-toolbar" data-pane-owner="graph" onKeyDown={handleToolNavigation}>
           <div className="search">

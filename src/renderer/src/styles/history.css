@@ -86,6 +86,7 @@
 }
 
 .commit-list {
+  container: commit-list / inline-size;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -114,6 +115,33 @@
   padding-right: var(--space-3);
   gap: 0 var(--space-3);
   white-space: nowrap;
+  /* Graph, message, author, date, commit. The message takes what the others leave, down to nothing, so the list never needs a sideways scrollbar. */
+  grid-template-columns: var(--graph-w) minmax(0, 1fr) 160px 120px 76px;
+}
+/* Narrower lists drop the least useful column first (the commit id is in the details), so the message keeps its room. */
+@container commit-list (width < 640px) {
+  .commit-row {
+    grid-template-columns: var(--graph-w) minmax(0, 1fr) 160px 120px;
+  }
+  .commit-row > :nth-child(5) {
+    display: none;
+  }
+}
+@container commit-list (width < 480px) {
+  .commit-row {
+    grid-template-columns: var(--graph-w) minmax(0, 1fr) 160px;
+  }
+  .commit-row > :nth-child(4) {
+    display: none;
+  }
+}
+@container commit-list (width < 340px) {
+  .commit-row {
+    grid-template-columns: var(--graph-w) minmax(0, 1fr);
+  }
+  .commit-row > :nth-child(3) {
+    display: none;
+  }
 }
 .commit-row > div {
   overflow: hidden;

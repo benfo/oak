@@ -5,6 +5,8 @@
 export const SIDEBAR_MIN = 180
 export const FILES_MIN = 260
 export const CONTENT_MIN = 320
+/** Height the commit details (message, file list, diff) keep under the history graph, so they are never squeezed to a header. */
+export const DETAILS_MIN = 280
 /** Room for the dividers between the three panes. */
 const DIVIDERS = 24
 

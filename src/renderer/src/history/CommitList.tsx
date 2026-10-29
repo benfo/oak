@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { Commit, Ref } from '../../../shared/types'
 import { WORKING_HASH } from '../../../shared/working.ts'
 import type { Graph, GraphRow } from './graph'
@@ -218,7 +218,7 @@ export function CommitList({
       >
         {/* Clipped, and moved by the list's horizontal scroll, so the columns stay aligned and only the list shows a scrollbar. */}
         <div ref={headRef} className="commit-head" aria-hidden="true">
-          <div className="commit-row header" style={{ gridTemplateColumns: cols(graphW) }}>
+          <div className="commit-row header" style={columns(graphW)}>
             <div />
             <div>Message</div>
             <div>Author</div>
@@ -248,7 +248,7 @@ export function CommitList({
                     role="option"
                     aria-selected={key === selected}
                     className={`commit-row working ${key === selected ? 'selected' : ''} ${key === cursor ? 'cursor' : ''}`}
-                    style={{ top: i * ROW_H, gridTemplateColumns: cols(graphW) }}
+                    style={{ top: i * ROW_H, ...columns(graphW) }}
                     onContextMenu={(e) => e.preventDefault()}
                     onMouseDown={(e) => {
                       if (e.button !== 0) return
@@ -281,7 +281,7 @@ export function CommitList({
                   role="option"
                   aria-selected={c.hash === selected || c.hash === compareBase}
                   className={`commit-row ${c.hash === selected || c.hash === compareBase ? 'selected' : ''} ${c.hash === cursor ? 'cursor' : ''}`}
-                  style={{ top: i * ROW_H, gridTemplateColumns: cols(graphW) }}
+                  style={{ top: i * ROW_H, ...columns(graphW) }}
                   onMouseDown={(e) => {
                     if (e.button !== 0) return
                     setCursor(c.hash)
@@ -343,7 +343,8 @@ export function CommitList({
   )
 }
 
-const cols = (graphW: number) => `${graphW}px minmax(200px, 1fr) 160px 120px 76px`
+/** The graph column's width, for the row grid in history.css (which also decides which columns fit). */
+const columns = (graphW: number) => ({ '--graph-w': `${graphW}px` }) as CSSProperties
 
 function edgePath(fromX: number, y1: number, toX: number, y2: number) {
   if (fromX === toX) return `M${fromX} ${y1}V${y2}`
