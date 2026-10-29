@@ -523,14 +523,20 @@ test.describe('blame', () => {
 })
 
 test.describe('layout', () => {
-  test('F11 expands the code area and restores it', async ({ open, small }) => {
+  test('F11 expands the code area and keeps the file list, F hides the list, and F11 restores the layout', async ({ open, small }) => {
     const page = await open(small)
     await page.getByRole('row', { name: /app\.ts/ }).click()
     const files = page.getByRole('row', { name: /notes\.txt/ })
+    const layout = page.locator('[data-workspace-layout]')
+    await expect(layout).toHaveAttribute('data-workspace-layout', 'standard')
     await expect(files).toBeVisible()
     await page.keyboard.press('F11')
+    await expect(layout).toHaveAttribute('data-workspace-layout', 'code')
+    await expect(files).toBeVisible()
+    await page.keyboard.press('f')
     await expect(files).toBeHidden()
     await page.keyboard.press('F11')
+    await expect(layout).toHaveAttribute('data-workspace-layout', 'standard')
     await expect(files).toBeVisible()
   })
 })
