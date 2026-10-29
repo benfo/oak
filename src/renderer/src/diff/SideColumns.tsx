@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import type { DiffSide } from './diffTypes'
+import { followedPosition, samePosition } from './followScroll'
 
 interface Props {
   setColumn: (el: HTMLDivElement | null) => void
@@ -7,8 +8,10 @@ interface Props {
   renderColumn: (side: DiffSide) => ReactNode
 }
 
-/** Before and After columns that scroll together. */
+/** Before and After columns that scroll together, in both directions; a side that is shorter or narrower stops at its own end. */
 export function SideColumns({ setColumn, focusPane, renderColumn }: Props) {
+  // The column we just moved to follow the other: its scroll event must not bounce back, or a clamped side would drag the long one.
+  const followed = useRef<HTMLElement | null>(null)
   return (
     <div
       className="side-columns"
@@ -35,10 +38,24 @@ export function SideColumns({ setColumn, focusPane, renderColumn }: Props) {
               })
           }}
           onScroll={(e) => {
-            const other = e.currentTarget.parentElement?.querySelector<HTMLElement>(
-              `.side-column[data-side="${side === 'old' ? 'new' : 'old'}"]`
+            const column = e.currentTarget
+            if (followed.current === column) {
+              followed.current = null
+              return
+            }
+            const other = column.parentElement?.querySelector<HTMLElement>(`.side-column[data-side="${side === 'old' ? 'new' : 'old'}"]`)
+            if (!other) return
+            const { left, top } = followedPosition(column, other)
+            if (samePosition(other.scrollLeft, left) && samePosition(other.scrollTop, top)) return
+            followed.current = other
+            other.scrollLeft = left
+            other.scrollTop = top
+            // The scroll event arrives a frame later. If nothing moved after all, none comes, so clear the mark after that.
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => {
+                if (followed.current === other) followed.current = null
+              })
             )
-            if (other && other.scrollTop !== e.currentTarget.scrollTop) other.scrollTop = e.currentTarget.scrollTop
           }}
         >
           {renderColumn(side)}
