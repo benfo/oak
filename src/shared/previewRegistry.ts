@@ -22,10 +22,3 @@ export interface PreviewRegistry<View> {
 export function createPreviewRegistry<View>(previewers: Previewer<View>[]): PreviewRegistry<View> {
   return { previewerFor: (path) => previewers.find((p) => p.matches(path)) ?? null }
 }
-
-/** Whether a path's extension (case-insensitive, after the last dot of the file name) is one of `extensions`. */
-export function hasExtension(path: string, extensions: ReadonlySet<string>): boolean {
-  const name = path.split('/').pop() ?? path
-  const dot = name.lastIndexOf('.')
-  return dot > 0 && extensions.has(name.slice(dot + 1).toLowerCase())
-}

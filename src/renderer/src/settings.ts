@@ -135,6 +135,9 @@ export function stepZoom(direction: 1 | -1 | 0) {
   updateSettings({ zoom: next })
 }
 
+/** The zoom actually in effect: the chosen one, unless the window is too small for it (see `applyZoom`). */
+let appliedZoom = 1
+
 /** Settings that take effect outside React: CSS variables, page zoom and the git executable. */
 function apply() {
   const root = document.documentElement.style
@@ -145,8 +148,6 @@ function apply() {
   applyZoom()
   api.setGitPath(current.gitPath).catch(() => {})
 }
-
-let appliedZoom = 1
 
 /** The chosen zoom, held back when the window is too small for the panes to keep their minimums. */
 function applyZoom() {

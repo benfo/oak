@@ -1,4 +1,5 @@
 import type { PreviewTarget } from '../../../shared/filePreview'
+import type { PreviewMode } from '../../../shared/previewRegistry'
 import { previewRegistry } from './previewers'
 import { setPreviewMode, usePreviewMode } from './previewMode'
 import { useFileVersions } from './useFileVersions'
@@ -15,6 +16,6 @@ export function useFilePreview(target: PreviewTarget | undefined, reloadKey: unk
     previewing,
     versions,
     error,
-    setMode: (next: typeof mode) => previewer && setPreviewMode(previewer.id, next)
+    setMode: (next: PreviewMode) => previewer && setPreviewMode(previewer.id, next)
   }
 }

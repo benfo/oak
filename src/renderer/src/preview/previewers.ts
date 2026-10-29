@@ -1,4 +1,5 @@
-import { createPreviewRegistry, hasExtension } from '../../../shared/previewRegistry'
+import { hasExtension } from '../../../shared/fileKinds'
+import { createPreviewRegistry } from '../../../shared/previewRegistry'
 import { SvgPreview } from './SvgPreview'
 import type { ReactPreviewer } from './types'
 

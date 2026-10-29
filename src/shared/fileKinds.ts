@@ -1,4 +1,9 @@
-import { hasExtension } from './previewRegistry.ts'
+/** Whether a path's extension (case-insensitive, after the last dot of the file name) is one of `extensions`. */
+export function hasExtension(path: string, extensions: ReadonlySet<string>): boolean {
+  const name = path.split('/').pop() ?? path
+  const dot = name.lastIndexOf('.')
+  return dot > 0 && extensions.has(name.slice(dot + 1).toLowerCase())
+}
 
 /** Extensions of files a code editor can't usefully edit: images, documents, media, archives, binaries. */
 const NOT_EDITABLE = new Set([

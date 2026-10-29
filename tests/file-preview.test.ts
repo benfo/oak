@@ -5,7 +5,8 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { previewRefs, sameVersions, PREVIEW_MAX_BYTES } from '../src/shared/filePreview.ts'
-import { createPreviewRegistry, hasExtension, type Previewer } from '../src/shared/previewRegistry.ts'
+import { hasExtension } from '../src/shared/fileKinds.ts'
+import { createPreviewRegistry, type Previewer } from '../src/shared/previewRegistry.ts'
 import { fileVersions } from '../src/main/fileVersions.ts'
 
 const git = (cwd: string, ...args: string[]) =>
@@ -14,11 +15,16 @@ const git = (cwd: string, ...args: string[]) =>
     .trim()
 const text = (v: { state: string; bytes?: Uint8Array }) => (v.state === 'ok' ? Buffer.from(v.bytes!).toString() : v.state)
 
-function repoWith(setup: (dir: string) => void) {
+/** A throwaway repo, set up by `setup`, removed afterwards (retrying, as a killed git process can hold its folder a moment on Windows). */
+async function withRepo(setup: (dir: string) => void, body: (dir: string) => Promise<void>) {
   const dir = mkdtempSync(join(tmpdir(), 'oak-preview-'))
-  git(dir, 'init', '-q')
-  setup(dir)
-  return dir
+  try {
+    git(dir, 'init', '-q')
+    setup(dir)
+    await body(dir)
+  } finally {
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  }
 }
 
 test('an unstaged change compares the index with the working tree', () => {
@@ -63,71 +69,71 @@ test('the registry hands back the first previewer that matches, or null', () => 
 })
 
 test('reading a modified file gives the committed and working versions', async () => {
-  const dir = repoWith((d) => {
-    writeFileSync(join(d, 'a.svg'), '<svg>1</svg>')
-    git(d, 'add', '.')
-    git(d, 'commit', '-qm', 'one')
-    writeFileSync(join(d, 'a.svg'), '<svg>2</svg>')
-  })
-  try {
-    const v = await fileVersions(dir, { kind: 'headToWorking', file: 'a.svg' })
-    assert.equal(text(v.before), '<svg>1</svg>')
-    assert.equal(text(v.after), '<svg>2</svg>')
-  } finally {
-    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
-  }
+  await withRepo(
+    (d) => {
+      writeFileSync(join(d, 'a.svg'), '<svg>1</svg>')
+      git(d, 'add', '.')
+      git(d, 'commit', '-qm', 'one')
+      writeFileSync(join(d, 'a.svg'), '<svg>2</svg>')
+    },
+    async (dir) => {
+      const v = await fileVersions(dir, { kind: 'headToWorking', file: 'a.svg' })
+      assert.equal(text(v.before), '<svg>1</svg>')
+      assert.equal(text(v.after), '<svg>2</svg>')
+    }
+  )
 })
 
 test('an untracked file has a missing before and a deleted file a missing after', async () => {
-  const dir = repoWith((d) => {
-    writeFileSync(join(d, 'gone.svg'), '<svg/>')
-    git(d, 'add', '.')
-    git(d, 'commit', '-qm', 'one')
-    rmSync(join(d, 'gone.svg'))
-    writeFileSync(join(d, 'new.svg'), '<svg>n</svg>')
-  })
-  try {
-    const added = await fileVersions(dir, { kind: 'working', diffKind: 'untracked', file: 'new.svg' })
-    assert.deepEqual([added.before.state, text(added.after)], ['missing', '<svg>n</svg>'])
-    const deleted = await fileVersions(dir, { kind: 'headToWorking', file: 'gone.svg' })
-    assert.deepEqual([text(deleted.before), deleted.after.state], ['<svg/>', 'missing'])
-  } finally {
-    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
-  }
+  await withRepo(
+    (d) => {
+      writeFileSync(join(d, 'gone.svg'), '<svg/>')
+      git(d, 'add', '.')
+      git(d, 'commit', '-qm', 'one')
+      rmSync(join(d, 'gone.svg'))
+      writeFileSync(join(d, 'new.svg'), '<svg>n</svg>')
+    },
+    async (dir) => {
+      const added = await fileVersions(dir, { kind: 'working', diffKind: 'untracked', file: 'new.svg' })
+      assert.deepEqual([added.before.state, text(added.after)], ['missing', '<svg>n</svg>'])
+      const deleted = await fileVersions(dir, { kind: 'headToWorking', file: 'gone.svg' })
+      assert.deepEqual([text(deleted.before), deleted.after.state], ['<svg/>', 'missing'])
+    }
+  )
 })
 
 test('a commit reads each side at its own path, and a root commit has no before', async () => {
-  const dir = repoWith((d) => {
-    mkdirSync(join(d, 'img'))
-    writeFileSync(join(d, 'img', 'a.svg'), '<svg>a</svg>')
-    git(d, 'add', '.')
-    git(d, 'commit', '-qm', 'one')
-    git(d, 'mv', 'img/a.svg', 'img/b.svg')
-    git(d, 'commit', '-qm', 'two')
-  })
-  try {
-    const [two, one] = git(dir, 'rev-list', 'HEAD').split('\n')
-    const moved = await fileVersions(dir, { kind: 'commit', hash: two, parent: one, file: 'img/b.svg', oldPath: 'img/a.svg' })
-    assert.deepEqual([text(moved.before), text(moved.after)], ['<svg>a</svg>', '<svg>a</svg>'])
-    const root = await fileVersions(dir, { kind: 'commit', hash: one, parent: null, file: 'img/a.svg' })
-    assert.deepEqual([root.before.state, text(root.after)], ['missing', '<svg>a</svg>'])
-  } finally {
-    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
-  }
+  await withRepo(
+    (d) => {
+      mkdirSync(join(d, 'img'))
+      writeFileSync(join(d, 'img', 'a.svg'), '<svg>a</svg>')
+      git(d, 'add', '.')
+      git(d, 'commit', '-qm', 'one')
+      git(d, 'mv', 'img/a.svg', 'img/b.svg')
+      git(d, 'commit', '-qm', 'two')
+    },
+    async (dir) => {
+      const [two, one] = git(dir, 'rev-list', 'HEAD').split('\n')
+      const moved = await fileVersions(dir, { kind: 'commit', hash: two, parent: one, file: 'img/b.svg', oldPath: 'img/a.svg' })
+      assert.deepEqual([text(moved.before), text(moved.after)], ['<svg>a</svg>', '<svg>a</svg>'])
+      const root = await fileVersions(dir, { kind: 'commit', hash: one, parent: null, file: 'img/a.svg' })
+      assert.deepEqual([root.before.state, text(root.after)], ['missing', '<svg>a</svg>'])
+    }
+  )
 })
 
 test('a file over the size cap is reported, not loaded', async () => {
-  const dir = repoWith((d) => {
-    writeFileSync(join(d, 'big.svg'), Buffer.alloc(PREVIEW_MAX_BYTES + 1, 'a'))
-    git(d, 'add', '.')
-    git(d, 'commit', '-qm', 'one')
-  })
-  try {
-    const v = await fileVersions(dir, { kind: 'headToWorking', file: 'big.svg' })
-    assert.deepEqual([v.before.state, v.after.state], ['tooLarge', 'tooLarge'])
-  } finally {
-    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
-  }
+  await withRepo(
+    (d) => {
+      writeFileSync(join(d, 'big.svg'), Buffer.alloc(PREVIEW_MAX_BYTES + 1, 'a'))
+      git(d, 'add', '.')
+      git(d, 'commit', '-qm', 'one')
+    },
+    async (dir) => {
+      const v = await fileVersions(dir, { kind: 'headToWorking', file: 'big.svg' })
+      assert.deepEqual([v.before.state, v.after.state], ['tooLarge', 'tooLarge'])
+    }
+  )
 })
 
 test('a reload with the same content counts as nothing new', () => {
