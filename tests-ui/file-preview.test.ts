@@ -107,9 +107,9 @@ test('switching between Diff and Preview moves nothing, so the same spot can be 
     if (width) await pane.evaluate((el, w) => Object.assign(el.style, { flex: 'none', width: `${w}px` }), width)
     await expect(pane.locator('.preview-side')).toHaveCount(2)
     const preview = await layout()
-    // Nothing sits on top of the switch, however small the pane.
-    const [group, chip] = [preview.toggle!, (await pane.locator('.diff-kind').first().boundingBox())!]
-    expect(group.x + group.width).toBeLessThanOrEqual(chip.x)
+    // The filename gives way before the switch does, however small the pane.
+    const group = preview.toggle!
+    expect(group.x + group.width).toBeLessThanOrEqual(preview.filenameX!)
     await toggle.getByRole('button', { name: 'Diff', exact: true }).click()
     await expect(pane.locator('.dl.add')).toHaveCount(1)
     expect(await layout()).toEqual(preview)
