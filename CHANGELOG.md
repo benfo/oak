@@ -2,7 +2,7 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
-## Unreleased
+## 0.1.22
 
 ### Added
 
