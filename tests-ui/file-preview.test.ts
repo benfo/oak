@@ -120,3 +120,12 @@ test('switching between Diff and Preview moves nothing, so the same spot can be 
     expect(await layout()).toEqual(preview)
   }
 })
+
+test('a small window at the largest zoom still leaves the content pane its minimum width', async ({ open, small }) => {
+  const page = await open(small)
+  await page.setViewportSize({ width: 960, height: 720 })
+  for (let i = 0; i < 6; i++) await page.keyboard.press('Control+Equal')
+  await page.getByRole('row', { name: /app\.ts/ }).click()
+  // Two px of slack: at a fractional zoom the browser snaps panel edges to device pixels.
+  await expect.poll(() => page.locator('#changes-rest').evaluate((el) => el.getBoundingClientRect().width)).toBeGreaterThanOrEqual(318)
+})

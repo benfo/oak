@@ -41,6 +41,7 @@ import { buildChangeRows, changeTreeOrder, CHANGE_TREE_INDENT, expandTo, toggled
 import { ChevronSpacer, FolderLabel } from '../components/ChangeTreeRow'
 import { FileIcon } from '../components/FileIcon'
 import { TreeToggle, toggleChangesTree } from '../components/TreeToggle'
+import { FILES_MIN } from '../lib/layoutMinimums'
 
 /** Matches --row-md (tokens.css). */
 const ROW_H = 28
@@ -531,7 +532,7 @@ export function ChangesView({
   )
 
   return (
-    <Split id="changes" label="Changed files width" initial={360} min={260} max={800} collapsed={filesHidden}>
+    <Split id="changes" label="Changed files width" initial={360} min={FILES_MIN} max={800} collapsed={filesHidden}>
       <div className="changes-left">
         <OperationBanner r={r} />
         <div className="changes-files" ref={filesRef}>

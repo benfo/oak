@@ -37,6 +37,7 @@ import { PaneFrame } from '../components/Pane'
 import { openPalette } from '../components/Palette'
 import { WORKING_HASH } from '../../../shared/working.ts'
 import { comparisonSummary, type ComparisonRelation } from './comparisonModes'
+import { FILES_MIN } from '../lib/layoutMinimums'
 
 /** Matches --row-md (tokens.css). */
 const ROW_H = 28
@@ -473,7 +474,7 @@ export function CommitDetails({
 
   return (
     <div className="commit-details-view">
-      <Split id="commit-details" label="Commit files width" initial={420} min={260} max={900} collapsed={filesHidden}>
+      <Split id="commit-details" label="Commit files width" initial={420} min={FILES_MIN} max={900} collapsed={filesHidden}>
         <div className="commit-info" aria-busy={pending}>
           <div
             className="commit-meta"

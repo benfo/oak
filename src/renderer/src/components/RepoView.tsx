@@ -45,6 +45,7 @@ import { showLessContext, showMoreContext, toggleFullContext } from '../diff/use
 import { toast } from '../ui'
 import { openRepoOrGlobalConfig } from '../lib/useGitConfig'
 import type { WorkspaceLayout } from './LayoutMenu'
+import { CONTENT_MIN, FILES_MIN, SIDEBAR_MIN } from '../lib/layoutMinimums'
 
 export type View = 'changes' | 'history' | 'blame'
 
@@ -286,7 +287,15 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
             onEnterMain={focusMain}
           />
         )}
-        <Split id="sidebar" label="Sidebar width" initial={260} min={180} max={520} collapsed={!sidebarVisible}>
+        <Split
+          id="sidebar"
+          label="Sidebar width"
+          initial={260}
+          min={SIDEBAR_MIN}
+          restMin={FILES_MIN + CONTENT_MIN}
+          max={520}
+          collapsed={!sidebarVisible}
+        >
           <Sidebar
             r={r}
             view={view}

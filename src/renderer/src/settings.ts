@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { PullMode } from '../../shared/types'
 import { api } from './api'
+import { zoomThatFits } from './lib/layoutMinimums'
 import type { DiffLayout } from './diff/diffLayout'
 import type { FileIconPackId } from './fileIcons/packs'
 
@@ -141,13 +142,22 @@ function apply() {
   if (font) root.setProperty('--mono', `${/[\s,'"]/.test(font) ? font : `'${font}'`}, ${MONO_STACK}`)
   else root.removeProperty('--mono')
   root.setProperty('--tab-size', String(current.tabWidth))
-  window.bridge.setZoom(current.zoom)
+  applyZoom()
   api.setGitPath(current.gitPath).catch(() => {})
+}
+
+let appliedZoom = 1
+
+/** The chosen zoom, held back when the window is too small for the panes to keep their minimums. */
+function applyZoom() {
+  appliedZoom = zoomThatFits(current.zoom, window.innerWidth, appliedZoom)
+  window.bridge.setZoom(appliedZoom)
   // The native title-bar buttons don't zoom, so the toolbar keeps their size in real pixels.
-  root.setProperty('--zoom', String(current.zoom))
+  document.documentElement.style.setProperty('--zoom', String(appliedZoom))
 }
 
 /** Call before the first render. */
 export function initSettings() {
   apply()
+  window.addEventListener('resize', applyZoom)
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
 import { handleResizeNavigation } from '../lib/navigation'
 import { registerSplit, resizeFocusedPane, RESIZE_KEYS, type ResizeKey } from '../lib/paneResize'
+import { CONTENT_MIN } from '../lib/layoutMinimums'
 
 interface Props {
   id: string
@@ -13,6 +14,8 @@ interface Props {
   initial: number
   min?: number
   max?: number
+  /** Smallest the second pane may get, in px. Side-by-side splits keep the content pane usable by default. */
+  restMin?: number
   /** Controlled first-pane visibility; never collapse implicitly while dragging. */
   collapsed?: boolean
   /** Maximize the first pane while keeping the second pane mounted. */
@@ -32,7 +35,18 @@ const load = (id: string, fallback: number) => {
 /** The library owns pointer/keyboard resizing, bounds, ARIA values and resize observation.
  * Oak keeps its pixel preferences and explicit pane navigation.
  */
-export function Split({ id, label, dir = 'row', initial, min = 120, max = 2000, collapsed, restCollapsed, children }: Props) {
+export function Split({
+  id,
+  label,
+  dir = 'row',
+  initial,
+  min = 120,
+  max = 2000,
+  restMin = dir === 'row' ? CONTENT_MIN : 80,
+  collapsed,
+  restCollapsed,
+  children
+}: Props) {
   const [size] = useState(() => load(id, initial))
   const group = useRef<HTMLDivElement | null>(null)
   const separator = useRef<HTMLDivElement | null>(null)
@@ -155,7 +169,7 @@ export function Split({ id, label, dir = 'row', initial, min = 120, max = 2000, 
       <Panel
         id={`${id}-rest`}
         className="split-pane split-rest"
-        minSize={restCollapsed ? 0 : 80}
+        minSize={restCollapsed ? 0 : restMin}
         maxSize={restCollapsed ? 0 : '100%'}
         hidden={restCollapsed}
         inert={restCollapsed}
