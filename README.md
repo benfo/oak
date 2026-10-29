@@ -38,4 +38,4 @@ Run `npm run typecheck`, `npm run lint` and `npm test` before opening a pull req
 
 ## License
 
-Oak is licensed under the [MIT License](LICENSE).
+Oak is licensed under the [MIT License](LICENSE). Third-party material, such as the Colour file icons, is listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

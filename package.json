@@ -82,6 +82,9 @@
       "out/preload/**/*",
       "out/renderer/**/*"
     ],
+    "extraResources": [
+      "THIRD-PARTY-NOTICES.md"
+    ],
     "win": {
       "artifactName": "Oak-Setup-${version}.${ext}",
       "target": [
