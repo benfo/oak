@@ -1,7 +1,7 @@
 {
   "name": "oak",
   "productName": "Oak",
-  "version": "0.1.20",
+  "version": "0.1.21",
   "description": "A keyboard-friendly Git GUI for Windows and Linux, built on your installed Git",
   "homepage": "https://www.benfourie.com/oak/",
   "license": "MIT",

@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.1.21",
+    "highlights": [
+      { "title": "File type icons", "text": "Show an icon for each file and folder in Changes and in a commit's files. Choose Simple (quiet monochrome glyphs) or Colour in Preferences under Appearance, or search the command palette for File icons. They are off until you choose one, and rows keep their size either way." },
+      { "title": "Focus mode keeps the file list", "text": "Press F11 to expand the code area and the file list stays beside the diff, in Changes and in History. Press F to hide or show that list, and F11 again to restore your layout." },
+      { "title": "Sidebar icon rail", "text": "Ctrl+[ collapses the sidebar to a strip of view icons: Changes with its count, History and Blame. Ctrl+1 to Ctrl+3 switch between them, and Ctrl+[ again brings the sidebar back." }
+    ],
+    "fixes": [
+      "Escape leaves focus mode while the History All files tree has focus."
+    ]
+  },
+  {
     "version": "0.1.20",
     "highlights": [
       { "title": "Ignore whitespace changes", "text": "Hide edits that only change spaces, tabs or line endings from the diff options menu, in Changes and in History. Added and removed blank lines stay visible, and a file with only whitespace changes stays in the list with a way to show them. The filter is off again when Oak restarts." },

@@ -2,6 +2,18 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.21
+
+### Added
+
+- File type icons. Show an icon for each file and folder in Changes and in a commit's files. Choose Simple (quiet monochrome glyphs) or Colour in Preferences under Appearance, or search the command palette for File icons. They are off until you choose one, and rows keep their size either way. The Colour icons come from Material Icon Theme (MIT), credited in THIRD-PARTY-NOTICES.md.
+- Focus mode keeps the file list. Press F11 to expand the code area and the file list stays beside the diff, in Changes and in History. Press F to hide or show that list, and F11 again to restore your layout.
+- Sidebar icon rail. Ctrl+[ collapses the sidebar to a strip of view icons: Changes with its count, History and Blame. Ctrl+1 to Ctrl+3 switch between them, and Ctrl+[ again brings the sidebar back.
+
+### Fixed
+
+- Escape leaves focus mode while the History All files tree has focus.
+
 ## 0.1.20
 
 ### Added
