@@ -116,9 +116,16 @@ export const lines: Line[] = [
       {
         id: 'tree',
         name: 'Changed files as a tree',
-        text: ["Group changed files by folder to see where a change lands. It applies to Changes and to a commit's files in History, and your selection stays in place when you switch."],
+        text: [
+          "Group changed files by folder to see where a change lands. It applies to Changes and to a commit's files in History, and your selection stays in place when you switch.",
+          'File icons help you spot what kind of file a row is. Choose Simple (quiet monochrome glyphs) or Colour in Preferences, or search the command palette for "File icons". They are off until you pick one, and rows keep their size either way.',
+        ],
         keys: [{ label: 'List or tree', keys: ['V'] }],
-        shots: [{ image: 'oak-tree', title: "Oak's Changes view with files grouped by folder and a folder selected", caption: 'Unstaged and staged files grouped by folder, with src/components selected.' }],
+        shots: [
+          { image: 'oak-tree', title: "Oak's Changes view with files grouped by folder and a folder selected", caption: 'Unstaged and staged files grouped by folder, with src/components selected.' },
+          { image: 'oak-icons-simple', title: "Oak's Changes view with monochrome file type icons beside each file and folder", caption: 'File icons set to Simple.' },
+          { image: 'oak-icons-colour', title: "Oak's Changes view with coloured file type icons beside each file and folder", caption: 'File icons set to Colour.' },
+        ],
       },
     ],
   },
