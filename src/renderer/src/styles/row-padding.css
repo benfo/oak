@@ -11,4 +11,3 @@
   padding-left: calc(var(--row-pad) + var(--indent, 0px));
   padding-right: var(--row-pad);
 }
-

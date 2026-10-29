@@ -61,3 +61,21 @@
   font-size: var(--text-sm);
   text-align: center;
 }
+
+/*
+ * The Diff | Preview switch leads the title, so tools to its right appearing or going never move it. The filename gives
+ * way before the switch does: it contributes no minimum width of its own, so the title can't shrink below the switch.
+ */
+.diff-heading {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+}
+.diff-heading > .segmented {
+  flex: none;
+  font-family: var(--font);
+}
+.diff-heading .diff-filename {
+  contain: inline-size;
+}

@@ -23,9 +23,9 @@ interface Props {
   onFind: () => void
   findOpen: boolean
   canFind: boolean
-  /** Leads the tools, e.g. the Diff | Preview switch of a previewable file. */
+  /** Leads the title, before the filename, so nothing to its left can move it: the Diff | Preview switch of a previewable file. */
   modeToggle?: ReactNode
-  /** Showing a preview instead of the diff: the diff-only tools stay in place, hidden, so nothing around them moves. */
+  /** Showing a preview instead of the diff: the diff-only tools are left out (the right-aligned tools just get shorter). */
   previewing?: boolean
 }
 
@@ -55,13 +55,15 @@ export function DiffToolbar({
   return (
     <div className="diff-title">
       {leading}
-      <Tip label={title} focusable={false}>
-        <span className="diff-filename">{title}</span>
-      </Tip>
-      {metadata}
-      {!plain && <WhitespaceFilterIndicator hidden={previewing} />}
-      <Toolbar className="diff-controls" aria-label="Diff tools" ref={toolsRef}>
+      <div className="diff-heading">
         {modeToggle}
+        <Tip label={title} focusable={false}>
+          <span className="diff-filename">{title}</span>
+        </Tip>
+      </div>
+      {metadata}
+      {!plain && !previewing && <WhitespaceFilterIndicator />}
+      <Toolbar className="diff-controls" aria-label="Diff tools" ref={toolsRef}>
         <Tip label="Find in file" keys="/ or Ctrl+F">
           <Button className="icon-btn" aria-label="Find in file" aria-pressed={findOpen} isDisabled={!canFind} onPress={onFind}>
             <Icon name="search" size={14} />
@@ -89,8 +91,8 @@ export function DiffToolbar({
             </span>
           </DiffNavigationGroup>
         )}
-        {!plain && (
-          <div className="diff-tools-reserved" data-hidden={previewing || undefined} inert={previewing}>
+        {!plain && !previewing && (
+          <>
             <DiffNavigationGroup
               previous={{
                 label: onlyChange ? 'Reveal change' : 'Previous change',
@@ -121,7 +123,7 @@ export function DiffToolbar({
               </Tip>
             </DiffNavigationGroup>
             <DiffOptions />
-          </div>
+          </>
         )}
       </Toolbar>
     </div>

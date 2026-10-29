@@ -84,26 +84,32 @@ test('a very large SVG is scaled to fit inside its side of the pane', async ({ o
   }
 })
 
+// A path long enough to be truncated, so the room the tools leave it can't matter.
+const LONG = 'assets/design-system/components/navigation/icons/a-really-quite-long-icon-name.svg'
+
 test('switching between Diff and Preview moves nothing, so the same spot can be clicked again, at any pane width', async ({
   open,
   small
 }) => {
-  write(small, 'a.svg', svg('red'))
+  write(small, LONG, svg('red'))
   commitAll(small, 'Add icon')
-  write(small, 'a.svg', svg('blue'))
+  write(small, LONG, svg('blue'))
   const page = await open(small)
   const pane = page.locator('.changes-diff')
-  await page.getByRole('row', { name: /a\.svg/ }).click()
+  await page.getByRole('row', { name: /really-quite-long-icon-name/ }).click()
   const toggle = pane.getByRole('group', { name: 'View' })
   const layout = async () => ({
     toggle: await toggle.boundingBox(),
     title: await pane.locator('.diff-title').boundingBox(),
-    filename: await pane.locator('.diff-filename').boundingBox()
+    filenameX: (await pane.locator('.diff-filename').boundingBox())?.x
   })
-  for (const width of [null, 480]) {
+  for (const width of [null, 480, 160]) {
     if (width) await pane.evaluate((el, w) => Object.assign(el.style, { flex: 'none', width: `${w}px` }), width)
     await expect(pane.locator('.preview-side')).toHaveCount(2)
     const preview = await layout()
+    // Nothing sits on top of the switch, however small the pane.
+    const [group, chip] = [preview.toggle!, (await pane.locator('.diff-kind').first().boundingBox())!]
+    expect(group.x + group.width).toBeLessThanOrEqual(chip.x)
     await toggle.getByRole('button', { name: 'Diff', exact: true }).click()
     await expect(pane.locator('.dl.add')).toHaveCount(1)
     expect(await layout()).toEqual(preview)

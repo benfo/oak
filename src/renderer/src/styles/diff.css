@@ -22,17 +22,6 @@
 .diff-filter-slot[data-active] {
   visibility: visible;
 }
-.diff-filter-slot[data-hidden][data-active] {
-  visibility: hidden;
-}
-.diff-tools-reserved {
-  display: flex;
-  align-items: center;
-  gap: var(--space-0-5);
-}
-.diff-tools-reserved[data-hidden] {
-  visibility: hidden;
-}
 .diff-filter.diff-full-button {
   display: flex;
   align-items: center;
@@ -55,7 +44,7 @@
 @container diff-pane (width < 640px) {
   .diff-wrap:not(.plain) .diff-title {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(min-content, 1fr) auto auto;
     grid-template-rows: var(--control-sm) var(--control-sm);
     align-content: center;
     gap: var(--space-1);
