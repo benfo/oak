@@ -2,6 +2,27 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## Unreleased
+
+### Added
+
+- SVG preview. An SVG in Changes or History opens as a picture, with a Diff | Preview switch at the start of the title to see the text diff instead. Before and after sit side by side on a checkerboard at the file's own proportions, and an added or deleted file shows one side. Press Ctrl+Shift+V, or search the command palette for Toggle preview, to switch. SVGs are drawn as images, so scripts inside them never run.
+- Open in editor. Open a file at the cursor's line, or the repository, in VS Code, Cursor, Sublime Text, Notepad++ or a custom command, chosen in Preferences under External tools. Files an editor cannot edit, such as images, documents and archives, offer Open with default app instead.
+- Open in browser, Open pull request and Copy link. Reach the repository, a branch, a commit, a file or a line on GitHub, GitLab, Bitbucket and Azure DevOps. Oak never offers a page that would not exist, such as a commit that has not been pushed.
+- Commit options. A menu beside Amend with Skip hooks, Sign off, Sign commit (follow Git config, always or never) and Allow empty commit. The options apply to one commit, a label beside the button names any that are on, and Commit & Push also skips the push hook when hooks were skipped.
+- WIP commits. The command palette has WIP commit (skip hooks), WIP commit and push (backup) and Undo WIP commit (keep changes): a save point that stages everything and commits it as WIP without hooks or signing.
+
+### Changed
+
+- Small windows. The diff toolbar wraps instead of switching layout at a fixed width, History drops its Commit, then Date, then Author columns as the list narrows, the file list and diff keep a minimum size, and the largest zoom steps are held back in a window too small for them.
+- Side-by-side diffs scroll together sideways as well as vertically, and each side stops at its own end.
+- Right-click menus use one order everywhere: actions, explore (compare, history, blame), go elsewhere (open in editor, browser), Copy, then destructive actions last.
+- The staged, unstaged or untracked label is gone from the Changes diff title. The list section and the diff's buttons already say which one it is.
+
+### Fixed
+
+- History no longer shows two stacked horizontal scrollbars in a narrow window, and its column header now follows the list when it scrolls sideways.
+
 ## 0.1.21
 
 ### Added
