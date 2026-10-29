@@ -6,6 +6,7 @@ import { createStore } from '../ui'
 import { Icon } from './Icon'
 import { useContextMenuRetargeting } from '../lib/useContextMenuRetargeting'
 import { MenuNavigation } from './MenuNavigation'
+import { useKeyboardMenuHoverLock } from '../lib/useKeyboardMenuHoverLock'
 
 /*
  * Context and dropdown menus, as React Aria menus (themed like the rest of Oak, keyboard-first).
@@ -54,6 +55,7 @@ function ContextMenu({ req }: { req: MenuReq }) {
   }
 
   useContextMenuRetargeting(() => finish(null))
+  useKeyboardMenuHoverLock(req.viaKeyboard)
 
   return (
     <>

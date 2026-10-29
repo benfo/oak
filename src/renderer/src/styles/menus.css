@@ -105,3 +105,8 @@
 .palette-action kbd {
   flex: none;
 }
+
+/* A menu opened from the keyboard ignores a resting pointer until the mouse really moves (useKeyboardMenuHoverLock). */
+[data-menu-hover-lock] .menu-popover {
+  pointer-events: none;
+}

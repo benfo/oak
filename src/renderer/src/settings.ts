@@ -50,6 +50,10 @@ export interface Settings {
   avatars: AvatarSource
   /** File-type icons beside files and folders in change lists and trees. */
   fileIcons: FileIconPackId
+  /** Editor for 'Open in editor': a preset id, '' for the first installed one, or 'custom' with the command below. */
+  externalEditor: string
+  /** Command for the custom editor; {file} is the full path and {line} the line. */
+  externalEditorCommand: string
   /** Reopen the last repository on startup (otherwise start on the welcome screen). */
   reopenLastRepo: boolean
   /** Check for new versions of Oak in the background and download them. */
@@ -80,7 +84,9 @@ export const DEFAULTS: Settings = {
   fetchPrune: true,
   gitPath: '',
   avatars: 'all',
-  fileIcons: 'none'
+  fileIcons: 'none',
+  externalEditor: '',
+  externalEditorCommand: ''
 }
 
 /** all = GitHub and Gravatar (Gravatar gets a hash of each email); github = GitHub noreply addresses only. */

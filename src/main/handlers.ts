@@ -3,7 +3,8 @@ import { spawn } from 'child_process'
 import { existsSync, promises as fs } from 'fs'
 import path from 'path'
 import { getGitBinary, git, outputSink, setGitBinary } from './git'
-import { parseRemoteUrl, pullRequestUrl, pullRequestUrlFromOutput } from '../shared/pullRequest'
+import { pullRequestUrlFromOutput, type RemotePageTarget } from '../shared/remote'
+import { defaultRemote, pullRequestPage, remotePage, unpushedCommits } from './remote'
 import { homedir } from 'os'
 import { addRecent, listRecent, removeRecent } from './recent'
 import { listThemes, setWindowTheme, themesDir, type WindowTheme } from './windowTheme'
@@ -13,6 +14,7 @@ import { setsLineEndings } from '../shared/gitTools'
 import { splitFileLogChunk } from '../shared/fileLog'
 import { blameArgs, mapLineToOlder, parseBlame, type BlameResult } from '../shared/blame'
 import { configFilePath, findExecutables, openConfigFile } from './gitConfigFiles'
+import { openInEditor, type EditorChoice } from './editor'
 import type {
   Branch,
   ChangedFile,
@@ -113,32 +115,6 @@ async function currentBranch(repo: string) {
   } catch {
     return null
   }
-}
-
-async function defaultRemote(repo: string) {
-  const remotes = (await git(repo, ['remote']))
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-  if (!remotes.length) throw new Error('This repository has no remotes configured.')
-  return remotes.includes('origin') ? 'origin' : remotes[0]
-}
-
-/** The "new pull request" page for a pushed branch, on the remote it tracks (else origin). */
-async function pullRequestPage(repo: string, branch: string) {
-  const config = async (key: string) => (await git(repo, ['config', '--get', key], { okCodes: [1] })).trim()
-  const configured = await config(`branch.${branch}.remote`)
-  const remote = configured && configured !== '.' ? configured : await defaultRemote(repo)
-  const remoteBranch = (await config(`branch.${branch}.merge`)).replace(/^refs\/heads\//, '') || branch
-  const pushed = await git(repo, ['rev-parse', '--verify', '-q', `refs/remotes/${remote}/${remoteBranch}`], { okCodes: [1] })
-  if (!pushed.trim()) throw new Error(`Push "${branch}" first: it isn't on ${remote} yet.`)
-  const remoteUrl = (await git(repo, ['remote', 'get-url', remote])).trim()
-  const url = pullRequestUrl(remoteUrl, remoteBranch)
-  if (!url)
-    throw new Error(
-      `Oak doesn't know where ${remote} (${parseRemoteUrl(remoteUrl)?.host ?? remoteUrl}) hosts pull requests. GitHub, GitLab, Bitbucket and Azure DevOps are supported.`
-    )
-  return url
 }
 
 async function repoState(repo: string): Promise<RepoState> {
@@ -851,6 +827,12 @@ epo`), if any. */
     return pullRequestPage(repo, name)
   },
 
+  /** The remote website's page for the repository, a branch, a commit or a file line, refusing any that would 404 (see `remotePage`). */
+  remotePage: (repo: string, target: RemotePageTarget, remoteName?: string) => remotePage(repo, target, remoteName),
+
+  /** HEAD and the commits no remote branch has, so menus can grey remote items at once. */
+  unpushedCommits: (repo: string) => unpushedCommits(repo),
+
   async pushTag(repo: string, tag: string) {
     await git(repo, ['push', await defaultRemote(repo), `refs/tags/${tag}`])
   },
@@ -879,6 +861,11 @@ epo`), if any. */
 
   async revealFile(repo: string, file: string) {
     shell.showItemInFolder(path.join(repo, file))
+  },
+
+  /** Opens a file at a line, or the repository folder when `file` is null, in the editor chosen in Preferences. */
+  async openInEditor(repo: string, file: string | null, line: number | undefined, editor: EditorChoice) {
+    await openInEditor(repo, file, line, editor)
   },
 
   async openTerminal(repo: string) {

@@ -1,4 +1,7 @@
 import { copyText } from './copy'
+import { branchRemotePage, copyRemoteLink, openOnRemote } from './openOnRemote'
+import { remoteItem } from './remoteMenu'
+import { isBranchNotOnRemote } from '../../../shared/remote'
 import { showMenu } from '../api'
 import * as act from '../actions'
 import type { Branch, MenuItem } from '../../../shared/types'
@@ -42,13 +45,11 @@ export async function showBranchMenu(
   const cur = r.status?.branch
   const compares = await compareMenuItems(r, b)
   const isCurrent = !remote && b.name === cur
+  const unpushed = isBranchNotOnRemote(b)
   const id = await showMenu(
     [
       { id: 'checkout', label: remote ? 'Checkout as local branch' : 'Checkout', enabled: !isCurrent },
       { id: 'new', label: 'New branch from here…' },
-      ...(remote ? [] : [{ id: 'pr', label: 'Open pull request' }]),
-      { type: 'separator' },
-      ...(compares.length ? [{ label: 'Compare', submenu: compares }] : []),
       {
         label: 'Merge / Rebase',
         enabled: !isCurrent,
@@ -57,6 +58,19 @@ export async function showBranchMenu(
           { id: 'rebase', label: `Rebase ${cur ?? 'HEAD'} onto ${b.name}` }
         ]
       },
+      ...(compares.length ? [{ type: 'separator' as const }, { label: 'Compare', submenu: compares }] : []),
+      { type: 'separator' },
+      remoteItem('remote', 'Open in browser', unpushed),
+      ...(remote ? [] : [remoteItem('pr', 'Open pull request', unpushed)]),
+      {
+        label: 'Copy',
+        submenu: [
+          { id: 'copy', label: 'Branch name' },
+          { id: 'copyhash', label: 'Commit hash' },
+          remoteItem('copylink', 'Branch link', unpushed)
+        ]
+      },
+      { type: 'separator' },
       {
         label: 'Manage',
         submenu: [
@@ -65,14 +79,6 @@ export async function showBranchMenu(
           ...(hide
             ? [{ id: 'hide', label: 'Hide this branch' }, ...(hide.folder ? [{ id: 'hide-folder', label: `Hide ${hide.folder}` }] : [])]
             : [])
-        ]
-      },
-      { type: 'separator' },
-      {
-        label: 'Copy',
-        submenu: [
-          { id: 'copy', label: 'Branch name' },
-          { id: 'copyhash', label: 'Commit hash' }
         ]
       }
     ],
@@ -84,6 +90,8 @@ export async function showBranchMenu(
   else if (id === 'rebase') act.rebase(r, b.name)
   else if (id === 'new') act.newBranch(r, b.name, b.name)
   else if (id === 'pr') act.openPullRequest(r, b.name)
+  else if (id === 'remote') void openOnRemote(r.path, branchRemotePage(b).target, branchRemotePage(b).remoteName)
+  else if (id === 'copylink') void copyRemoteLink(r.path, branchRemotePage(b).target, 'branch link', branchRemotePage(b).remoteName)
   else if (id === 'rename') act.renameBranch(r, b)
   else if (id === 'delete') remote ? act.deleteRemoteBranch(r, b.name) : act.deleteBranch(r, b.name)
   else if (id === 'hide' && hide) onHide?.(hide.exact)

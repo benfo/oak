@@ -3,6 +3,7 @@ import { api, errorMessage, repoName } from './api'
 import { toast } from './ui'
 import type { Branch, Commit, HistoryScope, RepoStatus, Stash } from '../../shared/types'
 import { loadHistoryToCommit } from './lib/historyNavigation'
+import { refreshUnpushed } from './lib/remoteMenu'
 import {
   cachedRemoteHead,
   defaultCompareName,
@@ -187,6 +188,7 @@ export function useRepo(path: string): RepoCtx {
         const options = branchOptionsRef.current
         const hiddenRefs = hiddenRefGlobs(loadedBranches, options)
         const keepRemotes = visibleRemoteRefs(loadedBranches, options, head)
+        void refreshUnpushed(path)
         const [b, s, c, recent] = await Promise.all([
           branchesRequest,
           api.stashes(path),

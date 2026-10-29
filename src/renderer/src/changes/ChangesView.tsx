@@ -27,6 +27,8 @@ import { Tip } from '../components/Tip'
 import { focusFiles, focusPane, handleNavigation, handleToolNavigation } from '../lib/navigation'
 import { usePane } from '../lib/usePane'
 import { fileMenuItems, runFileMenu } from '../lib/fileMenu'
+import { openInEditor } from '../lib/openInEditor'
+import { isNewFileNotOnRemote } from '../../../shared/remote'
 import { fileListCopy, registerListCopy } from '../lib/listCopy'
 import { PaneFrame } from '../components/Pane'
 import { openPalette } from '../components/Palette'
@@ -348,10 +350,12 @@ export function ChangesView({
           ]
         : section === 'staged'
           ? [{ id: 'unstage', label: `Unstage${many}` }]
-          : [
-              { id: 'stage', label: `Stage${many}` },
-              { id: 'discard', label: one?.kind === 'untracked' ? 'Delete file…' : `Discard changes${many ? ` to${many}` : ''}…` }
-            ]
+          : [{ id: 'stage', label: `Stage${many}` }]
+    // Destructive actions come last, below the Copy submenu.
+    const manage: MenuItem[] =
+      section === 'unstaged'
+        ? [{ id: 'discard', label: one?.kind === 'untracked' ? 'Delete file…' : `Discard changes${many ? ` to${many}` : ''}…` }]
+        : []
     const id = await showMenu([
       ...items,
       { type: 'separator' },
@@ -362,7 +366,10 @@ export function ChangesView({
           canOpen: one?.status !== 'D',
           history: true,
           blame: true,
-          canBlame: !!one && !['A', 'D', '?'].includes(one.status)
+          canBlame: !!one && !['A', 'D', '?'].includes(one.status),
+          canRemote: !!one && !['A', 'D', '?'].includes(one.status),
+          notOnRemote: !!one && isNewFileNotOnRemote(one.status, { working: true, commitUnpushed: false }),
+          manage
         }
       )
     ])
@@ -626,6 +633,7 @@ export function ChangesView({
             )
           }
           actions={diffActions}
+          onOpenInEditor={lead && lead.status !== 'D' ? (line) => openInEditor(r.path, lead.path, line) : undefined}
           readOnlyReason={readOnlyReason}
           onBack={
             filesHidden

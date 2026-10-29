@@ -1,4 +1,7 @@
 import { copyText } from '../lib/copy'
+import { copyRemoteLink, openOnRemote } from '../lib/openOnRemote'
+import { isUnpushed, remoteItem } from '../lib/remoteMenu'
+import { isBranchNotOnRemote } from '../../../shared/remote'
 import { showMenu } from '../api'
 import * as act from '../actions'
 import type { Branch, Commit, MenuItem, Ref } from '../../../shared/types'
@@ -30,18 +33,19 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
   })
   // Only commits that are a local branch tip get it, like the sidebar's branch menu.
   const prBranches = c.refs.filter((x) => x.type === 'local')
-  const pullRequests: MenuItem[] = prBranches.map((x) => ({
-    id: `pr:${x.name}`,
-    label: prBranches.length > 1 ? `Open pull request for ${x.name}` : 'Open pull request'
-  }))
+  const pullRequests: MenuItem[] = prBranches.map((x) => {
+    const unpushedBranch = r.branches.some((b) => b.type === 'local' && b.name === x.name && isBranchNotOnRemote(b))
+    return remoteItem(`pr:${x.name}`, prBranches.length > 1 ? `Open pull request for ${x.name}` : 'Open pull request', unpushedBranch)
+  })
+  const unpushed = isUnpushed(r.path, c.hash)
+  const detach: MenuItem = { id: 'detach', label: 'Checkout this commit (detached)' }
   const items: MenuItem[] = [
     ...(checkouts.length > 1
-      ? [{ label: 'Checkout branch', submenu: checkouts }]
-      : checkouts.map((item) => ({ ...item, label: `Checkout ${item.label}` }))),
+      ? [{ label: 'Checkout', submenu: [...checkouts, { type: 'separator' as const }, detach] }]
+      : [...checkouts.map((item) => ({ ...item, label: `Checkout ${item.label}` })), detach]),
     { id: 'branch', label: 'New branch from here…' },
+    { id: 'tag', label: 'New tag from here…' },
     { id: 'pick', label: `Cherry-pick onto ${cur}`, enabled: !isHead },
-    { type: 'separator' },
-    { label: 'Compare', submenu: [...compares, { id: 'compare-commit', label: 'Compare commit with…' }] },
     {
       label: 'Merge / Rebase',
       enabled: !isHead,
@@ -50,6 +54,20 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
         { id: 'rebase', label: `Rebase ${cur} onto this` }
       ]
     },
+    { type: 'separator' },
+    { label: 'Compare', submenu: [...compares, { id: 'compare-commit', label: 'Compare commit with…' }] },
+    { type: 'separator' },
+    remoteItem('remote', 'Open in browser', unpushed),
+    ...pullRequests,
+    {
+      label: 'Copy',
+      submenu: [
+        { id: 'copy', label: 'Commit hash' },
+        { id: 'copymsg', label: 'Commit message' },
+        remoteItem('copylink', 'Commit link', unpushed)
+      ]
+    },
+    { type: 'separator' },
     {
       label: 'Undo',
       submenu: [
@@ -64,18 +82,6 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
               { id: 'reset:hard', label: 'Reset to here, discard changes…' }
             ])
       ]
-    },
-    {
-      label: 'More',
-      submenu: [{ id: 'detach', label: 'Checkout this commit (detached)' }, { id: 'tag', label: 'New tag from here…' }, ...pullRequests]
-    },
-    { type: 'separator' },
-    {
-      label: 'Copy',
-      submenu: [
-        { id: 'copy', label: 'Commit hash' },
-        { id: 'copymsg', label: 'Commit message' }
-      ]
     }
   ]
   const id = await showMenu(items)
@@ -88,6 +94,7 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
   if (id.startsWith('co:')) act.checkout(r, id.slice(3), 'local')
   else if (id.startsWith('cor:')) act.checkout(r, id.slice(4), 'remote')
   else if (id.startsWith('pr:')) act.openPullRequest(r, id.slice(3))
+  else if (id === 'remote') void openOnRemote(r.path, { kind: 'commit', hash: c.hash })
   else if (id === 'detach') act.checkout(r, c.hash, 'detached')
   else if (id === 'branch') act.newBranch(r, c.hash)
   else if (id === 'tag') act.createTag(r, c.hash)
@@ -98,6 +105,7 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
   else if (id.startsWith('reset:')) act.reset(r, c, id.slice(6) as 'soft' | 'mixed' | 'hard')
   else if (id === 'copy') copyText(c.hash, 'commit hash')
   else if (id === 'copymsg') copyText(c.subject, 'commit message')
+  else if (id === 'copylink') void copyRemoteLink(r.path, { kind: 'commit', hash: c.hash }, 'commit link')
 }
 
 export async function showRefMenu(r: RepoCtx, branch: Branch, onCompare: CompareBranch, anchor?: Element | null) {

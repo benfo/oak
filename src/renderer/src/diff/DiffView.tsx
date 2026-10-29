@@ -12,7 +12,7 @@ import { useDiffRows } from './useDiffRows'
 import { useDiffScroll } from './useDiffScroll'
 import { useDiffCode } from './useDiffCode'
 import { useDiffSelection } from './useDiffSelection'
-import { useDiffCopy } from './useDiffCopy'
+import { useDiffCopy, type RemoteLineActions } from './useDiffCopy'
 import { useDiffPane } from './useDiffPane'
 import { DiffToolbar } from './DiffToolbar'
 import { renderDiffItems } from './DiffItems'
@@ -48,6 +48,10 @@ interface Props {
   /** Put the cursor on the line with this new-side number, scroll to it and focus the diff, then call `onRevealed` (also when there is no such line). */
   revealLine?: number
   onRevealed?: () => void
+  /** Offers "Open in editor" in the line menu, at the cursor's line; omit when the file can't be opened. */
+  onOpenInEditor?: (line?: number) => void
+  /** Offers "Open in browser" and "Line link" in the line menu, at the cursor's line. */
+  remote?: RemoteLineActions
 }
 
 export function DiffView({
@@ -64,7 +68,9 @@ export function DiffView({
   files,
   plain = false,
   revealLine,
-  onRevealed
+  onRevealed,
+  onOpenInEditor,
+  remote
 }: Props) {
   const { diff, source, displayText, reviewMode } = useDiffDocument(text, plain)
   const acts = diff && actions ? actions(diff) : null
@@ -100,7 +106,15 @@ export function DiffView({
     setSide
   })
   const { selected } = selection
-  const { copySource, showCopyMenu } = useDiffCopy({ diff, rows, cursor, selected, ref })
+  const { copySource, showCopyMenu } = useDiffCopy({
+    diff,
+    rows,
+    cursor,
+    selected,
+    ref,
+    openInEditor: onOpenInEditor,
+    remote
+  })
 
   useDiffCursor(diff, rows, cursor, setCursor, reviewMode, selection.clear, pendingHunk)
 

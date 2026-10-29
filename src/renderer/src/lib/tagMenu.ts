@@ -10,19 +10,11 @@ export async function showTagMenu(r: RepoCtx, b: Branch, anchor?: Element | null
   const items: MenuItem[] = [
     { id: 'checkout', label: 'Checkout (detached)' },
     { id: 'new', label: 'New branch from here…' },
-    { type: 'separator' },
     {
       label: 'Merge / Rebase',
       submenu: [
         { id: 'merge', label: `Merge into ${cur}` },
         { id: 'rebase', label: `Rebase ${cur} onto ${b.name}` }
-      ]
-    },
-    {
-      label: 'Manage',
-      submenu: [
-        { id: 'push', label: 'Push tag' },
-        { id: 'delete', label: 'Delete…' }
       ]
     },
     { type: 'separator' },
@@ -31,6 +23,14 @@ export async function showTagMenu(r: RepoCtx, b: Branch, anchor?: Element | null
       submenu: [
         { id: 'copy', label: 'Tag name' },
         { id: 'copyhash', label: 'Commit hash' }
+      ]
+    },
+    { type: 'separator' },
+    {
+      label: 'Manage',
+      submenu: [
+        { id: 'push', label: 'Push tag' },
+        { id: 'delete', label: 'Delete…' }
       ]
     }
   ]

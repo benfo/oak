@@ -15,6 +15,10 @@ import { Split } from '../components/Split'
 import { focusPane, handleDismissNavigation, handleListNav, handleNavigation, handleToolNavigation } from '../lib/navigation'
 import { usePane } from '../lib/usePane'
 import { fileMenuItems, runFileMenu } from '../lib/fileMenu'
+import { openInEditor } from '../lib/openInEditor'
+import { copyRemoteLink, openOnRemote } from '../lib/openOnRemote'
+import { isUnpushed } from '../lib/remoteMenu'
+import { isNewFileNotOnRemote } from '../../../shared/remote'
 import { toast } from '../ui'
 import { useSettings } from '../settings'
 import { buildChangeRows, changeTreeOrder, CHANGE_TREE_INDENT, expandTo, toggled, type ChangeRow } from '../lib/changeTree'
@@ -104,6 +108,8 @@ export function CommitDetails({
   }, [relationKey])
   const [slowKey, setSlowKey] = useState<string | null>(null)
   const working = hash === WORKING_HASH
+  /** The commit whose version of a file the remote shows: HEAD for working changes. */
+  const remoteCommit = working || !hash ? 'HEAD' : hash
   const selectionKey = JSON.stringify([hash, compareBase, branchComparison])
   const path = selectedFile?.key === selectionKey ? selectedFile.path : (filePath ?? null)
   const fileCommit = filePath && hash && !compareBase && !branchComparison ? commits.find((c) => c.hash === hash) : undefined
@@ -220,9 +226,17 @@ export function CommitDetails({
 
   const fileMenu = async (f: ChangedFile) => {
     const id = await showMenu(
-      fileMenuItems([f.path], { workingTree: working, canOpen: f.status !== 'D', history: true, blame: true, canBlame: f.status !== 'D' })
+      fileMenuItems([f.path], {
+        workingTree: working,
+        canOpen: f.status !== 'D',
+        history: true,
+        blame: true,
+        canBlame: f.status !== 'D',
+        canRemote: f.status !== 'D',
+        notOnRemote: isNewFileNotOnRemote(f.status, { working, commitUnpushed: isUnpushed(repo, remoteCommit) })
+      })
     )
-    runFileMenu(id, repo, [f.path], onFileHistory, (path) => onBlame(path, working ? null : hash))
+    runFileMenu(id, repo, [f.path], onFileHistory, (path) => onBlame(path, working ? null : hash), remoteCommit)
   }
 
   const onListKey = (e: React.KeyboardEvent) => {
@@ -393,8 +407,15 @@ export function CommitDetails({
       } catch (e) {
         toast.error(errorMessage(e))
       }
-    } else runFileMenu(id, repo, [p], onFileHistory, (path) => onBlame(path, working ? null : hash))
+    } else runFileMenu(id, repo, [p], onFileHistory, (path) => onBlame(path, working ? null : hash), remoteCommit)
   }
+  /** The shown file's path when it can be opened in an editor: it still exists in the working copy (or is the current content). */
+  const editorPath = treeMissing ? null : showContent ? treeSelection : file && file.status !== 'D' ? file.path : null
+  const openAt = (line?: number) => {
+    if (!editorPath) return
+    openInEditor(repo, editorPath, line, working ? undefined : 'Opened the working copy; the line may differ from this commit')
+  }
+
   const findFile = () =>
     openPalette({
       placeholder: 'Find changed file…',
@@ -719,6 +740,17 @@ export function CommitDetails({
                   }
             }
             onSwitchView={filesHidden || allMode ? undefined : toggleChangesTree}
+            onOpenInEditor={editorPath ? openAt : undefined}
+            remote={
+              editorPath && !working
+                ? {
+                    open: (line) => openOnRemote(repo, { kind: 'file', hash: remoteCommit, path: editorPath, line }),
+                    copyLink: (line) => copyRemoteLink(repo, { kind: 'file', hash: remoteCommit, path: editorPath, line }, 'line link'),
+                    notOnRemote: () =>
+                      !!file && isNewFileNotOnRemote(file.status, { working, commitUnpushed: isUnpushed(repo, remoteCommit) })
+                  }
+                : undefined
+            }
             leading={filesToggle}
             plain={showContent}
             files={

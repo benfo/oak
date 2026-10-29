@@ -8,6 +8,8 @@ import { requestPaneSearch } from '../lib/keymap'
 import { activeDiffCopy } from '../diff/diffCopy'
 import { copyDiffAsPatch, copyListItem, copyText } from '../lib/copy'
 import { activeListCopy } from '../lib/listCopy'
+import { openInEditor } from '../lib/openInEditor'
+import { copyRemoteLink, openOnRemote } from '../lib/openOnRemote'
 import { shortcutBlockReason } from '../lib/shortcutPolicy'
 import { focusFiles, focusPane, isNavigationControl } from '../lib/navigation'
 import { WORKING_HASH, hasWorkingChanges } from '../../../shared/working.ts'
@@ -441,6 +443,27 @@ function buildCommands({
       category: 'Repository',
       keys: 'Ctrl+Shift+E',
       run: () => api.openPath(r.path)
+    },
+    {
+      id: 'editor',
+      repositoryAction: true,
+      title: 'Open repository in editor',
+      category: 'Repository',
+      run: () => openInEditor(r.path, null)
+    },
+    {
+      id: 'open-remote',
+      repositoryAction: true,
+      title: 'Open repository in browser',
+      category: 'Repository',
+      run: () => openOnRemote(r.path, { kind: 'repo' })
+    },
+    {
+      id: 'copy-repo-link',
+      repositoryAction: true,
+      title: 'Copy repository link',
+      category: 'Repository',
+      run: () => copyRemoteLink(r.path, { kind: 'repo' }, 'repository link')
     },
     {
       id: 'terminal',
