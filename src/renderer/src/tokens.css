@@ -60,9 +60,8 @@
   --row-lg: 32px;
   --diff-line-height: 20px;
   --diff-counter-width: 64px;
-  --diff-filter-width: 148px;
   --diff-options-max-height: 560px;
-  --diff-toolbar-compact-height: 64px;
+  --diff-heading-basis: 24ch; /* the room the filename wants before the tools wrap beneath it */
   --diff-layout-width: 104px;
   --find-input-width: 200px;
   --find-bar-width: 440px;

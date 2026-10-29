@@ -290,11 +290,27 @@
   opacity: 1;
   color: var(--muted-foreground);
 }
-:is(.file-row:hover, .file-row.selected, .file-row[data-selected], .file-row[data-focus-visible], .tree-row[data-hovered], .tree-row[data-selected], .tree-row[data-focus-visible])
+:is(
+    .file-row:hover,
+    .file-row.selected,
+    .file-row[data-selected],
+    .file-row[data-focus-visible],
+    .tree-row[data-hovered],
+    .tree-row[data-selected],
+    .tree-row[data-focus-visible]
+  )
   .file-icon {
   opacity: 1;
 }
-:is(.file-row:hover, .file-row.selected, .file-row[data-selected], .file-row[data-focus-visible], .tree-row[data-hovered], .tree-row[data-selected], .tree-row[data-focus-visible])
+:is(
+    .file-row:hover,
+    .file-row.selected,
+    .file-row[data-selected],
+    .file-row[data-focus-visible],
+    .tree-row[data-hovered],
+    .tree-row[data-selected],
+    .tree-row[data-focus-visible]
+  )
   .file-icon.mono {
   color: var(--foreground);
 }
@@ -370,4 +386,3 @@
   background: var(--hover);
   color: var(--muted-foreground);
 }
-

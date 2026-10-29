@@ -7,16 +7,17 @@
 .diff-controls {
   display: flex;
   flex: 0 1 auto;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   min-width: 0;
   align-items: center;
   gap: var(--space-0-5);
   margin-left: auto;
   font-family: var(--font);
 }
+/* Always laid out at its own text width, so the review filter appearing never moves anything. */
 .diff-filter-slot {
   flex: none;
-  width: var(--diff-filter-width);
   visibility: hidden;
 }
 .diff-filter-slot[data-active] {
@@ -40,28 +41,6 @@
   overflow-y: auto;
 }
 
-/* A narrow pane gets two fixed rows; toggling a review filter never changes their height. */
-@container diff-pane (width < 640px) {
-  .diff-wrap:not(.plain) .diff-title {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-rows: var(--control-sm) var(--control-sm);
-    align-content: center;
-    gap: var(--space-1);
-    height: var(--diff-toolbar-compact-height);
-  }
-  .diff-wrap:not(.plain) .diff-filter-slot {
-    grid-column: 3;
-  }
-  .diff-wrap:not(.plain) .diff-controls {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    justify-content: flex-end;
-  }
-  .diff-wrap:not(.plain) .find-bar {
-    top: calc(var(--diff-toolbar-compact-height) + var(--space-1));
-  }
-}
 .diff-navigation-group {
   display: flex;
   align-items: center;
@@ -156,10 +135,13 @@
   flex-direction: column;
   height: 100%;
 }
+/* Wraps by itself: the tools drop beneath the filename only when they no longer fit beside it. */
 .diff-title {
   display: flex;
+  flex-wrap: wrap;
+  align-content: center;
   align-items: center;
-  gap: var(--space-1-5);
+  gap: var(--space-1) var(--space-1-5);
   flex: none;
   min-height: var(--control-lg);
   padding: 0 var(--space-2);

@@ -95,6 +95,18 @@
 .subject-len.over {
   color: var(--warning);
 }
+.commit-option-chip {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 var(--space-1-5);
+  border-radius: var(--radius-full);
+  background: var(--hover);
+  color: var(--warning);
+  font-size: var(--text-xs);
+  line-height: 18px;
+}
 .btn-count {
   padding: 0 var(--space-1-5);
   border-radius: var(--radius-full);
@@ -133,4 +145,3 @@
   padding: 0 var(--space-2-5);
   white-space: nowrap;
 }
-

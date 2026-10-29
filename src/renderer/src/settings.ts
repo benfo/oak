@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { PullMode } from '../../shared/types'
 import { api } from './api'
+import { zoomThatFits } from './lib/layoutMinimums'
 import type { DiffLayout } from './diff/diffLayout'
 import type { FileIconPackId } from './fileIcons/packs'
 
@@ -50,6 +51,10 @@ export interface Settings {
   avatars: AvatarSource
   /** File-type icons beside files and folders in change lists and trees. */
   fileIcons: FileIconPackId
+  /** Editor for 'Open in editor': a preset id, '' for the first installed one, or 'custom' with the command below. */
+  externalEditor: string
+  /** Command for the custom editor; {file} is the full path and {line} the line. */
+  externalEditorCommand: string
   /** Reopen the last repository on startup (otherwise start on the welcome screen). */
   reopenLastRepo: boolean
   /** Check for new versions of Oak in the background and download them. */
@@ -80,7 +85,9 @@ export const DEFAULTS: Settings = {
   fetchPrune: true,
   gitPath: '',
   avatars: 'all',
-  fileIcons: 'none'
+  fileIcons: 'none',
+  externalEditor: '',
+  externalEditorCommand: ''
 }
 
 /** all = GitHub and Gravatar (Gravatar gets a hash of each email); github = GitHub noreply addresses only. */
@@ -128,6 +135,9 @@ export function stepZoom(direction: 1 | -1 | 0) {
   updateSettings({ zoom: next })
 }
 
+/** The zoom actually in effect: the chosen one, unless the window is too small for it (see `applyZoom`). */
+let appliedZoom = 1
+
 /** Settings that take effect outside React: CSS variables, page zoom and the git executable. */
 function apply() {
   const root = document.documentElement.style
@@ -135,13 +145,20 @@ function apply() {
   if (font) root.setProperty('--mono', `${/[\s,'"]/.test(font) ? font : `'${font}'`}, ${MONO_STACK}`)
   else root.removeProperty('--mono')
   root.setProperty('--tab-size', String(current.tabWidth))
-  window.bridge.setZoom(current.zoom)
+  applyZoom()
   api.setGitPath(current.gitPath).catch(() => {})
+}
+
+/** The chosen zoom, held back when the window is too small for the panes to keep their minimums. */
+function applyZoom() {
+  appliedZoom = zoomThatFits(current.zoom, window.innerWidth, appliedZoom)
+  window.bridge.setZoom(appliedZoom)
   // The native title-bar buttons don't zoom, so the toolbar keeps their size in real pixels.
-  root.setProperty('--zoom', String(current.zoom))
+  document.documentElement.style.setProperty('--zoom', String(appliedZoom))
 }
 
 /** Call before the first render. */
 export function initSettings() {
   apply()
+  window.addEventListener('resize', applyZoom)
 }

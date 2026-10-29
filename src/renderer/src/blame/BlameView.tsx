@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { errorMessage, showMenu } from '../api'
+import { openInEditor } from '../lib/openInEditor'
+import { copyRemoteLink, openOnRemote } from '../lib/openOnRemote'
 import { PaneFrame } from '../components/Pane'
 import { useFileTokens } from '../diff/highlight'
 import { copyText } from '../lib/copy'
@@ -206,8 +208,17 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
           enabled: !c.boundary
         },
         ...(past ? [{ id: 'newer', label: 'Back to newer blame' }] : []),
-        { id: 'copyhash', label: 'Copy commit hash', enabled: !c.uncommitted },
-        { id: 'copyline', label: 'Copy line' }
+        { type: 'separator' },
+        { id: 'editor', label: 'Open in editor', enabled: !result?.binary },
+        { id: 'remote', label: 'Open in browser', enabled: !result?.binary },
+        {
+          label: 'Copy',
+          submenu: [
+            { id: 'copyhash', label: 'Commit hash', enabled: !c.uncommitted },
+            { id: 'copyline', label: 'Line' },
+            { id: 'copylink', label: 'Line link', enabled: !result?.binary }
+          ]
+        }
       ],
       anchor
     )
@@ -216,6 +227,10 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
     else if (id === 'before') void stepBack(index)
     else if (id === 'newer') stepNewer()
     else if (id === 'copyhash') copyText(l.hash, 'commit hash')
+    else if (id === 'editor')
+      openInEditor(repo, file, index + 1, rev ? 'Opened the working copy; the line may differ from this revision' : undefined)
+    else if (id === 'remote') void openOnRemote(repo, { kind: 'file', hash: rev ?? 'HEAD', path: file, line: index + 1 })
+    else if (id === 'copylink') void copyRemoteLink(repo, { kind: 'file', hash: rev ?? 'HEAD', path: file, line: index + 1 }, 'line link')
     else if (id === 'copyline') copyText(l.text, 'line')
   }
 

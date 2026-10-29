@@ -103,4 +103,3 @@ input[type='checkbox']:focus-visible,
 .btn:disabled .btn-count {
   background: var(--hover);
 }
-

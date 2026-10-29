@@ -4,7 +4,8 @@
 }
 .find-bar {
   position: absolute;
-  top: calc(var(--control-lg) + var(--space-1));
+  /* Below the toolbar, however many rows it wraps to (DiffToolbar publishes its height). */
+  top: calc(var(--diff-toolbar-height, var(--control-lg)) + var(--space-1));
   right: var(--space-4);
   /* Above the cursor ring (2), which is drawn later in the page and would otherwise cross the box. */
   z-index: 3;

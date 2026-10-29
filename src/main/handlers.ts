@@ -3,7 +3,12 @@ import { spawn } from 'child_process'
 import { existsSync, promises as fs } from 'fs'
 import path from 'path'
 import { getGitBinary, git, outputSink, setGitBinary } from './git'
-import { parseRemoteUrl, pullRequestUrl, pullRequestUrlFromOutput } from '../shared/pullRequest'
+import { readBlob } from './blob'
+import { fileVersions as readFileVersions } from './fileVersions'
+import type { FileVersions, PreviewSource } from '../shared/filePreview'
+import { pullRequestUrlFromOutput, type RemotePageTarget } from '../shared/remote'
+import { defaultRemote, pullRequestPage, remotePage, unpushedCommits } from './remote'
+import { isReachable } from './reachable'
 import { homedir } from 'os'
 import { addRecent, listRecent, removeRecent } from './recent'
 import { listThemes, setWindowTheme, themesDir, type WindowTheme } from './windowTheme'
@@ -13,6 +18,8 @@ import { setsLineEndings } from '../shared/gitTools'
 import { splitFileLogChunk } from '../shared/fileLog'
 import { blameArgs, mapLineToOlder, parseBlame, type BlameResult } from '../shared/blame'
 import { configFilePath, findExecutables, openConfigFile } from './gitConfigFiles'
+import { openInEditor, type EditorChoice } from './editor'
+import { commitFlags, isWipSubject, NO_COMMIT_OPTIONS, type CommitOptions } from '../shared/commitOptions'
 import type {
   Branch,
   ChangedFile,
@@ -47,46 +54,6 @@ const MAX_PREVIEW_BYTES = 2 * 1024 * 1024
 
 // ---------- helpers ----------
 
-/**
- * One `git cat-file --batch` process reads a blob and its size together (process start-up dominates on Windows).
- * Stops reading as soon as the header shows the blob is over `limit`. Resolves null when the object is missing.
- */
-function readBlob(repo: string, spec: string, limit: number): Promise<{ size: number; data: Buffer } | null> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(getGitBinary(), ['cat-file', '--batch'], { cwd: repo, windowsHide: true })
-    const chunks: Buffer[] = []
-    let received = 0
-    let done = false
-    const finish = (result: { size: number; data: Buffer } | null, error?: Error) => {
-      if (done) return
-      done = true
-      child.kill()
-      if (error) reject(error)
-      else resolve(result)
-    }
-    const check = () => {
-      const buf = Buffer.concat(chunks)
-      const end = buf.indexOf(10)
-      if (end < 0) return
-      const header = buf.subarray(0, end).toString('utf8')
-      const match = /^\S+ \S+ (\d+)$/.exec(header)
-      if (!match) return finish(null)
-      const size = Number(match[1])
-      if (size > limit) return finish({ size, data: Buffer.alloc(0) })
-      if (received - end - 1 >= size) finish({ size, data: buf.subarray(end + 1, end + 1 + size) })
-    }
-    child.stdout.on('data', (d: Buffer) => {
-      chunks.push(d)
-      received += d.length
-      check()
-    })
-    child.on('error', (e) => finish(null, new Error(`Could not run git: ${e.message}`)))
-    child.on('close', () => finish(null))
-    child.stdin.on('error', () => {})
-    child.stdin.end(`${spec}\n`)
-  })
-}
-
 const gitDirs = new Map<string, string>()
 
 async function gitDir(repo: string) {
@@ -113,32 +80,6 @@ async function currentBranch(repo: string) {
   } catch {
     return null
   }
-}
-
-async function defaultRemote(repo: string) {
-  const remotes = (await git(repo, ['remote']))
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-  if (!remotes.length) throw new Error('This repository has no remotes configured.')
-  return remotes.includes('origin') ? 'origin' : remotes[0]
-}
-
-/** The "new pull request" page for a pushed branch, on the remote it tracks (else origin). */
-async function pullRequestPage(repo: string, branch: string) {
-  const config = async (key: string) => (await git(repo, ['config', '--get', key], { okCodes: [1] })).trim()
-  const configured = await config(`branch.${branch}.remote`)
-  const remote = configured && configured !== '.' ? configured : await defaultRemote(repo)
-  const remoteBranch = (await config(`branch.${branch}.merge`)).replace(/^refs\/heads\//, '') || branch
-  const pushed = await git(repo, ['rev-parse', '--verify', '-q', `refs/remotes/${remote}/${remoteBranch}`], { okCodes: [1] })
-  if (!pushed.trim()) throw new Error(`Push "${branch}" first: it isn't on ${remote} yet.`)
-  const remoteUrl = (await git(repo, ['remote', 'get-url', remote])).trim()
-  const url = pullRequestUrl(remoteUrl, remoteBranch)
-  if (!url)
-    throw new Error(
-      `Oak doesn't know where ${remote} (${parseRemoteUrl(remoteUrl)?.host ?? remoteUrl}) hosts pull requests. GitHub, GitLab, Bitbucket and Azure DevOps are supported.`
-    )
-  return url
 }
 
 async function repoState(repo: string): Promise<RepoState> {
@@ -298,6 +239,8 @@ epo`), if any. */
             ? ['HEAD', scope.target]
             : [`${scope.from}..${scope.to}`]
     const fields = '%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%s%x1f%D'
+    // The anchor is a commit the view navigated to; once a reset or amend orphans it, it must not keep showing.
+    const anchor = include && !file && (await isReachable(repo, include)) ? include : undefined
     let out: string
     try {
       out = await git(repo, [
@@ -320,7 +263,7 @@ epo`), if any. */
         `--max-count=${limit}`,
         // A leading separator keeps each commit's name-status lines inside its own chunk.
         ...(file ? ['--follow', '--name-status', '-M', `--format=%x1e${fields}`] : [`--format=${fields}%x1e`]),
-        ...(include && !file ? [include] : []),
+        ...(anchor ? [anchor] : []),
         ...(file ? ['--', file] : [])
       ])
     } catch (e) {
@@ -552,6 +495,9 @@ epo`), if any. */
     )
   },
 
+  /** Both sides of a file a diff compares, as bytes, for previews. */
+  fileVersions: (repo: string, source: PreviewSource): Promise<FileVersions> => readFileVersions(repo, source),
+
   /** Saves a file as it was at a commit to a location the user picks. Returns the path, or null if cancelled. */
   async saveFileCopy(repo: string, hash: string, file: string): Promise<string | null> {
     const win = BrowserWindow.getFocusedWindow()
@@ -709,8 +655,15 @@ epo`), if any. */
     await git(repo, [...args, '-'], { input: patch })
   },
 
-  async commit(repo: string, message: string, amend: boolean, signoff = false) {
-    await git(repo, ['commit', '-F', '-', ...(amend ? ['--amend'] : []), ...(signoff ? ['--signoff'] : [])], { input: message })
+  async commit(repo: string, message: string, amend: boolean, options: CommitOptions = NO_COMMIT_OPTIONS) {
+    await git(repo, ['commit', '-F', '-', ...(amend ? ['--amend'] : []), ...commitFlags(options)], { input: message })
+  },
+
+  /** Takes the last commit back into the working tree, but only when it is a WIP commit (see `WIP_MESSAGE`). */
+  async undoWipCommit(repo: string) {
+    const subject = (await git(repo, ['log', '-1', '--format=%s'])).trim()
+    if (!isWipSubject(subject)) throw new Error('The last commit is not a WIP commit.')
+    await git(repo, ['reset', '-q', 'HEAD~1'])
   },
 
   // ---- branches & refs ----
@@ -818,10 +771,10 @@ epo`), if any. */
   },
 
   /** Pushes; resolves with a link to open a pull request when one is useful (see pullRequestUrlFromOutput). */
-  async push(repo: string, force: boolean): Promise<string | null> {
+  async push(repo: string, force: boolean, noVerify = false): Promise<string | null> {
     const branch = await currentBranch(repo)
     if (!branch) throw new Error('You are not on a branch (detached HEAD). Create a branch first.')
-    const forceArgs = force ? ['--force-with-lease'] : []
+    const forceArgs = [...(force ? ['--force-with-lease'] : []), ...(noVerify ? ['--no-verify'] : [])]
     let hasUpstream = true
     try {
       await git(repo, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'])
@@ -851,6 +804,12 @@ epo`), if any. */
     return pullRequestPage(repo, name)
   },
 
+  /** The remote website's page for the repository, a branch, a commit or a file line, refusing any that would 404 (see `remotePage`). */
+  remotePage: (repo: string, target: RemotePageTarget, remoteName?: string) => remotePage(repo, target, remoteName),
+
+  /** HEAD and the commits no remote branch has, so menus can grey remote items at once. */
+  unpushedCommits: (repo: string) => unpushedCommits(repo),
+
   async pushTag(repo: string, tag: string) {
     await git(repo, ['push', await defaultRemote(repo), `refs/tags/${tag}`])
   },
@@ -879,6 +838,11 @@ epo`), if any. */
 
   async revealFile(repo: string, file: string) {
     shell.showItemInFolder(path.join(repo, file))
+  },
+
+  /** Opens a file at a line, or the repository folder when `file` is null, in the editor chosen in Preferences. */
+  async openInEditor(repo: string, file: string | null, line: number | undefined, editor: EditorChoice) {
+    await openInEditor(repo, file, line, editor)
   },
 
   async openTerminal(repo: string) {

@@ -80,7 +80,7 @@ test.describe('history', () => {
       .click({ button: 'right' })
     const menu = page.getByRole('menu')
     await expect(menu.getByRole('menuitem', { name: /New branch from here/ })).toBeVisible()
-    for (const group of ['Compare', 'Merge / Rebase', 'Undo', 'More', 'Copy']) {
+    for (const group of ['Compare', 'Merge / Rebase', 'Undo', 'Copy']) {
       await expect(menu.getByRole('menuitem', { name: group })).toBeVisible()
     }
     await expect(menu.getByRole('menuitem', { name: /Revert commit/ })).toHaveCount(0)

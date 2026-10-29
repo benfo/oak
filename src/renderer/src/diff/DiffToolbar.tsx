@@ -6,6 +6,7 @@ import { Icon } from '../components/Icon'
 import { DiffOptions } from './DiffOptions'
 import { WhitespaceFilterIndicator } from './WhitespaceFilterIndicator'
 import { DiffNavigationGroup } from './DiffNavigationGroup'
+import { usePublishToolbarHeight } from './usePublishToolbarHeight'
 
 interface Props {
   leading?: ReactNode
@@ -23,6 +24,10 @@ interface Props {
   onFind: () => void
   findOpen: boolean
   canFind: boolean
+  /** Leads the title, before the filename, so nothing to its left can move it: the Diff | Preview switch of a previewable file. */
+  modeToggle?: ReactNode
+  /** Showing a preview instead of the diff: the diff-only tools are left out (the right-aligned tools just get shorter). */
+  previewing?: boolean
 }
 
 /** File title with the file, change, context and layout controls. */
@@ -40,20 +45,27 @@ export function DiffToolbar({
   jumpHunk,
   onFind,
   findOpen,
-  canFind
+  canFind,
+  modeToggle,
+  previewing = false
 }: Props) {
+  const titleRef = useRef<HTMLDivElement>(null)
+  usePublishToolbarHeight(titleRef)
   const toolsRef = useRef<HTMLDivElement>(null)
   useEffect(() => toolbarHomeEnd(toolsRef.current), [])
   const navigationDisabled = !changeCount || (changeCount === 1 && singleChangeVisible)
   const onlyChange = changeCount === 1
   return (
-    <div className="diff-title">
+    <div className="diff-title" ref={titleRef}>
       {leading}
-      <Tip label={title} focusable={false}>
-        <span className="diff-filename">{title}</span>
-      </Tip>
+      <div className="diff-heading">
+        {modeToggle}
+        <Tip label={title} focusable={false}>
+          <span className="diff-filename">{title}</span>
+        </Tip>
+      </div>
       {metadata}
-      {!plain && <WhitespaceFilterIndicator />}
+      {!plain && !previewing && <WhitespaceFilterIndicator />}
       <Toolbar className="diff-controls" aria-label="Diff tools" ref={toolsRef}>
         <Tip label="Find in file" keys="/ or Ctrl+F">
           <Button className="icon-btn" aria-label="Find in file" aria-pressed={findOpen} isDisabled={!canFind} onPress={onFind}>
@@ -82,7 +94,7 @@ export function DiffToolbar({
             </span>
           </DiffNavigationGroup>
         )}
-        {!plain && (
+        {!plain && !previewing && (
           <>
             <DiffNavigationGroup
               previous={{

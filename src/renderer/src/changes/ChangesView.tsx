@@ -27,6 +27,8 @@ import { Tip } from '../components/Tip'
 import { focusFiles, focusPane, handleNavigation, handleToolNavigation } from '../lib/navigation'
 import { usePane } from '../lib/usePane'
 import { fileMenuItems, runFileMenu } from '../lib/fileMenu'
+import { openInEditor } from '../lib/openInEditor'
+import { isNewFileNotOnRemote } from '../../../shared/remote'
 import { fileListCopy, registerListCopy } from '../lib/listCopy'
 import { PaneFrame } from '../components/Pane'
 import { openPalette } from '../components/Palette'
@@ -39,6 +41,7 @@ import { buildChangeRows, changeTreeOrder, CHANGE_TREE_INDENT, expandTo, toggled
 import { ChevronSpacer, FolderLabel } from '../components/ChangeTreeRow'
 import { FileIcon } from '../components/FileIcon'
 import { TreeToggle, toggleChangesTree } from '../components/TreeToggle'
+import { FILES_MIN } from '../lib/layoutMinimums'
 
 /** Matches --row-md (tokens.css). */
 const ROW_H = 28
@@ -348,10 +351,12 @@ export function ChangesView({
           ]
         : section === 'staged'
           ? [{ id: 'unstage', label: `Unstage${many}` }]
-          : [
-              { id: 'stage', label: `Stage${many}` },
-              { id: 'discard', label: one?.kind === 'untracked' ? 'Delete file…' : `Discard changes${many ? ` to${many}` : ''}…` }
-            ]
+          : [{ id: 'stage', label: `Stage${many}` }]
+    // Destructive actions come last, below the Copy submenu.
+    const manage: MenuItem[] =
+      section === 'unstaged'
+        ? [{ id: 'discard', label: one?.kind === 'untracked' ? 'Delete file…' : `Discard changes${many ? ` to${many}` : ''}…` }]
+        : []
     const id = await showMenu([
       ...items,
       { type: 'separator' },
@@ -362,7 +367,10 @@ export function ChangesView({
           canOpen: one?.status !== 'D',
           history: true,
           blame: true,
-          canBlame: !!one && !['A', 'D', '?'].includes(one.status)
+          canBlame: !!one && !['A', 'D', '?'].includes(one.status),
+          canRemote: !!one && !['A', 'D', '?'].includes(one.status),
+          notOnRemote: !!one && isNewFileNotOnRemote(one.status, { working: true, commitUnpushed: false }),
+          manage
         }
       )
     ])
@@ -524,7 +532,7 @@ export function ChangesView({
   )
 
   return (
-    <Split id="changes" label="Changed files width" initial={360} min={260} max={800} collapsed={filesHidden}>
+    <Split id="changes" label="Changed files width" initial={360} min={FILES_MIN} max={800} collapsed={filesHidden}>
       <div className="changes-left">
         <OperationBanner r={r} />
         <div className="changes-files" ref={filesRef}>
@@ -604,15 +612,11 @@ export function ChangesView({
       <div className="diff-pane changes-diff">
         <DiffView
           title={lead ? (lead.oldPath ? `${lead.oldPath} → ${lead.path}` : lead.path) : undefined}
-          metadata={
-            lead && (
-              <>
-                <span className="diff-kind">{lead.kind}</span>
-                {selected.length > 1 && <span className="diff-kind count">{selected.length} files selected</span>}
-              </>
-            )
-          }
+          metadata={lead && selected.length > 1 && <span className="diff-kind count">{selected.length} files selected</span>}
           text={diff}
+          preview={
+            lead ? { repo: r.path, source: { kind: 'working', diffKind: lead.kind, file: lead.path, oldPath: lead.oldPath } } : undefined
+          }
           loading={!!lead}
           emptyText={
             total ? (
@@ -626,6 +630,7 @@ export function ChangesView({
             )
           }
           actions={diffActions}
+          onOpenInEditor={lead && lead.status !== 'D' ? (line) => openInEditor(r.path, lead.path, line) : undefined}
           readOnlyReason={readOnlyReason}
           onBack={
             filesHidden

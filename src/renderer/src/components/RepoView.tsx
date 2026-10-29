@@ -8,6 +8,8 @@ import { requestPaneSearch } from '../lib/keymap'
 import { activeDiffCopy } from '../diff/diffCopy'
 import { copyDiffAsPatch, copyListItem, copyText } from '../lib/copy'
 import { activeListCopy } from '../lib/listCopy'
+import { openInEditor } from '../lib/openInEditor'
+import { copyRemoteLink, openOnRemote } from '../lib/openOnRemote'
 import { shortcutBlockReason } from '../lib/shortcutPolicy'
 import { focusFiles, focusPane, isNavigationControl } from '../lib/navigation'
 import { WORKING_HASH, hasWorkingChanges } from '../../../shared/working.ts'
@@ -43,6 +45,9 @@ import { showLessContext, showMoreContext, toggleFullContext } from '../diff/use
 import { toast } from '../ui'
 import { openRepoOrGlobalConfig } from '../lib/useGitConfig'
 import type { WorkspaceLayout } from './LayoutMenu'
+import { CONTENT_MIN, FILES_MIN, SIDEBAR_MIN } from '../lib/layoutMinimums'
+import { usePreviewToggleCommand } from '../preview/activePreview'
+import { TOGGLE_PREVIEW_KEYS } from '../preview/PreviewModeToggle'
 
 export type View = 'changes' | 'history' | 'blame'
 
@@ -178,6 +183,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
       document.querySelector<HTMLInputElement>('.sidebar-filter input')?.select()
     } else focusPane('[data-pane="sidebar"]')
   }
+  const previewToggleCommand = usePreviewToggleCommand()
   const commands = buildCommands({
     r,
     view,
@@ -191,6 +197,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     showBlame,
     sidebarToggle,
     filesToggleCommand: { title: filesHidden ? 'Show file list' : 'Hide file list', enabled: canToggleFiles, toggle: toggleFiles },
+    previewToggleCommand,
     focusSidebar,
     layout,
     revealPanes,
@@ -284,7 +291,15 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
             onEnterMain={focusMain}
           />
         )}
-        <Split id="sidebar" label="Sidebar width" initial={260} min={180} max={520} collapsed={!sidebarVisible}>
+        <Split
+          id="sidebar"
+          label="Sidebar width"
+          initial={260}
+          min={SIDEBAR_MIN}
+          restMin={FILES_MIN + CONTENT_MIN}
+          max={520}
+          collapsed={!sidebarVisible}
+        >
           <Sidebar
             r={r}
             view={view}
@@ -358,6 +373,7 @@ interface CommandCtx {
   showBlame: (file: string, rev: string | null) => void
   sidebarToggle: { title: string; enabled: boolean; toggle: () => void }
   filesToggleCommand: { title: string; enabled: boolean; toggle: () => void }
+  previewToggleCommand: { enabled: boolean; toggle: () => void }
   focusSidebar: (search?: boolean) => void
   layout: WorkspaceLayout
   revealPanes: () => void
@@ -377,12 +393,15 @@ function buildCommands({
   showBlame,
   sidebarToggle,
   filesToggleCommand,
+  previewToggleCommand,
   focusSidebar,
   layout,
   revealPanes,
   toggleFocus
 }: CommandCtx): Command[] {
   const st = r.status
+  // A WIP commit takes everything, so a merge in progress or conflicts must be settled first.
+  const canCommitWip = !!st && st.state === 'clean' && st.staged.length + st.unstaged.length > 0
   const hasRemotes = r.branches.some((b) => b.type === 'remote')
   const currentBranch = r.branches.find((b) => b.type === 'local' && b.current) ?? null
   const hasOtherBranch = r.branches.some((b) => b.type !== 'tag' && !b.current)
@@ -441,6 +460,27 @@ function buildCommands({
       category: 'Repository',
       keys: 'Ctrl+Shift+E',
       run: () => api.openPath(r.path)
+    },
+    {
+      id: 'editor',
+      repositoryAction: true,
+      title: 'Open repository in editor',
+      category: 'Repository',
+      run: () => openInEditor(r.path, null)
+    },
+    {
+      id: 'open-remote',
+      repositoryAction: true,
+      title: 'Open repository in browser',
+      category: 'Repository',
+      run: () => openOnRemote(r.path, { kind: 'repo' })
+    },
+    {
+      id: 'copy-repo-link',
+      repositoryAction: true,
+      title: 'Copy repository link',
+      category: 'Repository',
+      run: () => copyRemoteLink(r.path, { kind: 'repo' }, 'repository link')
     },
     {
       id: 'terminal',
@@ -648,6 +688,15 @@ function buildCommands({
       run: toggleFocus
     },
     {
+      id: 'toggle-preview',
+      title: 'Toggle preview',
+      detail: 'Switch the open file between its diff and its preview',
+      category: 'View',
+      keys: TOGGLE_PREVIEW_KEYS,
+      enabled: previewToggleCommand.enabled,
+      run: previewToggleCommand.toggle
+    },
+    {
       id: 'toggle-files-pane',
       title: filesToggleCommand.title,
       detail: 'F in focus mode',
@@ -804,6 +853,33 @@ function buildCommands({
           placeholder: 'Apply which stash?',
           items: r.stashes.map((s) => ({ id: s.ref, label: s.message, detail: s.ref, run: () => act.stashApply(r, s.ref) }))
         })
+    },
+    {
+      id: 'commit-wip',
+      repositoryAction: true,
+      requiresIdle: true,
+      title: 'WIP commit (skip hooks)',
+      category: 'Changes',
+      enabled: canCommitWip,
+      run: () => act.commitWip(r)
+    },
+    {
+      id: 'commit-wip-push',
+      repositoryAction: true,
+      requiresIdle: true,
+      title: 'WIP commit and push (backup)',
+      category: 'Changes',
+      enabled: canCommitWip,
+      run: () => act.commitWip(r, true)
+    },
+    {
+      id: 'undo-wip',
+      repositoryAction: true,
+      requiresIdle: true,
+      title: 'Undo WIP commit (keep changes)',
+      category: 'Changes',
+      enabled: !!st?.head,
+      run: () => act.undoWipCommit(r)
     },
     {
       id: 'abort-op',

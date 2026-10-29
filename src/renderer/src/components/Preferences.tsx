@@ -14,6 +14,7 @@ import { openWhatsNew } from './WhatsNew'
 import { openRepoOrGlobalConfig } from '../lib/useGitConfig'
 import { GitPage } from './GitPage'
 import { RepositoryPage } from './RepositoryPage'
+import { ExternalToolsPage } from './ExternalToolsPage'
 import { Field } from './prefsFields'
 import { Tip } from './Tip'
 
@@ -24,6 +25,7 @@ const TABS = [
   ['general', 'General'],
   ['git', 'Git'],
   ['repository', 'Repository'],
+  ['tools', 'External tools'],
   ['diffs', 'Diffs'],
   ['appearance', 'Appearance'],
   ['themes', 'Themes']
@@ -155,6 +157,10 @@ function Preferences({ repo, onClose }: { repo: string | null; onClose: () => vo
         </TabList>
         <Section id="git" title="Git">
           <GitPage repo={repo} />
+        </Section>
+
+        <Section id="tools" title="External tools">
+          <ExternalToolsPage />
         </Section>
 
         <Section id="repository" title="Repository">
