@@ -129,3 +129,42 @@ test('a small window at the largest zoom still leaves the content pane its minim
   // Two px of slack: at a fractional zoom the browser snaps panel edges to device pixels.
   await expect.poll(() => page.locator('#changes-rest').evaluate((el) => el.getBoundingClientRect().width)).toBeGreaterThanOrEqual(318)
 })
+
+test('Ctrl+Shift+V and the palette toggle the preview, and only offer it for a file that has one', async ({ open, small }) => {
+  write(small, 'a.svg', svg('red'))
+  commitAll(small, 'Add icon')
+  write(small, 'a.svg', svg('blue'))
+  write(small, 'plain.ts', 'const a = 1\n')
+  const page = await open(small)
+  const pane = page.locator('.changes-diff')
+  const showing = (mode: 'Diff' | 'Preview') =>
+    expect(pane.getByRole('group', { name: 'View' }).getByRole('button', { name: mode, exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+  await page.getByRole('row', { name: /a\.svg/ }).click()
+  await showing('Preview')
+  await page.keyboard.press('Control+Shift+V')
+  await showing('Diff')
+  await expect(pane.locator('.dl.add')).toHaveCount(1)
+
+  // From the palette too, which says what the key is.
+  await page.keyboard.press('Control+Shift+P')
+  const palette = page.locator('.command-palette')
+  await palette.getByRole('textbox', { name: 'Type a command…' }).fill('Toggle preview')
+  const option = palette.getByRole('option')
+  await expect(option).toHaveCount(1)
+  await expect(option).toContainText('Ctrl+Shift+V')
+  await page.keyboard.press('Enter')
+  await showing('Preview')
+
+  // A file with no previewer: no command, and the key does nothing.
+  await page.getByRole('row', { name: /plain\.ts/ }).click()
+  await expect(pane.locator('.dl').first()).toBeVisible()
+  await page.keyboard.press('Control+Shift+P')
+  await palette.getByRole('textbox', { name: 'Type a command…' }).fill('Toggle preview')
+  await expect(palette.getByText('No matches', { exact: true })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('Control+Shift+V')
+  await expect(pane.getByRole('group', { name: 'View' })).toHaveCount(0)
+})

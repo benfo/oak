@@ -46,6 +46,8 @@ import { toast } from '../ui'
 import { openRepoOrGlobalConfig } from '../lib/useGitConfig'
 import type { WorkspaceLayout } from './LayoutMenu'
 import { CONTENT_MIN, FILES_MIN, SIDEBAR_MIN } from '../lib/layoutMinimums'
+import { usePreviewToggleCommand } from '../preview/activePreview'
+import { TOGGLE_PREVIEW_KEYS } from '../preview/PreviewModeToggle'
 
 export type View = 'changes' | 'history' | 'blame'
 
@@ -181,6 +183,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
       document.querySelector<HTMLInputElement>('.sidebar-filter input')?.select()
     } else focusPane('[data-pane="sidebar"]')
   }
+  const previewToggleCommand = usePreviewToggleCommand()
   const commands = buildCommands({
     r,
     view,
@@ -194,6 +197,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     showBlame,
     sidebarToggle,
     filesToggleCommand: { title: filesHidden ? 'Show file list' : 'Hide file list', enabled: canToggleFiles, toggle: toggleFiles },
+    previewToggleCommand,
     focusSidebar,
     layout,
     revealPanes,
@@ -369,6 +373,7 @@ interface CommandCtx {
   showBlame: (file: string, rev: string | null) => void
   sidebarToggle: { title: string; enabled: boolean; toggle: () => void }
   filesToggleCommand: { title: string; enabled: boolean; toggle: () => void }
+  previewToggleCommand: { enabled: boolean; toggle: () => void }
   focusSidebar: (search?: boolean) => void
   layout: WorkspaceLayout
   revealPanes: () => void
@@ -388,6 +393,7 @@ function buildCommands({
   showBlame,
   sidebarToggle,
   filesToggleCommand,
+  previewToggleCommand,
   focusSidebar,
   layout,
   revealPanes,
@@ -680,6 +686,15 @@ function buildCommands({
       enabled: layout === 'code',
       when: () => layout === 'code',
       run: toggleFocus
+    },
+    {
+      id: 'toggle-preview',
+      title: 'Toggle preview',
+      detail: 'Switch the open file between its diff and its preview',
+      category: 'View',
+      keys: TOGGLE_PREVIEW_KEYS,
+      enabled: previewToggleCommand.enabled,
+      run: previewToggleCommand.toggle
     },
     {
       id: 'toggle-files-pane',
