@@ -116,15 +116,23 @@ export const lines: Line[] = [
       {
         id: 'tree',
         name: 'Changed files as a tree',
-        text: [
-          "Group changed files by folder to see where a change lands. It applies to Changes and to a commit's files in History, and your selection stays in place when you switch.",
-          'File icons help you spot what kind of file a row is. Choose Simple (quiet monochrome glyphs) or Colour in Preferences, or search the command palette for "File icons". They are off until you pick one, and rows keep their size either way.',
-        ],
+        text: ["Group changed files by folder to see where a change lands. It applies to Changes and to a commit's files in History, and your selection stays in place when you switch."],
         keys: [{ label: 'List or tree', keys: ['V'] }],
+        shots: [{ image: 'oak-tree', title: "Oak's Changes view with files grouped by folder and a folder selected", caption: 'Unstaged and staged files grouped by folder, with src/components selected.' }],
+      },
+      {
+        id: 'file-icons',
+        name: 'File type icons',
+        text: [
+          "Files and folders in Changes and in a commit's files can show an icon for their type, so you can tell a stylesheet from a script or a config file at a glance. Open and closed folders have their own icons.",
+          'Simple draws quiet monochrome glyphs in your theme\'s text colour. Colour uses the Material Icon Theme set, with light variants where an icon needs one. Both keep rows the same size, and they are off until you choose one.',
+        ],
+        keys: [{ label: 'Open the palette', keys: ['Ctrl', 'Shift', 'P'] }],
+        points: ['Open the command palette', 'Search for "File icons"', 'Pick None, Simple or Colour'],
         shots: [
-          { image: 'oak-tree', title: "Oak's Changes view with files grouped by folder and a folder selected", caption: 'Unstaged and staged files grouped by folder, with src/components selected.' },
           { image: 'oak-icons-simple', title: "Oak's Changes view with monochrome file type icons beside each file and folder", caption: 'File icons set to Simple.' },
-          { image: 'oak-icons-colour', title: "Oak's Changes view with coloured file type icons beside each file and folder", caption: 'File icons set to Colour.' },
+          { image: 'oak-icons-colour', title: "Oak's Changes view with coloured file type icons beside each file and folder", caption: 'File icons set to Colour (Material Icon Theme, MIT).' },
+          { image: 'oak-icons-palette', title: "Oak's command palette listing the File icons commands", caption: 'Switch from the command palette, or in Preferences under Appearance.' },
         ],
       },
     ],
