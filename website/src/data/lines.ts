@@ -175,7 +175,7 @@ export const lines: Line[] = [
           { label: 'Collapse the sidebar to icons', keys: ['Ctrl', '['] },
           { label: 'Previous or next file', keys: ['Alt', 'PageUp / PageDown'] },
         ],
-        shots: [{ image: 'oak-focus', title: 'Oak with the code area expanded to fill the window', caption: 'After pressing F11, the diff fills the window.' }],
+        shots: [{ image: 'oak-focus', title: 'Oak in focus mode with the file lists beside a side by side diff', caption: 'After pressing F11, the diff fills the window and the file lists stay beside it.' }],
       },
       {
         id: 'resize',
