@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { previewRefs, PREVIEW_MAX_BYTES } from '../src/shared/filePreview.ts'
+import { previewRefs, sameVersions, PREVIEW_MAX_BYTES } from '../src/shared/filePreview.ts'
 import { createPreviewRegistry, hasExtension, type Previewer } from '../src/shared/previewRegistry.ts'
 import { fileVersions } from '../src/main/fileVersions.ts'
 
@@ -128,4 +128,12 @@ test('a file over the size cap is reported, not loaded', async () => {
   } finally {
     rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   }
+})
+
+test('a reload with the same content counts as nothing new', () => {
+  const ok = (...bytes: number[]) => ({ state: 'ok' as const, bytes: new Uint8Array(bytes) })
+  const missing = { state: 'missing' as const }
+  assert.equal(sameVersions({ before: missing, after: ok(1, 2) }, { before: missing, after: ok(1, 2) }), true)
+  assert.equal(sameVersions({ before: missing, after: ok(1, 2) }, { before: missing, after: ok(1, 3) }), false)
+  assert.equal(sameVersions({ before: ok(1), after: ok(1) }, { before: missing, after: ok(1) }), false)
 })

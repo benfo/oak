@@ -47,3 +47,19 @@ export function previewRefs(source: PreviewSource): PreviewRefs {
       return { before: source.parent ? git(`${source.parent}:${before}`) : null, after: git(`${source.hash}:${source.file}`) }
   }
 }
+
+/** A file a diff is of, with the repository to read it from. */
+export interface PreviewTarget {
+  repo: string
+  source: PreviewSource
+}
+
+function sameVersion(a: FileVersion, b: FileVersion): boolean {
+  if (a.state !== b.state) return false
+  if (a.state === 'tooLarge' && b.state === 'tooLarge') return a.size === b.size
+  if (a.state !== 'ok' || b.state !== 'ok') return true
+  return a.bytes.length === b.bytes.length && a.bytes.every((byte, i) => byte === b.bytes[i])
+}
+
+/** Whether a reload brought nothing new, so the versions already on screen can stay. */
+export const sameVersions = (a: FileVersions, b: FileVersions) => sameVersion(a.before, b.before) && sameVersion(a.after, b.after)
