@@ -7,6 +7,8 @@
       { "title": "Open in browser, Open pull request and Copy link", "text": "Reach the repository, a branch, a commit, a file or a line on GitHub, GitLab, Bitbucket and Azure DevOps. Oak never offers a page that would not exist, such as a commit that has not been pushed." },
       { "title": "Commit options", "text": "A menu beside Amend with Skip hooks, Sign off, Sign commit (follow Git config, always or never) and Allow empty commit. The options apply to one commit, a label beside the button names any that are on, and Commit & Push also skips the push hook when hooks were skipped." },
       { "title": "WIP commits", "text": "The command palette has WIP commit (skip hooks), WIP commit and push (backup) and Undo WIP commit (keep changes): a save point that stages everything and commits it as WIP without hooks or signing." },
+      { "title": "Menus in one order", "text": "Right-click menus use one order everywhere: actions, explore (compare, history, blame), go elsewhere (open in editor, browser), Copy, then destructive actions last." },
+      { "title": "Cleaner diff title", "text": "The staged, unstaged or untracked label is gone from the Changes diff title. The list section and the diff's buttons already say which one it is." },
       { "title": "Better in small windows", "text": "The diff toolbar wraps instead of switching layout at a fixed width, History drops its Commit, then Date, then Author columns as the list narrows, the file list and diff keep a minimum size, and the largest zoom steps are held back in a window too small for them. Side-by-side diffs also scroll together sideways, and each side stops at its own end." }
     ],
     "fixes": [
