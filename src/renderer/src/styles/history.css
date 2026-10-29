@@ -96,6 +96,10 @@
   opacity: var(--disabled-opacity);
   pointer-events: none;
 }
+.commit-head {
+  flex: none;
+  overflow: hidden;
+}
 .commit-scroll {
   flex: 1;
   overflow: auto;

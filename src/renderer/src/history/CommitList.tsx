@@ -86,6 +86,7 @@ export function CommitList({
   const [cursor, setCursor] = useState(selected)
   useEffect(() => setCursor(selected), [selected, revealKey])
   const scrollRef = useRef<HTMLDivElement>(null)
+  const headRef = useRef<HTMLDivElement>(null)
   const graphW = laneX(Math.min(graph.width, MAX_LANES) - 1) + 12
   const offset = working ? 1 : 0
   const keys = useMemo(() => (working ? [WORKING_HASH] : []).concat(commits.map((c) => c.hash)), [commits, !!working])
@@ -215,15 +216,26 @@ export function CommitList({
           if (!e.defaultPrevented) onDisplayMenu?.(e)
         }}
       >
-        <div className="commit-row header" aria-hidden="true" style={{ gridTemplateColumns: cols(graphW) }}>
-          <div />
-          <div>Message</div>
-          <div>Author</div>
-          <div>Date</div>
-          <div>Commit</div>
+        {/* Clipped, and moved by the list's horizontal scroll, so the columns stay aligned and only the list shows a scrollbar. */}
+        <div ref={headRef} className="commit-head" aria-hidden="true">
+          <div className="commit-row header" style={{ gridTemplateColumns: cols(graphW) }}>
+            <div />
+            <div>Message</div>
+            <div>Author</div>
+            <div>Date</div>
+            <div>Commit</div>
+          </div>
         </div>
         {/* Clicks land on the scroller; hand focus to the pane so the graph stays a single Tab stop. */}
-        <div ref={scrollRef} className="commit-scroll" tabIndex={-1} onFocus={(e) => e.currentTarget.parentElement?.focus()}>
+        <div
+          ref={scrollRef}
+          className="commit-scroll"
+          tabIndex={-1}
+          onFocus={(e) => e.currentTarget.parentElement?.focus()}
+          onScroll={(e) => {
+            if (headRef.current) headRef.current.scrollLeft = e.currentTarget.scrollLeft
+          }}
+        >
           <div style={{ height: keys.length * ROW_H, position: 'relative' }}>
             {keys.slice(start, end).map((key, k) => {
               const i = start + k

@@ -39,10 +39,11 @@
 .split-column {
   flex-direction: column;
 }
+/* A pane never scrolls (the panel library sets overflow: auto inline): the region inside it that overflows owns its scrollbar, so no two scrollbars ever stack on one axis. */
 .split-pane {
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow: hidden !important;
   display: flex;
   flex-direction: column;
 }
