@@ -4,6 +4,7 @@ import { Radio, RadioGroup, Tab, TabList, TabPanel, Tabs } from 'react-aria-comp
 import { api, errorMessage } from '../api'
 import type { Command } from '../commands'
 import { allThemes, loadCustomThemes, previewTheme, setTheme, starterTheme, themeSetting, type Theme } from '../theme'
+import { FILE_ICON_PACKS, type FileIconPackId } from '../fileIcons/packs'
 import { DEFAULTS, stepZoom, updateSettings, useSettings, ZOOM_STEPS, type AvatarSource } from '../settings'
 import { createStore, Modal, toast } from '../ui'
 import { checkForUpdates, describeUpdate, installUpdate, useUpdateStatus } from '../updates'
@@ -258,6 +259,22 @@ function Preferences({ repo, onClose }: { repo: string | null; onClose: () => vo
             <input type="checkbox" checked={s.wheelZoom} onChange={(e) => updateSettings({ wheelZoom: e.target.checked })} />
             Zoom with Ctrl+scroll
           </label>
+          <Field
+            label="File icons"
+            hint="Shown beside files and folders in change lists and trees. Colour is based on Material Icon Theme (MIT)."
+          >
+            <select
+              className="select"
+              value={s.fileIcons}
+              onChange={(e) => updateSettings({ fileIcons: e.target.value as FileIconPackId })}
+            >
+              {FILE_ICON_PACKS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field label="Code font" hint="Diffs, hashes and the commit message. Leave empty for Cascadia Code / Consolas.">
             <input
               className="input"

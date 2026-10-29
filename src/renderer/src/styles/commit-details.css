@@ -278,6 +278,30 @@
   background: none;
   color: var(--muted-foreground);
 }
+/* File-type icons: fixed size so rows never shift; variants for light themes swap by data-theme. */
+.file-icon {
+  flex: none;
+  display: block;
+  /* Decorative, so it recedes next to the status badge; full strength on the row you're acting on. */
+  opacity: 0.8;
+}
+/* Monochrome icons recede through colour, not opacity: muted text colour, full strength when active. */
+.file-icon.mono {
+  opacity: 1;
+  color: var(--muted-foreground);
+}
+:is(.file-row:hover, .file-row.selected, .file-row[data-selected], .file-row[data-focus-visible], .tree-row[data-hovered], .tree-row[data-selected], .tree-row[data-focus-visible])
+  .file-icon {
+  opacity: 1;
+}
+:is(.file-row:hover, .file-row.selected, .file-row[data-selected], .file-row[data-focus-visible], .tree-row[data-hovered], .tree-row[data-selected], .tree-row[data-focus-visible])
+  .file-icon.mono {
+  color: var(--foreground);
+}
+:root[data-theme='light'] .file-icon.for-dark,
+:root:not([data-theme='light']) .file-icon.for-light {
+  display: none;
+}
 .file-row.folder-row .file-name {
   font-weight: var(--weight-medium);
 }

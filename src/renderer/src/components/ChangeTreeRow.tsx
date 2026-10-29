@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { FileIcon } from './FileIcon'
 import { Icon } from './Icon'
 import { folderStats, type ChangeRow } from '../lib/changeTree'
 
@@ -23,7 +24,7 @@ export function FolderLabel<T extends object>({ row, collapsed, chevron }: { row
   return (
     <>
       {chevron ?? <FolderChevron collapsed={collapsed} />}
-      <Icon name="folder" size={14} />
+      <FileIcon path={row.name} kind="folder" open={!collapsed} />
       <span className="file-name">{row.name}</span>
       <span className="folder-count">{row.files.length}</span>
       {stats && (

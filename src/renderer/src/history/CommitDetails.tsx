@@ -19,6 +19,7 @@ import { toast } from '../ui'
 import { useSettings } from '../settings'
 import { buildChangeRows, changeTreeOrder, CHANGE_TREE_INDENT, expandTo, toggled, type ChangeRow } from '../lib/changeTree'
 import { ChevronSpacer, FolderLabel } from '../components/ChangeTreeRow'
+import { FileIcon } from '../components/FileIcon'
 import { TreeToggle, toggleChangesTree } from '../components/TreeToggle'
 import { useCommitFilesMode, getCommitFilesMode, setCommitFilesMode, toggleCommitFilesMode } from './commitFilesMode'
 import { loadCommitFileContent } from './commitFileContent'
@@ -431,6 +432,7 @@ export function CommitDetails({
           <Tip label={STATUS_LABEL[f.status]} focusable={false}>
             <span className={`status status-${f.status === '?' ? 'U' : f.status}`}>{f.status}</span>
           </Tip>
+          <FileIcon path={f.path} kind="file" />
           <span className="file-name">{name}</span>
           <span className="file-dir">{spacer ? '' : dir}</span>
           {f.additions !== null && (

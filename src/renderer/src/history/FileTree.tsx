@@ -1,5 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Tree, TreeItem, TreeItemContent, Virtualizer, type Key, type Selection } from 'react-aria-components'
+import { FileIcon } from '../components/FileIcon'
 import { Icon } from '../components/Icon'
 import { Tip } from '../components/Tip'
 import { PaneFrame, PaneSearch } from '../components/Pane'
@@ -230,10 +231,13 @@ export function FileTree({
                     <span className="tree-chevron" aria-hidden="true">
                       <Icon name={open.has(entry.path) ? 'chevronDown' : 'chevronRight'} size={14} />
                     </span>
-                    <Icon name="folder" size={14} />
+                    <FileIcon path={entry.path} kind="folder" open={open.has(entry.path)} />
                   </>
                 ) : (
-                  <span className="tree-chevron" aria-hidden="true" />
+                  <>
+                    <span className="tree-chevron" aria-hidden="true" />
+                    <FileIcon path={entry.path} kind="file" />
+                  </>
                 )}
                 <span className="tree-label">{entry.name}</span>
                 {status && (

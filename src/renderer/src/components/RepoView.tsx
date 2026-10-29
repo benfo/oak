@@ -32,6 +32,7 @@ import { BlameView, type BlameRequest, type CommitTarget } from '../blame/BlameV
 import { openPalette, openShortcuts } from './Palette'
 import { OutputDialog, showOutput } from './OpStatus'
 import { APP_COMMANDS } from './Preferences'
+import { FILE_ICON_PACKS } from '../fileIcons/packs'
 import { getSettings, updateSettings, useSettings } from '../settings'
 import { toggleChangesTree } from './TreeToggle'
 import { getCommitFilesMode, setCommitFilesMode, toggleCommitFilesMode, useCommitFilesMode } from '../history/commitFilesMode'
@@ -714,6 +715,12 @@ function buildCommands({
     },
     { id: 'theme', title: 'Choose theme…', category: 'View', run: showThemePicker },
     { id: 'themes-folder', title: 'Open custom themes folder', category: 'View', run: () => api.openThemesFolder() },
+    ...FILE_ICON_PACKS.map((p) => ({
+      id: `file-icons-${p.id}`,
+      title: `File icons: ${p.name}`,
+      category: 'View',
+      run: () => updateSettings({ fileIcons: p.id })
+    })),
     {
       id: 'open-repo-git-config',
       repositoryAction: true,

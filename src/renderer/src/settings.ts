@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import type { PullMode } from '../../shared/types'
 import { api } from './api'
 import type { DiffLayout } from './diff/diffLayout'
+import type { FileIconPackId } from './fileIcons/packs'
 
 /** User preferences (Preferences dialog, Ctrl+,). Stored in localStorage; read anywhere with getSettings(). */
 export interface Settings {
@@ -25,7 +26,6 @@ export interface Settings {
   diffLayout: DiffLayout
   /** Changed files (History and working tree) as a folder tree instead of a flat list. */
   changesTree: boolean
-  /** History's file list: only the files a commit changed, or every file in its snapshot. */
   /** Trace the checked-out branch's first-parent line and soften other graph lines. */
   emphasizeCurrentBranch: boolean
   /** Unchanged lines shown around each change in diffs (`git diff -U`). At least 1 so hunks stay stageable. */
@@ -48,6 +48,8 @@ export interface Settings {
   gitPath: string
   /** Where author pictures come from; initials are always the fallback. */
   avatars: AvatarSource
+  /** File-type icons beside files and folders in change lists and trees. */
+  fileIcons: FileIconPackId
   /** Reopen the last repository on startup (otherwise start on the welcome screen). */
   reopenLastRepo: boolean
   /** Check for new versions of Oak in the background and download them. */
@@ -77,7 +79,8 @@ export const DEFAULTS: Settings = {
   autoStageOnCommit: false,
   fetchPrune: true,
   gitPath: '',
-  avatars: 'all'
+  avatars: 'all',
+  fileIcons: 'none'
 }
 
 /** all = GitHub and Gravatar (Gravatar gets a hash of each email); github = GitHub noreply addresses only. */
