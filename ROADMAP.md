@@ -24,9 +24,39 @@ Lessons for a future history rewrite or tag move:
 0. **Website follow-ups.** Panels differ in height, so content below the map shifts a little when a station changes; revisit if it bothers anyone. Keep "planned" in step with this file. Notes and rules are in `website/README.md`.
 1. **Refactor.** Add the `test:ui` job to `checks.yml` once the suite is stable (needs a display on Linux, for example xvfb). Work down the `max-lines` warnings when touching those files.
 2. **Agent contributions.** `AGENTS.md` is contributor-facing; the maintainer's workflow lives in gitignored `AGENTS.local.md` (plus a `CLAUDE.local.md` import, both in `.git/info/exclude`), so a fresh clone must recreate them. Open: how to check that agent-written PRs follow the rules (PR template checklist, CI).
-3. **Code signing.** Windows marks downloads with Mark of the Web, so users must Unblock the installer (the website explains). The fix is signing: SignPath Foundation is free for open source and Oak is now public; compare Azure Artifact Signing (about $10 a month, `win.azureSignOptions`, no hardware token). SmartScreen may warn until reputation builds. Needs the maintainer to set up the account.
+3. **Code signing.** Windows marks downloads with Mark of the Web, so users must Unblock the installer (the website explains). The fix is signing: SignPath Foundation is free for open source and Oak is now public; compare Azure Artifact Signing (about $10 a month, `win.azureSignOptions`, no hardware token). SmartScreen may warn until reputation builds (EV certificates no longer skip that). Plan: apply to SignPath Foundation first (the wait is the slow part), fall back to Azure Artifact Signing, sign only in the release workflow, never locally. Meanwhile publish SHA-256 checksums and build provenance; once signing works, drop the Unblock instructions from the README and website. Needs the maintainer to set up the account.
 4. **Conflict follow-ups** (one small step at a time): stash-pop conflict banner, ours/theirs labels (swapped in a rebase), modify/delete conflicts, pulling conflicts from Pull/Rebase into the same flow.
 5. **Housekeeping.** Confirm Linux in more real-world testing.
+6. **Marketing and distribution.** The plan is in [docs/marketing-plan.md](docs/marketing-plan.md). First steps: `winget` package, README refresh, release checksums, "good first issue" labels; launch after signing and a clean install.
+
+## Features still to build
+
+Proposed order, not yet agreed (each still needs its workflow discussed first). Priority is parity with the most-used and most-asked-for features of other Git clients. Details of each idea are in Backlog. "Not built" was checked against `src/main/handlers.ts` on 2026-11-01; recheck before starting one.
+
+**Next (the usual reasons people reject a client)**
+
+1. Squash and fixup commits from History (the small part of interactive rebase; build first).
+2. Interactive rebase: reorder, squash, fixup, drop, reword.
+3. Submodules: status, update, open (not built).
+4. Git LFS: visible state for tracked files and pending uploads (works through `git`, no UI).
+5. Clone and init flow check (a `clone` handler exists; confirm recent repositories and default folder).
+
+**Then**
+
+6. Full text search: `git grep`, `git log --grep`, `-S` and `-G` in one panel.
+7. Worktrees: create, view, switch, clean up.
+8. Bisect as a short guided flow (not built).
+9. Compare the working tree against any commit.
+10. Commit options follow-ups: author and date overrides, `--reset-author`, Co-authored-by trailers.
+11. Partial code expansion in diffs.
+12. Conflict follow-ups (item 4 above).
+
+**Later or by request**
+
+- Built-in merge editor (contradicts the "rely on the merge tool" decision; only on clear demand).
+- Verified signature badge, Blame this line from diffs, shared find options, hover commit details, `oak://` links.
+- Pull request support beyond links, more previewers, user-installable icon packs, rebindable shortcuts, more themes.
+- Terminal panel, macOS installers and testing, more Linux distributions.
 
 ## Shipped
 
@@ -63,6 +93,10 @@ Ideas only. None is agreed, and each needs a concrete workflow and a discussion 
 **Git features**
 
 - Interactive rebase, three-way merge editor, Git command log panel.
+- Squash and fixup from History: select commits, choose "Squash into previous" or "Fixup into previous", confirm, then rebase non-interactively (`git rebase --autosquash`). Covers most of what people use interactive rebase for; build it first and reuse its confirm and undo for the full interactive version.
+- Submodules: list them with status (clean, modified, uninitialised), initialise and update, open one as a repository. Everyday actions only; no `submodule add` wizard until asked.
+- Git LFS: show which files are LFS pointers and whether uploads are pending, using `git lfs` output. LFS itself already works through the user's `git`.
+- Bisect as a guided flow: mark good and bad from History, show progress and the found commit, always offer Reset.
 - User-installable file icon packs, like custom themes: folders in an `icon-packs` folder under the app data folder, each with a `pack.json` (names, extensions, folders, light variants) and SVGs; "Import icon pack…" would validate and extract a zip into it. Needs SVG sanitising (render as `<img>` only), zip-slip and size limits, and a decision on depending on the `material-icon-theme` npm package instead of vendoring. A Seti-based monochrome pack is an option if Simple feels too generic.
 - Skip for rebase, cherry-pick and revert conflicts (prototyped and removed as niche and destructive; revisit if asked, with a confirm naming the dropped commit). Conflict safeguards (branch-named ours/theirs, a confirm when one side drops the other's changes, an Undo toast); revisit if users report lost work.
 - Commit options follow-ups: author and date overrides, `--reset-author` for amend, trailers such as Co-authored-by, a "Verified" signature badge in History (no git commit flag exists for checking signatures; it is a display feature), and a hint when an undone WIP commit was already pushed (the remote still has it and the next push needs a force push). Not wanted: `--no-post-rewrite`.
