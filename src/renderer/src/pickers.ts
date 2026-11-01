@@ -5,6 +5,7 @@ import type { RepoCtx } from './useRepo'
 import type { Branch } from '../../shared/types'
 import { openPalette } from './components/Palette'
 import { openCloneDialog } from './components/Welcome'
+import { toast } from './ui'
 
 /*
  * The branch and repository pickers. They drop down from their toolbar button, whether opened by a
@@ -19,6 +20,7 @@ const clip = (t: string) => (t.length > 28 ? `${t.slice(0, 27)}…` : t)
 
 /** Picks a comparison target for `source` (null = the checked-out branch). */
 export function showComparisonBranchPicker(r: RepoCtx, anchor: Element | null, source: Branch | null, onPick: (branch: Branch) => void) {
+  if (waitForBranches(r, 'branches')) return
   const sourceName = source?.name ?? r.status?.branch
   openPalette({
     placeholder: `Compare ${sourceName ?? 'HEAD'} with…`,
@@ -36,6 +38,7 @@ export function showComparisonBranchPicker(r: RepoCtx, anchor: Element | null, s
 }
 
 export function showBranchPicker(r: RepoCtx, anchor: Element | null = toolbarButton('.tb-branch')) {
+  if (waitForBranches(r, 'branches')) return
   const locals = r.branches.filter((b) => b.type === 'local')
   const localNames = new Set(locals.map((b) => b.name))
   // Remote branches without a local counterpart can be checked out as new tracking branches.
@@ -81,6 +84,7 @@ export const tagsNewestFirst = (branches: Branch[]) =>
 
 /** Every tag, searchable; picking one shows its commit in History. The sidebar lists only recent ones. */
 export function showTagPicker(r: RepoCtx, focusCommit: (hash: string) => void, query = '') {
+  if (waitForBranches(r, 'tags')) return
   openPalette({
     placeholder: 'Go to tag…',
     query,
@@ -124,4 +128,17 @@ export async function showRepoPicker(
     ],
     whenNoMatch: (t) => (isGitUrl(t) ? { label: `Clone ${t}`, run: () => clone(t) } : null)
   })
+}
+
+/** Whether the branch and tag lists, with their ahead/behind counts, dates and subjects, are still arriving. */
+export const branchListsLoading = (r: Pick<RepoCtx, 'refsLoaded' | 'detailsLoaded'>) => !r.refsLoaded || !r.detailsLoaded
+/**
+ * A picker opened over lists that have not fully arrived would look complete while missing entries, badges or
+ * subjects, so it does not open yet. Returns true (with a note saying so) when it has to wait; menus need only the
+ * lists, pickers also show the details.
+ */
+export function waitForBranches(r: RepoCtx, what: string, needDetails = true) {
+  const loading = needDetails ? branchListsLoading(r) : !r.refsLoaded
+  if (loading) toast.info(`Still loading ${what}…`)
+  return loading
 }

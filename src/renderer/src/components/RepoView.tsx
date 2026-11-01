@@ -409,7 +409,7 @@ function buildCommands({
   const st = r.status
   // A WIP commit takes everything, so a merge in progress or conflicts must be settled first.
   const canCommitWip = !!st && st.state === 'clean' && st.staged.length + st.unstaged.length > 0
-  const hasRemotes = r.branches.some((b) => b.type === 'remote')
+  const hasRemotes = !r.refsLoaded || r.branches.some((b) => b.type === 'remote')
   const currentBranch = r.branches.find((b) => b.type === 'local' && b.current) ?? null
   const hasOtherBranch = r.branches.some((b) => b.type !== 'tag' && !b.current)
   const isHead = !!c && c.hash === st?.head

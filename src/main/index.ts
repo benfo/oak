@@ -5,6 +5,7 @@ import { watch, writeFileSync, type FSWatcher } from 'fs'
 import { join } from 'path'
 import { folderArg, handlers } from './handlers'
 import { outputSink } from './git'
+import { classifyRepoChange } from '../shared/watchPaths'
 
 const STREAMING = new Set([
   'commit',
@@ -172,11 +173,9 @@ function registerIpc() {
     let gitTouched = false
     try {
       const w = watch(repo, { recursive: true }, (_ev, file) => {
-        const f = (file ?? '').toString().replace(/\\/g, '/')
-        if (f === '.git' || f.startsWith('.git/')) {
-          if (/^\.git\/(objects|logs)\//.test(f) || f.endsWith('.lock')) return
-          gitTouched = true
-        } else if (/(^|\/)node_modules\//.test(f)) return
+        const change = classifyRepoChange((file ?? '').toString().replace(/\\/g, '/'))
+        if (change === 'ignore') return
+        if (change === 'refs') gitTouched = true
         clearTimeout(timer)
         timer = setTimeout(() => {
           if (!sender.isDestroyed()) sender.send('repo-changed', { git: gitTouched })

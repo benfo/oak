@@ -2,6 +2,7 @@ import { copyText } from '../lib/copy'
 import { copyRemoteLink, openOnRemote } from '../lib/openOnRemote'
 import { isUnpushed, remoteItem } from '../lib/remoteMenu'
 import { isBranchNotOnRemote } from '../../../shared/remote'
+import { findBranch } from '../../../shared/refList'
 import { showMenu } from '../api'
 import * as act from '../actions'
 import type { Branch, Commit, MenuItem, Ref } from '../../../shared/types'
@@ -9,6 +10,7 @@ import type { RepoCtx } from '../useRepo'
 import { compareMenuItems, runCompareItem, showBranchMenu, type CompareBranch } from '../lib/branchMenu'
 import { showTagMenu } from '../lib/tagMenu'
 import { rewriteCommits } from '../rewriteActions'
+import { waitForBranches } from '../pickers'
 import { combineMenuItem } from './rewriteMenu'
 
 /** A commit can carry thousands of refs; a menu lists the first few and says how many it left out. */
@@ -20,6 +22,7 @@ const moreRow = (total: number): MenuItem[] =>
   total > MENU_REFS ? [{ id: 'more-refs', label: `${total - MENU_REFS} more branches not listed (use the sidebar)`, enabled: false }] : []
 
 export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch, onCompareCommit: (c: Commit) => void) {
+  if (waitForBranches(r, 'branches', false)) return
   const cur = r.status?.branch ?? 'HEAD'
   const isHead = c.hash === r.status?.head
   const locals = c.refs.filter((x) => x.type === 'local' && !x.current)
@@ -127,6 +130,7 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
 }
 
 export async function showRefMenu(r: RepoCtx, branch: Branch, onCompare: CompareBranch, anchor?: Element | null) {
+  if (waitForBranches(r, 'branches', false)) return
   if (branch.type === 'tag') return showTagMenu(r, branch, anchor)
   return showBranchMenu(r, branch, onCompare, undefined, anchor)
 }
@@ -149,5 +153,5 @@ export function refMenuTargets(r: RepoCtx, c: Commit) {
 
 export function branchForRef(r: RepoCtx, c: Commit, ref: Ref) {
   if (ref.type !== 'local' && ref.type !== 'remote' && ref.type !== 'tag') return undefined
-  return r.branches.find((b) => b.type === ref.type && b.name === ref.name && b.hash === c.hash)
+  return findBranch(r.branches, ref.type, ref.name, c.hash)
 }

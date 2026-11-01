@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, errorMessage, repoName } from './api'
 import { toast } from './ui'
-import type { Branch, Commit, HistoryScope, RepoStatus, Stash } from '../../shared/types'
+import type { Branch, BranchDetail, Commit, HistoryScope, RepoStatus, Stash } from '../../shared/types'
+import { logNeedsBranches, withDetails } from '../../shared/refList'
+import { FOCUS_REFRESH_AFTER_MS } from '../../shared/watchPaths'
 import { loadHistoryToCommit } from './lib/historyNavigation'
 import { refreshUnpushed } from './lib/remoteMenu'
 import {
@@ -64,6 +66,12 @@ export interface RepoCtx {
   /** The file `commits` is the history of, or null for the scope's ordinary list. Lags `historyFile` while the new list loads. */
   commitsFile: string | null
   hasMore: boolean
+  /** The branch, tag and stash lists have loaded for the first time. Until then they are empty because nothing has arrived, not because there are none. */
+  refsLoaded: boolean
+  /** The commit list has loaded for the first time. */
+  historyLoaded: boolean
+  /** Ahead/behind counts, dates and subjects of branches and tags (loaded after the lists themselves). */
+  detailsLoaded: boolean
   /** Which refs the graph walks. `scopeTarget` names the comparison branch included by the 'target' scope. */
   historyScope: HistoryScopeKind
   scopeTarget: string | null
@@ -103,6 +111,10 @@ export function useRepo(path: string): RepoCtx {
   // The file `commits` was listed for. It lags `historyFile` until the filtered log arrives.
   const [commitsFile, setCommitsFile] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(false)
+  // Set once the first listing of each kind has arrived, so a screen can say "loading" instead of showing a list that is not yet complete.
+  const [refsLoaded, setRefsLoaded] = useState(false)
+  const [historyLoaded, setHistoryLoaded] = useState(false)
+  const [detailsLoaded, setDetailsLoaded] = useState(false)
   const [historyNavigation, setHistoryNavigation] = useState<RepoCtx['historyNavigation']>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const busyRef = useRef(false)
@@ -126,6 +138,11 @@ export function useRepo(path: string): RepoCtx {
   )
   const limit = useRef(PAGE)
   const loadingRefs = useRef(false)
+  const refsReadAt = useRef(0)
+  const loadingDetails = useRef(false)
+  const detailsAgain = useRef(false)
+  const rawBranches = useRef<Branch[]>([])
+  const detailsRef = useRef<Record<string, BranchDetail>>({})
   const historyRequest = useRef(0)
   const historyAnchor = useRef<string | undefined>(undefined)
   const loadingHistory = useRef(false)
@@ -158,6 +175,28 @@ export function useRepo(path: string): RepoCtx {
     prefetchRemoteHead(path)
   }, [path])
 
+  /** Fills in ahead/behind, dates and subjects once the lists are up. A refresh that lands meanwhile queues one more pass. */
+  const loadBranchDetails = useCallback(async () => {
+    if (loadingDetails.current) {
+      detailsAgain.current = true
+      return
+    }
+    loadingDetails.current = true
+    try {
+      do {
+        detailsAgain.current = false
+        detailsRef.current = await api.branchDetails(path)
+        const merged = withDetails(rawBranches.current, detailsRef.current)
+        if (changed('branches', merged)) setBranches(merged)
+        setDetailsLoaded(true)
+      } while (detailsAgain.current)
+    } catch (e) {
+      toast.error(errorMessage(e))
+    } finally {
+      loadingDetails.current = false
+    }
+  }, [path])
+
   const refreshRefs = useCallback(
     async (force = false) => {
       if (loadingRefs.current && !force) return
@@ -167,58 +206,79 @@ export function useRepo(path: string): RepoCtx {
       const file = fileFor(range)
       const anchor = range || file ? undefined : historyAnchor.current
       const kind = scopeKind.current
-      try {
-        const branchesRequest = api.branches(path)
-        const scopeRequest = (async (): Promise<HistoryScope> => {
-          if (range) return { kind: 'range', ...range }
-          if (kind === 'lineage') return { kind: 'head' }
-          if (kind === 'head') {
-            // Nothing to exclude on the default branch itself, so it shows its whole line.
-            const base = await defaultCompareName(path, await branchesRequest, null)
-            return base ? { kind: 'head', base } : { kind: 'head' }
-          }
-          if (kind !== 'target') return { kind }
-          const target = await resolveCompareTarget(path, await branchesRequest, null)
-          // Without a distinct target (for example while on main) the scope is just the current line.
-          return target ? { kind: 'target', target: target.fullName } : { kind: 'head' }
-        })()
-        const scope = await scopeRequest
-        const loadedBranches = await branchesRequest
-        const head = await Promise.resolve(cachedRemoteHead(path)).catch(() => null)
-        const options = branchOptionsRef.current
-        const hiddenRefs = hiddenRefGlobs(loadedBranches, options)
-        const keepRemotes = visibleRemoteRefs(loadedBranches, options, head)
-        void refreshUnpushed(path)
-        const [b, s, c, recent] = await Promise.all([
-          branchesRequest,
-          api.stashes(path),
-          api.log(path, requestedLimit, anchor, scope, file ?? undefined, hiddenRefs, keepRemotes),
-          api.recentBranches(path)
-        ])
-        if (changed('remoteHead', head)) setRemoteHead(head)
-        if (changed('branches', b)) setBranches(b)
-        if (changed('stashes', s)) setStashes(s)
-        // Ordinary paging may finish after a click; keep it unless a larger navigation or a scope change has won.
-        if (
-          requestedLimit === limit.current &&
-          kind === scopeKind.current &&
-          range === rangeRef.current &&
-          file === fileFor(rangeRef.current)
-        ) {
-          scopeRef.current = scope
-          setScopeTarget(scope.kind === 'target' ? scope.target.replace(/^refs\/(heads|remotes)\//, '') : null)
-          if (changed('commits', c)) setCommits(c)
-          setCommitsFile(file)
-          setHasMore(c.length >= requestedLimit)
-        }
-        if (changed('recentBranches', recent)) setRecentBranches(recent)
-      } catch (e) {
+      let failed = false
+      const fail = (e: unknown) => {
+        if (failed) return
+        failed = true
         toast.error(errorMessage(e))
+      }
+      try {
+        // Each piece is shown the moment it arrives; none waits for the others unless it depends on them.
+        const branchesRequest = api.branches(path)
+        const remoteHeadRequest = branchesRequest.then(() => Promise.resolve(cachedRemoteHead(path)).catch(() => null))
+        const branchesShown = branchesRequest.then(async (loaded) => {
+          rawBranches.current = loaded
+          const merged = withDetails(loaded, detailsRef.current)
+          if (changed('branches', merged)) setBranches(merged)
+          void refreshUnpushed(path)
+          void loadBranchDetails()
+          const head = await remoteHeadRequest
+          if (changed('remoteHead', head)) setRemoteHead(head)
+        })
+        const stashesShown = api.stashes(path).then((s) => {
+          if (changed('stashes', s)) setStashes(s)
+        })
+        const recentShown = api.recentBranches(path).then((recent) => {
+          if (changed('recentBranches', recent)) setRecentBranches(recent)
+        })
+        const historyShown = (async () => {
+          const needsBranches = logNeedsBranches(branchOptionsRef.current, range ? 'all' : kind)
+          const scope = await (async (): Promise<HistoryScope> => {
+            if (range) return { kind: 'range', ...range }
+            if (kind === 'lineage') return { kind: 'head' }
+            if (kind === 'head') {
+              // Nothing to exclude on the default branch itself, so it shows its whole line.
+              const base = await defaultCompareName(path, await branchesRequest, null)
+              return base ? { kind: 'head', base } : { kind: 'head' }
+            }
+            if (kind !== 'target') return { kind }
+            const target = await resolveCompareTarget(path, await branchesRequest, null)
+            // Without a distinct target (for example while on main) the scope is just the current line.
+            return target ? { kind: 'target', target: target.fullName } : { kind: 'head' }
+          })()
+          let hiddenRefs: string[] = []
+          let keepRemotes: string[] | null = null
+          if (needsBranches) {
+            const loaded = await branchesRequest
+            const options = branchOptionsRef.current
+            hiddenRefs = hiddenRefGlobs(loaded, options)
+            keepRemotes = visibleRemoteRefs(loaded, options, await remoteHeadRequest)
+          }
+          const c = await api.log(path, requestedLimit, anchor, scope, file ?? undefined, hiddenRefs, keepRemotes)
+          // Ordinary paging may finish after a click; keep it unless a larger navigation or a scope change has won.
+          if (
+            requestedLimit === limit.current &&
+            kind === scopeKind.current &&
+            range === rangeRef.current &&
+            file === fileFor(rangeRef.current)
+          ) {
+            scopeRef.current = scope
+            setScopeTarget(scope.kind === 'target' ? scope.target.replace(/^refs\/(heads|remotes)\//, '') : null)
+            if (changed('commits', c)) setCommits(c)
+            setCommitsFile(file)
+            setHasMore(c.length >= requestedLimit)
+            setHistoryLoaded(true)
+          }
+        })()
+        await Promise.all(
+          [Promise.all([branchesShown, stashesShown]).then(() => setRefsLoaded(true)), recentShown, historyShown].map((p) => p.catch(fail))
+        )
       } finally {
         loadingRefs.current = false
+        refsReadAt.current = Date.now()
       }
     },
-    [path]
+    [path, loadBranchDetails]
   )
 
   const resetHistory = useCallback(() => {
@@ -321,8 +381,11 @@ export function useRepo(path: string): RepoCtx {
       if (busyRef.current) return
       return d.git ? refresh() : refreshStatus()
     })
+    // The watcher reports ref changes while Oak runs; focus re-reads refs only after a while, in case it missed one.
     const onFocus = () => {
-      if (!busyRef.current) refresh()
+      if (busyRef.current) return
+      if (Date.now() - refsReadAt.current > FOCUS_REFRESH_AFTER_MS) refresh()
+      else refreshStatus()
     }
     window.addEventListener('focus', onFocus)
     return () => {
@@ -399,6 +462,9 @@ export function useRepo(path: string): RepoCtx {
     commits,
     commitsFile,
     hasMore,
+    refsLoaded,
+    historyLoaded,
+    detailsLoaded,
     historyScope,
     scopeTarget,
     setHistoryScope,

@@ -521,11 +521,13 @@ export function HistoryView({
               tabIndex={0}
               onKeyDown={(e) => handleDismissNavigation(e, [dismissMode])}
             >
-              {pinned
-                ? `Nothing on ${pinned.source?.name ?? r.status?.branch ?? 'HEAD'} that ${pinned.name} lacks`
-                : r.historyFile
-                  ? 'No commits touch this file'
-                  : 'No commits yet'}
+              {!r.historyLoaded
+                ? 'Loading history…'
+                : pinned
+                  ? `Nothing on ${pinned.source?.name ?? r.status?.branch ?? 'HEAD'} that ${pinned.name} lacks`
+                  : r.historyFile
+                    ? 'No commits touch this file'
+                    : 'No commits yet'}
             </div>
           </PaneFrame>
         ) : (

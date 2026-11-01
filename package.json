@@ -34,6 +34,7 @@
     "dist:linux": "electron-vite build && electron-builder --linux --x64 --publish never",
     "test:ui": "electron-vite build && playwright test",
     "test:linux-package": "node scripts/smoke-linux.cjs",
+    "perf:open": "node scripts/perf-open.cjs",
     "lint": "stylelint \"src/renderer/src/**/*.css\" && eslint src",
     "format": "prettier --write \"{src,tests,scripts}/**/*.{ts,tsx,cjs}\" electron.vite.config.ts",
     "format:check": "prettier --check \"{src,tests,scripts}/**/*.{ts,tsx,cjs}\" electron.vite.config.ts",

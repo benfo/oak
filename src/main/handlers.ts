@@ -9,6 +9,7 @@ import type { FileVersions, PreviewSource } from '../shared/filePreview'
 import { pullRequestUrlFromOutput, type RemotePageTarget } from '../shared/remote'
 import { defaultRemote, pullRequestPage, remotePage, unpushedCommits } from './remote'
 import { isReachable } from './reachable'
+import { branchDetails, listBranches } from './refs'
 import { readMessages, restoreBeforeRewrite, runRewrite } from './rewrite'
 import type { RewritePlan, RewriteResult } from '../shared/rewrite'
 import { homedir } from 'os'
@@ -24,6 +25,7 @@ import { openInEditor, type EditorChoice } from './editor'
 import { commitFlags, isWipSubject, NO_COMMIT_OPTIONS, type CommitOptions } from '../shared/commitOptions'
 import type {
   Branch,
+  BranchDetail,
   ChangedFile,
   CheckoutKind,
   Commit,
@@ -292,44 +294,9 @@ epo`), if any. */
       })
   },
 
-  async branches(repo: string): Promise<Branch[]> {
-    const fmt = [
-      '%(refname)',
-      '%(objectname)',
-      '%(*objectname)',
-      '%(upstream:short)',
-      '%(upstream:track,nobracket)',
-      '%(HEAD)',
-      '%(creatordate:unix)',
-      '%(contents:subject)'
-    ].join('%1f')
-    const out = await git(repo, ['for-each-ref', '--sort=refname', `--format=${fmt}`, 'refs/heads', 'refs/remotes', 'refs/tags'])
-    const list: Branch[] = []
-    for (const line of out.split('\n')) {
-      if (!line) continue
-      const [ref, obj, peeled, upstream, track, head, date, subject] = line.split(US)
-      let type: Branch['type']
-      let name: string
-      if (ref.startsWith('refs/heads/')) [type, name] = ['local', ref.slice(11)]
-      else if (ref.startsWith('refs/remotes/')) [type, name] = ['remote', ref.slice(13)]
-      else [type, name] = ['tag', ref.slice(10)]
-      if (type === 'remote' && name.endsWith('/HEAD')) continue
-      list.push({
-        name,
-        fullName: ref,
-        type,
-        hash: peeled || obj,
-        upstream: upstream || null,
-        ahead: Number(/ahead (\d+)/.exec(track)?.[1] ?? 0),
-        behind: Number(/behind (\d+)/.exec(track)?.[1] ?? 0),
-        gone: track === 'gone',
-        current: head === '*',
-        date: Number(date) || 0,
-        subject
-      })
-    }
-    return list
-  },
+  branches: (repo: string): Promise<Branch[]> => listBranches(repo),
+
+  branchDetails: (repo: string): Promise<Record<string, BranchDetail>> => branchDetails(repo),
 
   async stashes(repo: string): Promise<Stash[]> {
     try {

@@ -9,7 +9,7 @@ import type { PullMode } from '../../../shared/types'
 import { Icon } from './Icon'
 import { Elapsed, showOutput } from './OpStatus'
 import { openPreferences } from './Preferences'
-import { showBranchPicker, showRepoPicker } from '../pickers'
+import { branchListsLoading, showBranchPicker, showRepoPicker } from '../pickers'
 import { Tip } from './Tip'
 import { LayoutMenu, type LayoutControls } from './LayoutMenu'
 
@@ -26,7 +26,10 @@ export function Toolbar({
   const barRef = useRef<HTMLDivElement>(null)
   useEffect(() => toolbarHomeEnd(barRef.current), [])
   const busy = !!r.busy
-  const hasRemotes = r.branches.some((b) => b.type === 'remote')
+  // The spinner takes the chevron's place while the lists load; the button is inert until they are in.
+  const branchesLoading = branchListsLoading(r)
+  // Until the lists arrive nobody knows there are no remotes, so Fetch and Pull stay available.
+  const hasRemotes = !r.refsLoaded || r.branches.some((b) => b.type === 'remote')
 
   const branchLabel = st ? (st.branch ?? (st.head ? `detached @ ${st.head.slice(0, 7)}` : 'no commits')) : '…'
 
@@ -40,12 +43,12 @@ export function Toolbar({
         </button>
       </Tip>
       <Tip label={st?.upstream ? `Tracking ${st.upstream}` : 'No upstream branch'}>
-        <button className="tb-branch" onClick={(e) => showBranchPicker(r, e.currentTarget)}>
+        <button className="tb-branch" disabled={branchesLoading} onClick={(e) => showBranchPicker(r, e.currentTarget)}>
           <Icon name="branch" />
           <span>{branchLabel}</span>
           {!!st?.ahead && <span className="pill">↑{st.ahead}</span>}
           {!!st?.behind && <span className="pill">↓{st.behind}</span>}
-          <Icon name="chevronDown" size={12} className="dim" />
+          {branchesLoading ? <span className="spinner" /> : <Icon name="chevronDown" size={12} className="dim" />}
         </button>
       </Tip>
       {r.busy && r.op && (

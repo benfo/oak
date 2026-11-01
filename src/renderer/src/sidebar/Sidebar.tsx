@@ -192,12 +192,17 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       label,
       icon,
       count: count ?? children.reduce((n, c) => n + (c.kind === 'item' ? 1 : (c.children?.length ?? 0)), 0),
+      // Until the lists arrive an empty section is not a zero, so its count says so in the space the number takes.
+      countLabel: pending ? '…' : undefined,
       children
     })
 
     const locals = r.branches.filter((b) => b.type === 'local')
     const hiddenRefs = hiddenBranchRefs(r.branches, st?.branch, branchOptions, r.remoteHead)
-    const visible = sidebarBranches(r.branches, st?.branch, branchOptions, r.remoteHead)
+    // Sorting by date needs the dates, which arrive after the lists; showing the rows in name order first would reshuffle them.
+    const pending = !r.refsLoaded || (branchOptions.sort === 'latest' && !r.detailsLoaded)
+    const visible =
+      branchOptions.sort === 'latest' && !r.detailsLoaded ? [] : sidebarBranches(r.branches, st?.branch, branchOptions, r.remoteHead)
     const localNode = (b: Branch, key = b.fullName): TreeNode => ({
       key,
       kind: 'item',
@@ -326,7 +331,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
 
     const branches: TreeNode = {
       ...section('local', 'Branches', local),
-      countLabel: hidden ? `${local.length} / ${total}` : undefined,
+      countLabel: pending ? '…' : hidden ? `${local.length} / ${total}` : undefined,
       title: hiddenAll
         ? `${hiddenAll} ${hiddenAll === 1 ? 'branch hidden' : 'branches hidden'}. Use Branch options to show them.`
         : undefined,
@@ -342,7 +347,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       section('tags', 'Tags', tags, undefined, allTags.length),
       section('stashes', 'Stashes', stashes)
     ]
-  }, [r.branches, r.stashes, r.recentBranches, r.remoteHead, st?.branch, st?.head, filter, branchOptions])
+  }, [r.branches, r.stashes, r.recentBranches, r.refsLoaded, r.detailsLoaded, r.remoteHead, st?.branch, st?.head, filter, branchOptions])
 
   const navNodes: TreeNode[] = [
     {

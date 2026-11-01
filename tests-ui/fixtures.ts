@@ -29,6 +29,8 @@ async function launch(repo: string): Promise<Launched> {
 interface Fixtures {
   /** Opens the app on a repo (on Changes unless `view` says otherwise); closed after the test. */
   open: (repo: string, view?: 'changes' | 'history') => Promise<Page>
+  /** Like `open`, but also hands back the Electron app, to reach the main process. */
+  openApp: (repo: string, view?: 'changes' | 'history') => Promise<Launched>
   /** A fresh small repo with a modified file (three hunks) and an untracked file. */
   small: string
 }
@@ -39,14 +41,17 @@ interface WorkerFixtures {
 }
 
 export const test = base.extend<Fixtures, WorkerFixtures>({
-  open: async ({}, use) => {
+  open: async ({ openApp }, use) => {
+    await use(async (repo, view) => (await openApp(repo, view)).page)
+  },
+  openApp: async ({}, use) => {
     const launched: Launched[] = []
     await use(async (repo, view = 'changes') => {
       const l = await launch(repo)
       launched.push(l)
       await l.page.getByRole('toolbar', { name: 'Repository actions' }).waitFor()
       await l.page.keyboard.press(view === 'changes' ? 'Control+1' : 'Control+2')
-      return l.page
+      return l
     })
     for (const l of launched) await l.app.close()
   },

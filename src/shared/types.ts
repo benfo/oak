@@ -72,10 +72,14 @@ export interface Branch {
   behind: number
   gone: boolean
   current: boolean
-  /** Unix seconds: tagger date for annotated tags, otherwise the commit date. */
+  /** Unix seconds: tagger date for annotated tags, otherwise the commit date. 0 until the details load. */
   date: number
+  /** Empty until the details load. */
   subject: string
 }
+
+/** The parts of a Branch that cost an object read per ref, so they load after the list itself. */
+export type BranchDetail = Pick<Branch, 'ahead' | 'behind' | 'date' | 'subject'>
 
 /** Where the app's self-update stands (src/main/updater.ts). */
 export type UpdateStatus =

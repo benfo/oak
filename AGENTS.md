@@ -11,6 +11,7 @@ Principles are in [PRODUCT.md](PRODUCT.md), the visual system in [DESIGN.md](DES
 - `npm run dev` (restart for main-process changes), `build`, `typecheck`, `lint`, `format` (`format:check` in CI), `npm test`. Run typecheck, lint, format and tests before proposing a change.
 - `npm test`: `tests/**/*.test.ts`, Node runner, real git in a temp repo. Node-tested modules import siblings with `.ts` extensions.
 - `npm run test:ui`: builds, then drives the real Electron app with Playwright (`tests-ui/`, serial, real repos and keystrokes). Not in CI yet. Run after changing views, diff or keyboard code. Each test launches a fresh app (about 2 s; about a minute in all), so run only what you touched (`npm run test:ui -- -g "name"`) and keep the full run and `--repeat-each` for the end. Stops at first failure, 5 s assertion timeout. Wait for a view switch to settle (destination focus) before the next shortcut, scope locators when labels repeat, and confirm a bug-fix test fails without the fix.
+- `npm run perf:open -- <label> <runs> <repo>...` (after `npm run build`): launches the real app per repo and prints median open timings and git command counts (`scripts/perf-open.cjs`). Compare commits by running it on each with another label.
 - `npm run dist` (Windows installer), `dist:linux`, `icon` (renders `build/icon.png` from `build/icon.svg`).
 - Releases are the maintainer's job (`docs/releasing.md`): never run `npm run release`, push `vX.Y.Z` tags or trigger website publication.
 - `npm run site:dev|check|build` work on `website/` (Astro, Tailwind, daisyUI; `npm ci --prefix website`). Factual copy, synthetic screenshots, no sales language or unsupported superiority claims. Section backgrounds alternate strictly: adding or removing a section re-flips the rest.
@@ -24,7 +25,7 @@ Principles are in [PRODUCT.md](PRODUCT.md), the visual system in [DESIGN.md](DES
 | Task | Start here |
 |---|---|
 | Add or change a git operation | `src/main/handlers.ts` (the `Handlers` type is the IPC contract), then call `api.<name>()` from `R/api.ts`. `src/main/git.ts` spawns git; IPC and native menus in `src/main/index.ts`; preload `src/preload/index.ts` |
-| Repo state, busy label, refresh | `R/useRepo.ts` (`withBusy`/`run`); shared confirmed git flows in `R/actions.ts` |
+| Repo state, busy label, refresh | `R/useRepo.ts` (`withBusy`/`run`; lists show as they arrive, `refsLoaded`/`historyLoaded`/`detailsLoaded`); branch and tag listing `src/main/refs.ts` with pure parts in `src/shared/refList.ts`; which file changes refresh refs `src/shared/watchPaths.ts`; shared confirmed git flows in `R/actions.ts` |
 | Palette command or global shortcut | `R/commands.ts`, built in `R/components/RepoView.tsx` (`buildCommands`); bindings in `R/lib/shortcuts.ts`, `R/lib/useShortcuts.ts` |
 | Widget key (list, graph, diff, blame) | `R/lib/keymap.ts` (`WIDGET_KEYMAP`), test in `tests/shortcuts-keymap.test.ts`; shared key policy `R/lib/navigation.ts` |
 | Context or action menu | Menus are built in `R/lib/fileMenu.ts`, `R/lib/branchMenu.ts`, `R/lib/tagMenu.ts`, `R/history/commitMenu.ts`, `R/changes/commitOptionsMenu.ts`; opened with `showMenu` from `R/api.ts`; component `R/components/ContextMenu.tsx` |
