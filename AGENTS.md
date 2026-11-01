@@ -39,10 +39,11 @@ Principles are in [PRODUCT.md](PRODUCT.md), the visual system in [DESIGN.md](DES
 | Pane focus and layout | `R/lib/usePane.ts`, `R/components/Pane.tsx`, `R/components/Split.tsx`, `R/lib/layoutMinimums.ts` |
 | Find in file | `src/shared/find.ts`, `R/lib/useFindInFile.ts`, `R/components/FindBar.tsx` |
 | Open in browser, copy link, pull request | `src/shared/remote/` (add a host in `src/shared/remote/providers/`, list it in `src/shared/remote/providers/index.ts`; `src/shared/remote/rules.ts` decides when a page may open), facts in `src/main/remote.ts`, menu items `R/lib/remoteMenu.ts` |
+| Squash or fixup commits | `src/shared/rewrite.ts` (planner: eligibility, reasons, rebase todo), `src/main/rewrite.ts` (scripted `git rebase -i`, undo), handlers `rewriteCommits`/`undoRewrite`/`commitMessages`; renderer flow `R/rewriteActions.ts`, menu row `R/history/rewriteMenu.ts`, palette `R/rewriteCommands.ts`; the Shift range is `R/history/useCommitRange.ts` with `R/history/commitRange.ts`, shown by `R/history/RangeSummary.tsx` |
 | Open in editor | `src/shared/editors.ts`, `src/main/editor.ts`, `R/lib/openInEditor.ts` |
 | File preview (SVG today) | `R/preview/previewers.ts` (registry), `src/shared/filePreview.ts`, `src/main/fileVersions.ts` |
 | File icons | `R/components/FileIcon.tsx` (the only place icons draw), `R/fileIcons/packs.tsx`, `R/fileIcons/materialPack.ts`; licences in `THIRD-PARTY-NOTICES.md` |
-| Toast or dialog | `R/ui.tsx` (`toast`, dialogs) |
+| Toast or dialog | `R/ui.tsx` (`toast`, dialogs; a commit list or warning inside one is `R/components/DialogDetails.tsx`) |
 | Long virtualized list | `R/lib/useVirtualRows.ts` |
 | Unit test (Node, real git) | `tests/*.test.ts`; UI tests (Playwright) in `tests-ui/`, fixtures `tests-ui/fixtures.ts`, `tests-ui/repos.ts` |
 | Release or website | `docs/releasing.md`, `scripts/`, `website/README.md` |
@@ -90,7 +91,7 @@ Principles are in [PRODUCT.md](PRODUCT.md), the visual system in [DESIGN.md](DES
 - **Tab and F6:** Tab is native/React Aria traversal (one stop per collection; fixed pane tools in DOM order; per-item buttons and search fields excluded). F6/Shift+F6 are the only pane jumps.
 - **Lists:** arrows, Home, End, PgUp, PgDn move; Space selects; Enter acts; Delete discards; Shift+F10 or Menu opens the context menu; Right goes deeper (graph, commit files, diff), Left back. Switching panes preserves selection.
 - **Diff:** line cursor; Shift+arrows, Space, Ctrl+A select; Enter stage/unstage; Delete discard; N/P hunks; Shift+Left/Right scroll sideways without moving focus, cursor or selection; Escape closes find, then clears selection, keeping focus in the code. Ctrl+Shift+D toggles Inline/Side by side through `changeDiffLayout.ts` only (keeps anchor, focus and selection).
-- **Vim keys** optional, off by default: h/j/k/l, Ctrl+D/U, gg/G in lists and diffs via `useNavigation`; menus h/j/k/l only; no editing modes.
+- **Vim keys** optional, off by default: h/j/k/l, Ctrl+D/U, gg/G in lists and diffs via `useNavigation`; menus h/j/k/l only, and once you have typed a letter in a menu the following letters stay type-ahead for a second ("ch", "squash"); no editing modes.
 - **History All files** is a tree: arrows move, expand and collapse only; Enter opens a file.
 - **Layouts:** F11 and the toolbar button expand the code area (sidebar, icon rail and History graph go; the file list stays beside the diff). `F` toggles that list (session only). `Ctrl+[` or the pane toggle collapses the sidebar to an icon rail (`sidebarHidden`, persisted; no-op in focus mode). Code is the only expanded layout; Escape restores it only when no widget has anything to undo (dispatcher fallback). Hidden panes stay mounted but inert, skipped by F6/Tab. No docking, saved layouts or automatic collapsing.
 - **Splits:** `Split.tsx` wraps `react-resizable-panels`; keep pixel-size preservation, `split:<id>` localStorage keys and a descriptive `label`. Shift+Alt+arrows move the nearest divider (`lib/paneResize.ts`). Dividers are not Tab stops.

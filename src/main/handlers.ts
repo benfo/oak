@@ -9,6 +9,8 @@ import type { FileVersions, PreviewSource } from '../shared/filePreview'
 import { pullRequestUrlFromOutput, type RemotePageTarget } from '../shared/remote'
 import { defaultRemote, pullRequestPage, remotePage, unpushedCommits } from './remote'
 import { isReachable } from './reachable'
+import { readMessages, restoreBeforeRewrite, runRewrite } from './rewrite'
+import type { RewritePlan, RewriteResult } from '../shared/rewrite'
 import { homedir } from 'os'
 import { addRecent, listRecent, removeRecent } from './recent'
 import { listThemes, setWindowTheme, themesDir, type WindowTheme } from './windowTheme'
@@ -711,6 +713,18 @@ epo`), if any. */
 
   async revert(repo: string, hash: string, isMerge: boolean) {
     await git(repo, ['revert', '--no-edit', ...(isMerge ? ['-m', '1'] : []), hash])
+  },
+
+  async rewriteCommits(repo: string, plan: RewritePlan, message: string): Promise<RewriteResult> {
+    return runRewrite(repo, plan, message)
+  },
+
+  async commitMessages(repo: string, hashes: string[]): Promise<string[]> {
+    return readMessages(repo, hashes)
+  },
+
+  async undoRewrite(repo: string, result: RewriteResult) {
+    await restoreBeforeRewrite(repo, result)
   },
 
   async reset(repo: string, hash: string, mode: ResetMode) {

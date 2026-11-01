@@ -29,6 +29,9 @@ import type { WorkspaceLayout } from '../components/LayoutMenu'
 import type { CommitTarget } from '../blame/BlameView'
 import { WORKING_HASH, hasWorkingChanges, workingFileCount } from '../../../shared/working.ts'
 import { DETAILS_MIN } from '../lib/layoutMinimums'
+import { useCommitRange } from './useCommitRange'
+import { RangeSummary } from './RangeSummary'
+import { showRangeMenu } from './rewriteMenu'
 
 export interface ComparisonRequest {
   source: Branch
@@ -102,6 +105,7 @@ export function HistoryView({
   filesHidden,
   filesToggle,
   onSelectedChange,
+  onRangeChange,
   onCompareBranch,
   onOpenChanges,
   onBlame
@@ -113,6 +117,8 @@ export function HistoryView({
   filesHidden: boolean
   filesToggle?: ReactNode
   onSelectedChange?: (c: Commit | null) => void
+  /** The commits selected as a range, or null. */
+  onRangeChange?: (hashes: string[] | null) => void
   onCompareBranch: CompareBranch
   onOpenChanges: () => void
   onBlame: (path: string, rev: string | null) => void
@@ -146,6 +152,8 @@ export function HistoryView({
     r.historyFile && !pinned && !compareBase ? (r.commits.find((c) => c.hash === activeHash)?.path ?? r.historyFile) : undefined
   const jumpHere = jump?.hash === activeHash ? jump : undefined
   liveHash.current = activeHash
+  const hashes = useMemo(() => r.commits.map((c) => c.hash), [r.commits])
+  const rangeSel = useCommitRange(hashes, selected, !pinned && !r.historyFile)
   useEffect(
     () =>
       registerListCopy({
@@ -279,6 +287,7 @@ export function HistoryView({
     }
   }, [r.branches, pinned?.source?.fullName])
   const select = (hash: string, reveal = true) => {
+    rangeSel.clear()
     setPinned((p) => (p ? { ...p, followHead: false } : p))
     setCompareBase(null)
     setSelected(hash)
@@ -286,7 +295,15 @@ export function HistoryView({
     if (reveal) setRevealKey((k) => k + 1)
   }
 
+  const extend = (hash: string) => {
+    if (!rangeSel.extendTo(hash)) return select(hash, false)
+    setCompareBase(null)
+    setSelected(hash)
+    void r.ensureCommit(hash)
+  }
+
   const toggle = (hash: string) => {
+    rangeSel.clear()
     // The working row is not a comparison endpoint (yet); Ctrl+click just selects it.
     if (hash === WORKING_HASH) return select(hash, false)
     if (pinned) return select(hash, false)
@@ -306,8 +323,17 @@ export function HistoryView({
   // Default to HEAD once history arrives; preserve explicit selections across refreshes.
   useEffect(() => {
     if (compareBase && !r.commits.some((c) => c.hash === compareBase)) setCompareBase(null)
-    // An explicitly selected commit remains valid even before its graph row is loaded.
-    if (activeHash) return
+    // An explicitly selected commit remains valid even before its graph row is loaded. Once history has settled
+    // without it, a squash, amend or reset made it unreachable: land on HEAD instead of on nothing.
+    const gone =
+      !!activeHash &&
+      activeHash !== WORKING_HASH &&
+      !pinned &&
+      !r.historyFile &&
+      !r.historyNavigation &&
+      r.commits.length > 0 &&
+      !r.commits.some((c) => c.hash === activeHash)
+    if (activeHash && !gone) return
     const head = r.commits.find((c) => c.refs.some((x) => x.current || x.type === 'head')) ?? r.commits[0]
     if (head) {
       setSelected(head.hash)
@@ -375,8 +401,9 @@ export function HistoryView({
   }, [fileLoading])
 
   useEffect(() => {
-    onSelectedChange?.(compareBase || pinned ? null : (r.commits.find((c) => c.hash === activeHash) ?? null))
-  }, [activeHash, compareBase, pinned, r.commits])
+    onSelectedChange?.(compareBase || pinned || rangeSel.range ? null : (r.commits.find((c) => c.hash === activeHash) ?? null))
+  }, [activeHash, compareBase, pinned, r.commits, rangeSel.range])
+  useEffect(() => onRangeChange?.(rangeSel.range), [rangeSel.range])
 
   const query = search.trim().toLowerCase()
   const matches = useMemo(
@@ -519,7 +546,10 @@ export function HistoryView({
             }}
             selected={activeHash}
             compareBase={compareBase}
+            range={rangeSel.set}
             onToggle={toggle}
+            onExtend={extend}
+            onClearRange={rangeSel.range ? rangeSel.clear : undefined}
             onDismissMode={dismissMode}
             revealKey={revealKey}
             onSelect={(h) => select(h, false)}
@@ -533,6 +563,7 @@ export function HistoryView({
             }}
             onContextMenu={(c, e) => {
               e.preventDefault()
+              if (rangeSel.range?.includes(c.hash)) return void showRangeMenu(r, rangeSel.range)
               // A context click targets one commit, never adds a comparison endpoint.
               // Keep an explicitly selected pair intact when opening either endpoint's menu.
               if (c.hash !== activeHash && c.hash !== compareBase) select(c.hash, false)
@@ -603,30 +634,34 @@ export function HistoryView({
           </div>
         )}
       </div>
-      <CommitDetails
-        repo={r.path}
-        hash={activeHash}
-        compareBase={compareBase ?? undefined}
-        branchComparison={branchComparison}
-        focusCode={layout === 'code'}
-        filesHidden={filesHidden}
-        filesToggle={filesToggle}
-        contentRevision={r.contentRevision}
-        onOpenChanges={onOpenChanges}
-        onFileHistory={startFileHistory}
-        onBlame={onBlame}
-        filePath={jumpHere?.file ?? historyPath}
-        jump={jumpHere}
-        comparisonSource={`${pinned?.followHead ? `${pinned.source?.name ?? r.status?.branch ?? 'HEAD'} ` : ''}${activeHash?.slice(0, 8) ?? ''}`}
-        onPickTarget={(anchor) => showComparisonBranchPicker(r, anchor, sourceBranch ?? null, (t) => pin(t, sourceBranch ?? null))}
-        commits={r.commits}
-        onSwap={() => {
-          setSelected(compareBase)
-          setCompareBase(selected)
-        }}
-        onClearComparison={() => endComparison()}
-        onSelectCommit={(h) => select(h)}
-      />
+      {rangeSel.range ? (
+        <RangeSummary r={r} hashes={rangeSel.range} />
+      ) : (
+        <CommitDetails
+          repo={r.path}
+          hash={activeHash}
+          compareBase={compareBase ?? undefined}
+          branchComparison={branchComparison}
+          focusCode={layout === 'code'}
+          filesHidden={filesHidden}
+          filesToggle={filesToggle}
+          contentRevision={r.contentRevision}
+          onOpenChanges={onOpenChanges}
+          onFileHistory={startFileHistory}
+          onBlame={onBlame}
+          filePath={jumpHere?.file ?? historyPath}
+          jump={jumpHere}
+          comparisonSource={`${pinned?.followHead ? `${pinned.source?.name ?? r.status?.branch ?? 'HEAD'} ` : ''}${activeHash?.slice(0, 8) ?? ''}`}
+          onPickTarget={(anchor) => showComparisonBranchPicker(r, anchor, sourceBranch ?? null, (t) => pin(t, sourceBranch ?? null))}
+          commits={r.commits}
+          onSwap={() => {
+            setSelected(compareBase)
+            setCompareBase(selected)
+          }}
+          onClearComparison={() => endComparison()}
+          onSelectCommit={(h) => select(h)}
+        />
+      )}
     </Split>
   )
 }

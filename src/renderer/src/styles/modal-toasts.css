@@ -250,3 +250,35 @@
 .toast.success {
   border-left-color: var(--diff-add-foreground);
 }
+
+.modal-list {
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+  max-height: calc(var(--row-md) * 6);
+  overflow-y: auto;
+}
+.modal-list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--row-md);
+  font-size: var(--text-sm);
+}
+.modal-list-row code {
+  font-family: var(--mono);
+  color: var(--muted-foreground);
+}
+.modal-list-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.modal-warning {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-2-5);
+  border-radius: var(--radius-md);
+  background: var(--warning-soft);
+  font-size: var(--text-sm);
+}

@@ -6,6 +6,7 @@ interface GitOptions {
   okCodes?: number[]
   /** Fail instead of asking for credentials (also suppresses Git Credential Manager's window). */
   noPrompt?: boolean
+  env?: Record<string, string>
 }
 
 const BASE_ARGS = ['--no-optional-locks', '-c', 'core.quotepath=false', '-c', 'color.ui=false']
@@ -46,7 +47,8 @@ export const getGitBinary = () => gitBinary
 export function git(cwd: string, args: string[], opts: GitOptions = {}): Promise<string> {
   const sink = outputSink.getStore()
   return new Promise((resolve, reject) => {
-    const env = opts.noPrompt ? { ...ENV, GCM_INTERACTIVE: 'never', GIT_ASKPASS: '', SSH_ASKPASS: '' } : ENV
+    const base = opts.noPrompt ? { ...ENV, GCM_INTERACTIVE: 'never', GIT_ASKPASS: '', SSH_ASKPASS: '' } : ENV
+    const env = opts.env ? { ...base, ...opts.env } : base
     const child = spawn(gitBinary, [...BASE_ARGS, ...args], { cwd, env, windowsHide: true })
     const out: Buffer[] = []
     const err: Buffer[] = []

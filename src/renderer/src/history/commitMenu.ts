@@ -8,6 +8,16 @@ import type { Branch, Commit, MenuItem, Ref } from '../../../shared/types'
 import type { RepoCtx } from '../useRepo'
 import { compareMenuItems, runCompareItem, showBranchMenu, type CompareBranch } from '../lib/branchMenu'
 import { showTagMenu } from '../lib/tagMenu'
+import { rewriteCommits } from '../rewriteActions'
+import { combineMenuItem } from './rewriteMenu'
+
+/** A commit can carry thousands of refs; a menu lists the first few and says how many it left out. */
+const MENU_REFS = 12
+function capped<T>(list: T[]) {
+  return list.slice(0, MENU_REFS)
+}
+const moreRow = (total: number): MenuItem[] =>
+  total > MENU_REFS ? [{ id: 'more-refs', label: `${total - MENU_REFS} more branches not listed (use the sidebar)`, enabled: false }] : []
 
 export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch, onCompareCommit: (c: Commit) => void) {
   const cur = r.status?.branch ?? 'HEAD'
@@ -15,10 +25,11 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
   const locals = c.refs.filter((x) => x.type === 'local' && !x.current)
   const hasLocal = (name: string) => r.branches.some((b) => b.type === 'local' && b.name === name)
   const remotes = c.refs.filter((x) => x.type === 'remote' && !hasLocal(x.name.slice(x.name.indexOf('/') + 1)))
-  const checkouts: MenuItem[] = [
+  const checkoutCandidates: MenuItem[] = [
     ...locals.map((x) => ({ id: `co:${x.name}`, label: x.name })),
     ...remotes.map((x) => ({ id: `cor:${x.name}`, label: `${x.name} as local branch` }))
   ]
+  const checkouts: MenuItem[] = [...capped(checkoutCandidates), ...moreRow(checkoutCandidates.length)]
   const allTips = c.refs.flatMap((x) =>
     x.type === 'local' || x.type === 'remote' ? r.branches.filter((b) => b.type === x.type && b.name === x.name) : []
   )
@@ -27,16 +38,21 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
     (t) => t.type === 'local' || !allTips.some((o) => o.type === 'local' && o.name === t.name.slice(t.name.indexOf('/') + 1))
   )
   const compares: MenuItem[] = []
-  const compareItems = await Promise.all(tips.map((tip) => compareMenuItems(r, tip, tips.length > 1)))
-  tips.forEach((tip, i) => {
+  const compareItems = await Promise.all(capped(tips).map((tip) => compareMenuItems(r, tip, tips.length > 1)))
+  capped(tips).forEach((tip, i) => {
     compares.push(...compareItems[i].map((item) => ({ ...item, id: `${tip.fullName}|${item.id}` })))
   })
   // Only commits that are a local branch tip get it, like the sidebar's branch menu.
   const prBranches = c.refs.filter((x) => x.type === 'local')
-  const pullRequests: MenuItem[] = prBranches.map((x) => {
+  const prItem = (x: Ref, label: string) => {
     const unpushedBranch = r.branches.some((b) => b.type === 'local' && b.name === x.name && isBranchNotOnRemote(b))
-    return remoteItem(`pr:${x.name}`, prBranches.length > 1 ? `Open pull request for ${x.name}` : 'Open pull request', unpushedBranch)
-  })
+    return remoteItem(`pr:${x.name}`, label, unpushedBranch)
+  }
+  // One branch: a flat row. Several: one "Open pull request" submenu, so they never flood the menu.
+  const pullRequests: MenuItem[] =
+    prBranches.length > 1
+      ? [{ label: 'Open pull request', submenu: [...capped(prBranches).map((x) => prItem(x, x.name)), ...moreRow(prBranches.length)] }]
+      : prBranches.map((x) => prItem(x, 'Open pull request'))
   const unpushed = isUnpushed(r.path, c.hash)
   const detach: MenuItem = { id: 'detach', label: 'Checkout this commit (detached)' }
   const items: MenuItem[] = [
@@ -54,6 +70,7 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
         { id: 'rebase', label: `Rebase ${cur} onto this` }
       ]
     },
+    combineMenuItem(r, [c.hash]),
     { type: 'separator' },
     { label: 'Compare', submenu: [...compares, { id: 'compare-commit', label: 'Compare commit with…' }] },
     { type: 'separator' },
@@ -101,6 +118,7 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
   else if (id === 'merge') act.merge(r, c.hash, label)
   else if (id === 'rebase') act.rebase(r, c.hash, label)
   else if (id === 'pick') act.cherryPick(r, c)
+  else if (id === 'squash' || id === 'fixup') void rewriteCommits(r, [c.hash], id)
   else if (id === 'revert') act.revert(r, c)
   else if (id.startsWith('reset:')) act.reset(r, c, id.slice(6) as 'soft' | 'mixed' | 'hard')
   else if (id === 'copy') copyText(c.hash, 'commit hash')

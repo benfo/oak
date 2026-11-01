@@ -4,6 +4,7 @@ import { useShortcutOverlay, shortcutPlatform } from './lib/useShortcuts'
 import { handleShortcutBindings } from './lib/shortcuts'
 import { ZoomIndicator } from './components/ZoomIndicator'
 import { Tip } from './components/Tip'
+import { DialogDetailsView, type DialogDetails } from './components/DialogDetails'
 
 export function createStore<T>(initial: T) {
   let value = initial
@@ -155,7 +156,7 @@ export function Modal({
 
 // ---------- prompt / confirm ----------
 
-export interface PromptOptions {
+export interface PromptOptions extends DialogDetails {
   title: string
   message?: string
   label?: string
@@ -168,12 +169,14 @@ export interface PromptOptions {
   /** Allow submitting an empty value. */
   optional?: boolean
   validate?: (v: string) => string | null
+  /** Start with the caret after the initial text instead of the text selected, for editing a prefilled message. */
+  caretAtEnd?: boolean
 }
 export interface PromptResult {
   value: string
   checked: boolean
 }
-export interface ConfirmOptions {
+export interface ConfirmOptions extends DialogDetails {
   title: string
   message: string
   ok?: string
@@ -253,8 +256,10 @@ function PromptDialog({ req }: { req: Extract<DialogReq, { kind: 'prompt' }> }) 
   const canSubmit = (req.optional || !!value.trim()) && !error
 
   useEffect(() => {
-    inputRef.current?.focus()
-    inputRef.current?.select()
+    const input = inputRef.current
+    input?.focus()
+    if (req.caretAtEnd) input?.setSelectionRange(input.value.length, input.value.length)
+    else input?.select()
   }, [])
 
   const submit = () => canSubmit && close(req.resolve, { value: value.trim(), checked })
@@ -263,6 +268,7 @@ function PromptDialog({ req }: { req: Extract<DialogReq, { kind: 'prompt' }> }) 
   return (
     <Modal title={req.title} onClose={() => close(req.resolve, null)}>
       {req.message && <p className="modal-msg">{req.message}</p>}
+      <DialogDetailsView items={req.items} warning={req.warning} />
       <label className="field">
         {req.label && <span>{req.label}</span>}
         <Input
@@ -314,6 +320,7 @@ function ConfirmDialog({ req }: { req: Extract<DialogReq, { kind: 'confirm' }> }
   return (
     <Modal title={req.title} onClose={() => close(req.resolve, false)}>
       <p className="modal-msg">{req.message}</p>
+      <DialogDetailsView items={req.items} warning={req.warning} />
       <div className="modal-actions">
         <button className="btn" onClick={() => close(req.resolve, false)}>
           Cancel

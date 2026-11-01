@@ -15,12 +15,14 @@ Lessons for a future history rewrite or tag move:
 
 **Release state.** 0.1.22 is the latest release (2026-10-29), after 0.1.21 (2026-10-29) and 0.1.20 (2026-10-28). The website downloads follow the latest published release (`website/src/data/release.json`, updated after the packages are public). The next release follows `docs/releasing.md`. Open items:
 
+- **Squash and fixup, in progress.** Built on `feature/squash-fixup` (24 commits, local only, no pull request yet; `main` is untouched) and passing its focused checks; the full unit and UI suites have not been run. Visual check (light and dark) and Vim-key check done by the maintainer. Waiting on: a pull request (squash merge), and `CHANGELOG.md` and `src/shared/releases.json` notes at release time. Also on the branch: menu type-ahead keeps going after a typed letter when Vim keys are on, a vanished selection falls back to HEAD after a rewrite, and the many-refs fixes (a History row shows at most 6 ref badges plus a "+N" chip; the commit menu lists at most 12 branches per list, groups several pull requests in one submenu, and says how many it left out; unit test `tests/ref-badge-cap.test.ts`, UI test `tests-ui/many-refs.test.ts`, the UI test confirmed to fail without the fix). What is built and what is left of it is under Backlog.
 - Open in editor: self-hosted GitHub, GitLab or Bitbucket servers need a host to provider setting (add it beside the provider list); a line link from a working file with local edits on a pushed commit can point a few lines off.
 - "Merge into" a branch already contained in the current one says "Nothing to merge". A disabled "(already merged)" item was reverted because the check delayed the menu; if wanted, compute it in the background like the compare-target cache.
 - Transit-map redesign of the Light and Dark themes (tokens only; see `PRODUCT.md`, `DESIGN.md`). Still open: `--radius-full` pills could use the signage radius, Dark grounds could take an ink tint, the Light selection tint is cool on warm paper, `.icon-btn` has a literal `24px` width. The 5,000-commit scroll test is removed with a TODO in `tests-ui/smoke.test.ts`; restore and stabilise it before adding `test:ui` to CI.
 
 ## Resume next
 
+0. **Performance (reported 2026-11-01).** Measured on a synthetic repo with about 9,200 refs on two commits. Cause found and fixed on `feature/squash-fixup`: one History row drew thousands of ref badges (each with a tooltip) and the commit menu listed every branch, which blocked Electron's main thread for about 3.7 s per click or key; palette and menus now open in 40 to 200 ms. Other menus, pickers and the sidebar were timed and are fine (tag picker filtering about 0.45 s, sidebar scroll and branch filter about 0.5 s). Still open: opening a repo waits on git (`for-each-ref` about 0.55 s, `log --all` about 0.43 s per call here, run on every focus and watcher refresh; `%(*objectname)` in `handlers.ts` `branches` may be part of it), so debounce or slim the refresh. Not measured: a commit with thousands of changed files, a very large working-tree status, huge diffs (fixtures `commits5k` and `hugeDiff` exist).
 0. **Website follow-ups.** Panels differ in height, so content below the map shifts a little when a station changes; revisit if it bothers anyone. Keep "planned" in step with this file. Notes and rules are in `website/README.md`.
 1. **Refactor.** Add the `test:ui` job to `checks.yml` once the suite is stable (needs a display on Linux, for example xvfb). Work down the `max-lines` warnings when touching those files.
 2. **Agent contributions.** `AGENTS.md` is contributor-facing; the maintainer's workflow lives in gitignored `AGENTS.local.md` (plus a `CLAUDE.local.md` import, both in `.git/info/exclude`), so a fresh clone must recreate them. Open: how to check that agent-written PRs follow the rules (PR template checklist, CI).
@@ -35,21 +37,20 @@ Proposed order, not yet agreed (each still needs its workflow discussed first). 
 
 **Next (the usual reasons people reject a client)**
 
-1. Squash and fixup commits from History (the small part of interactive rebase; build first).
-2. Interactive rebase: reorder, squash, fixup, drop, reword.
-3. Submodules: status, update, open (not built).
-4. Git LFS: visible state for tracked files and pending uploads (works through `git`, no UI).
-5. Clone and init flow check (a `clone` handler exists; confirm recent repositories and default folder).
+1. Interactive rebase: reorder, drop, reword, merge-aware (squash and fixup are built, see Backlog).
+2. Submodules: status, update, open (not built).
+3. Git LFS: visible state for tracked files and pending uploads (works through `git`, no UI).
+4. Clone and init flow check (a `clone` handler exists; confirm recent repositories and default folder).
 
 **Then**
 
-6. Full text search: `git grep`, `git log --grep`, `-S` and `-G` in one panel.
-7. Worktrees: create, view, switch, clean up.
-8. Bisect as a short guided flow (not built).
-9. Compare the working tree against any commit.
-10. Commit options follow-ups: author and date overrides, `--reset-author`, Co-authored-by trailers.
-11. Partial code expansion in diffs.
-12. Conflict follow-ups (item 4 above).
+5. Full text search: `git grep`, `git log --grep`, `-S` and `-G` in one panel.
+6. Worktrees: create, view, switch, clean up.
+7. Bisect as a short guided flow (not built).
+8. Compare the working tree against any commit.
+9. Commit options follow-ups: author and date overrides, `--reset-author`, Co-authored-by trailers.
+10. Partial code expansion in diffs.
+11. Conflict follow-ups (item 4 under Resume next).
 
 **Later or by request**
 
@@ -82,7 +83,7 @@ Rules for menus, Escape, layouts, styles, previews, tokens and reuse are in `AGE
 - **Layouts:** the named layouts, Layout menu, Resize panes picker, an overlaying file list drawer and hiding the toolbar in focus mode were removed. No docking or automatic collapsing.
 - **File icons:** the default stays None until the maintainer has tried it (one value in `settings.ts`).
 - **Website:** factual copy, no sales language or unsupported "only"/"unique" claims, the command palette featured, no live demo, screenshots are real captures of a synthetic repo, section backgrounds alternate strictly after the hero.
-- **Big collections:** the sidebar lists the newest 100 tags with a searchable "Go to tag…" picker.
+- **Big collections:** the sidebar lists the newest 100 tags with a searchable "Go to tag…" picker. A commit row shows at most 6 ref badges and a "+N" chip (the checked-out ref always stays); a menu lists at most 12 refs per list with a disabled "N more" row and points to the sidebar. Never render an unbounded list in a row, a menu or a tooltip.
 - **Libraries (audited 2026-10-20):** Git produces diffs, Shiki highlights, React Aria and react-resizable-panels own UI behaviour, `fuzzysort` ranks the palette behind `lib/fuzzy.ts`; nothing worth replacing. The graph and diff stay custom (`diff`'s `parsePatch` lacks combined diffs).
 - **Packaging:** the app includes only `out/main`, `out/preload` and `out/renderer`; scratch repos, profiles and screenshots under `out/` must never ship.
 
@@ -93,7 +94,9 @@ Ideas only. None is agreed, and each needs a concrete workflow and a discussion 
 **Git features**
 
 - Interactive rebase, three-way merge editor, Git command log panel.
-- Squash and fixup from History: select commits, choose "Squash into previous" or "Fixup into previous", confirm, then rebase non-interactively (`git rebase --autosquash`). Covers most of what people use interactive rebase for; build it first and reuse its confirm and undo for the full interactive version.
+- Squash and fixup from History is built (on `feature/squash-fixup`, release notes still to write): Shift+click or Shift+arrows select a contiguous range, then Combine commits in the menu, the summary buttons or the palette; Undo toast; force-push warning for pushed commits. Refused with a reason when the tree is dirty, a merge commit is in the way, or the list is a file history. Interactive rebase should reuse its planner (`src/shared/rewrite.ts`) and scripted-todo engine (`src/main/rewrite.ts`). Squashing around a skipped commit is a reorder, so it belongs to interactive rebase, not to Ctrl+click (Ctrl+click compares). Measured with 2,000 loaded commits selected: 200 ms to the summary and 350 ms to the dialog, rows not virtualised; revisit near 10,000.
+- Status bar: a bottom strip for progress, repository facts and quiet messages, so busy state stops living in toolbar spinners and some toasts can move there. Proposed 2026-11-01; needs a workflow and a rule for what stays a toast (errors, Undo).
+- Menu-wide type-ahead: typing in a menu only searches its own level, so "squash" does not find an item inside a submenu. Leaving it for the palette was chosen for now; revisit if people ask.
 - Submodules: list them with status (clean, modified, uninitialised), initialise and update, open one as a repository. Everyday actions only; no `submodule add` wizard until asked.
 - Git LFS: show which files are LFS pointers and whether uploads are pending, using `git lfs` output. LFS itself already works through the user's `git`.
 - Bisect as a guided flow: mark good and bad from History, show progress and the found commit, always offer Reset.

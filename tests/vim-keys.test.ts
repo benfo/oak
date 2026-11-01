@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { vimArrow } from '../src/renderer/src/lib/navigation.ts'
 import { isListSearchKey } from '../src/renderer/src/lib/navigation.ts'
-import { createVimMotions, handleListNav, markHalfPage, movementDelta } from '../src/renderer/src/lib/navigation.ts'
+import { createMenuTypeahead, createVimMotions, handleListNav, markHalfPage, movementDelta } from '../src/renderer/src/lib/navigation.ts'
 import type { KeyboardEvent } from 'react'
 
 const plain = { ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, isComposing: false }
@@ -91,4 +91,15 @@ test('half-page movement is scoped to its alias event and clamps custom lists at
   e.key = 'PageUp'
   handleListNav(e, 30, 2, (i) => positions.push(i), 12)
   assert.deepEqual(positions, [9, 29, 0])
+})
+
+test('a menu leaves h/j/k/l to type-ahead for a second after a typed letter, and arrows never open that window', () => {
+  const typeahead = createMenuTypeahead()
+  assert.equal(typeahead.inProgress(0), false)
+  typeahead.typed(0)
+  assert.equal(typeahead.inProgress(999), true)
+  assert.equal(typeahead.inProgress(1000), false)
+  typeahead.typed(2000)
+  typeahead.reset()
+  assert.equal(typeahead.inProgress(2001), false)
 })

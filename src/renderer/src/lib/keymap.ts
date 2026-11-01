@@ -24,6 +24,7 @@ export type WidgetAction =
   | 'refMenu'
   | 'select'
   | 'toggleSelect'
+  | 'extendSelect'
   | 'selectAll'
   | 'moveFocus'
   | 'search'
@@ -63,6 +64,7 @@ export function isListSearchKey(e: Pick<ShortcutKey, 'key' | 'ctrlKey' | 'metaKe
 }
 
 const ALL: readonly WidgetRole[] = ['list', 'graph', 'diff', 'blame']
+const EXTEND_SELECT = ['Shift+ArrowUp', 'Shift+ArrowDown', 'Shift+Home', 'Shift+End', 'Shift+PageUp', 'Shift+PageDown']
 const MOVE_FOCUS = ['Mod+ArrowUp', 'Mod+ArrowDown', 'Mod+Home', 'Mod+End', 'Mod+PageUp', 'Mod+PageDown']
 
 export const WIDGET_KEYMAP: readonly WidgetKey[] = [
@@ -119,6 +121,16 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
     roles: ['graph'],
     keys: ['Mod+Space'],
     help: { title: 'History commit list: toggle the focused commit in the comparison', keys: 'Ctrl+Space', category: 'History' }
+  },
+  {
+    action: 'extendSelect',
+    roles: ['graph'],
+    keys: EXTEND_SELECT,
+    help: {
+      title: 'History commit list: select a range of commits, then combine them from the menu',
+      keys: 'Shift+↑ / Shift+↓ / Shift+Home / Shift+End / Shift+PageUp / Shift+PageDown',
+      category: 'History'
+    }
   },
   {
     action: 'moveFocus',

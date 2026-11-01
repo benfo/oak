@@ -281,6 +281,27 @@ export function createVimMotions() {
   }
 }
 
+/** React Aria clears a menu's typed prefix after this long without a key. */
+const TYPEAHEAD_RESET_MS = 1000
+
+/**
+ * Under Vim navigation a menu reads h/j/k/l as arrows, but inside a word they belong to type-ahead
+ * ("ch", "squash"). A letter given to type-ahead keeps the following letters there until the window passes;
+ * an arrow never opens it, so holding j still moves, and any other key closes it.
+ */
+export function createMenuTypeahead() {
+  let until = 0
+  return {
+    inProgress: (now = Date.now()) => now < until,
+    typed: (now = Date.now()) => {
+      until = now + TYPEAHEAD_RESET_MS
+    },
+    reset: () => {
+      until = 0
+    }
+  }
+}
+
 /** Horizontal scrolling is separate from pane/column navigation and line selection. */
 export function horizontalScrollDirection(
   e: Pick<KeyboardEvent, 'key' | 'shiftKey' | 'ctrlKey' | 'metaKey' | 'altKey' | 'isComposing'>,

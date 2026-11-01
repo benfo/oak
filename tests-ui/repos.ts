@@ -79,3 +79,12 @@ export function hugeDiffRepo(dir: string) {
     numberedLines(60_000, (n) => (n % 100 === 0 ? `const edited${n} = 'changed'` : null))
   )
 }
+
+/** One commit that carries many branches and tags, like a release commit in a repo with thousands of refs. */
+export function manyRefsRepo(dir: string, count: number) {
+  initRepo(dir)
+  write(dir, 'a.txt', 'a\n')
+  commitAll(dir, 'Initial commit')
+  const lines = Array.from({ length: count }, (_, i) => [`create refs/heads/feature/many-${i}`, `create refs/tags/v0.${i}`]).flat()
+  execFileSync('git', ['update-ref', '--stdin'], { cwd: dir, env: ENV, input: lines.map((l) => `${l} HEAD`).join('\n') + '\n' })
+}

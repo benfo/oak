@@ -92,3 +92,12 @@ test('commands may only overlap widget keys by declaring a fallback', () => {
   assert.deepEqual(widgetCollisions([{ ...find, widgetFallback: true }]), [])
   assert.equal(widgetCollisions([{ id: 'stage-all', keys: 'Mod+Shift+A' }]).length, 0)
 })
+
+test('Shift with the movement keys extends the commit range in the graph, and plain keys do not', () => {
+  for (const k of ['ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']) {
+    assert.equal(widgetAction(key(k, { shiftKey: true }), 'graph'), 'extendSelect', k)
+    assert.equal(widgetAction(key(k), 'graph'), undefined, k)
+    assert.equal(widgetAction(key(k, { shiftKey: true, ctrlKey: true }), 'graph'), undefined, k)
+  }
+  assert.equal(widgetAction(key('ArrowDown', { shiftKey: true }), 'list'), undefined)
+})

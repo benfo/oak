@@ -2,7 +2,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSP
 import type { Commit, Ref } from '../../../shared/types'
 import { WORKING_HASH } from '../../../shared/working.ts'
 import type { Graph, GraphRow } from './graph'
-import { markBadgeMenu, refBadgeKey } from './refBadge'
+import { capRefs, hiddenRefsLabel, markBadgeMenu, refBadgeKey } from './refBadge'
 import { relativeTime } from '../lib/format'
 import { Avatar } from '../components/Avatar'
 import { canHandleNavigation, handleDismissNavigation, handleListNav, handleNavigation, movementDelta } from '../lib/navigation'
@@ -36,7 +36,13 @@ interface Props {
   onDisplayMenu?: (e: React.SyntheticEvent) => void
   selected: string | null
   compareBase: string | null
+  /** Commits selected as a range (Shift+click or Shift+arrows), or null. */
+  range: ReadonlySet<string> | null
   onToggle: (hash: string) => void
+  /** Extends the selection from its anchor to this commit. */
+  onExtend: (hash: string) => void
+  /** Only supplied while a range is selected: Escape clears it before anything else. */
+  onClearRange?: () => void
   /** Only supplied while this graph owns a visibly announced mode (comparison or file history). */
   onDismissMode?: () => void
   /** Bumped whenever the selected row should be scrolled into view. */
@@ -67,7 +73,10 @@ export function CommitList({
   onDisplayMenu,
   selected,
   compareBase,
+  range,
   onToggle,
+  onExtend,
+  onClearRange,
   onDismissMode,
   revealKey,
   onSelect,
@@ -129,7 +138,7 @@ export function CommitList({
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (!canHandleNavigation(e)) return
-    if (handleDismissNavigation(e, [onDismissMode])) return
+    if (handleDismissNavigation(e, [onClearRange, onDismissMode])) return
     const widget = widgetAction(e.nativeEvent, 'graph', shortcutPlatform())
     if ((widget === 'select' || widget === 'toggleSelect') && cursor) {
       e.preventDefault()
@@ -137,7 +146,7 @@ export function CommitList({
       else onSelect(cursor)
       return
     }
-    if (widget === 'moveFocus') {
+    if (widget === 'moveFocus' || widget === 'extendSelect') {
       const page = Math.max(1, Math.floor(height / ROW_H) - 1)
       const delta = movementDelta(e.key, page)
       if (delta !== undefined && keys.length) {
@@ -145,6 +154,7 @@ export function CommitList({
         const i = Math.max(0, Math.min(keys.length - 1, Math.max(0, cursorIndex) + delta))
         setCursor(keys[i])
         ensureVisible(i)
+        if (widget === 'extendSelect') onExtend(keys[i])
         return
       }
     }
@@ -203,7 +213,7 @@ export function CommitList({
         {...pane.resetProps}
         role="listbox"
         aria-multiselectable="true"
-        aria-label="Commit graph. Ctrl+click two commits to compare. Ctrl+arrows move focus, Ctrl+Space toggles selection."
+        aria-label="Commit graph. Shift+click or Shift+arrows select a range. Ctrl+click two commits to compare. Ctrl+arrows move focus, Ctrl+Space toggles selection."
         aria-activedescendant={cursorIndex >= start && cursorIndex < end ? `${id}-${cursor}` : undefined}
         onKeyDown={onKeyDown}
         onKeyDownCapture={(e) => pane.navigate(e, onSearch)}
@@ -274,18 +284,21 @@ export function CommitList({
                 )
               }
               const c = commits[i - offset]
+              const chosen = c.hash === selected || c.hash === compareBase || !!range?.has(c.hash)
+              const { shown, hidden } = capRefs(c.refs)
               return (
                 <div
                   key={c.hash}
                   id={`${id}-${c.hash}`}
                   role="option"
-                  aria-selected={c.hash === selected || c.hash === compareBase}
-                  className={`commit-row ${c.hash === selected || c.hash === compareBase ? 'selected' : ''} ${c.hash === cursor ? 'cursor' : ''}`}
+                  aria-selected={chosen}
+                  className={`commit-row ${chosen ? 'selected' : ''} ${c.hash === cursor ? 'cursor' : ''}`}
                   style={{ top: i * ROW_H, ...columns(graphW) }}
                   onMouseDown={(e) => {
                     if (e.button !== 0) return
                     setCursor(c.hash)
                     if (e.ctrlKey || e.metaKey) onToggle(c.hash)
+                    else if (e.shiftKey) onExtend(c.hash)
                     else onSelect(c.hash)
                   }}
                   onContextMenu={(e) => {
@@ -301,7 +314,7 @@ export function CommitList({
                     isHead={c.refs.some((r) => r.current || r.type === 'head')}
                   />
                   <div className="c-subject">
-                    {c.refs.map((r) => {
+                    {shown.map((r) => {
                       const hint = refMenuHint?.(c, r)
                       return (
                         <Tip key={r.type + r.name} label={hint} focusable={false}>
@@ -321,6 +334,11 @@ export function CommitList({
                         </Tip>
                       )
                     })}
+                    {hidden.length > 0 && (
+                      <Tip label={hiddenRefsLabel(hidden)} focusable={false}>
+                        <span className="ref-badge remote">+{hidden.length}</span>
+                      </Tip>
+                    )}
                     <span className="subject-text">{c.subject}</span>
                   </div>
                   <Tip label={`${c.author} <${c.email}>`} focusable={false}>

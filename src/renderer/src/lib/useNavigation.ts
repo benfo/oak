@@ -3,6 +3,7 @@ import { useSettings } from '../settings'
 import {
   vimArrow,
   createVimMotions,
+  createMenuTypeahead,
   markHalfPage,
   movementDelta,
   isListSearchKey,
@@ -21,6 +22,7 @@ export function useNavigation({
 } = {}) {
   const { vimNavigation } = useSettings()
   const motions = useMemo(createVimMotions, [])
+  const typeahead = useMemo(createMenuTypeahead, [])
   useEffect(() => {
     motions.reset()
   }, [vimNavigation, motions])
@@ -64,7 +66,11 @@ export function useNavigation({
     }
     const finding = !!search && isListSearchKey(e.nativeEvent)
     if (!finding && (e.ctrlKey || e.metaKey || e.altKey)) return false
-    const arrow = vimNavigation ? vimArrow(e.nativeEvent) : undefined
+    const arrow = vimNavigation && !(kind === 'menu' && typeahead.inProgress()) ? vimArrow(e.nativeEvent) : undefined
+    if (kind === 'menu' && !arrow) {
+      if (e.key.length === 1 && e.key !== ' ') typeahead.typed()
+      else typeahead.reset()
+    }
     // The view's own switch keys are not type-ahead; let the pane's handler see them.
     const switching = kind === 'list' ? navigationAction(e.nativeEvent) : undefined
     if (switching === 'switchList' || switching === 'switchView') return false

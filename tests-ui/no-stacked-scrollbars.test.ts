@@ -44,5 +44,11 @@ for (const [width, zoomSteps] of [
       .click()
     await expect(page.locator('.commit-scroll')).toBeVisible()
     expect(await stackedScrollers(page)).toEqual([])
+    await page
+      .locator('.commit-list')
+      .getByRole('option', { name: /Initial commit/ })
+      .click({ modifiers: ['Shift'] })
+    await expect(page.getByRole('region', { name: 'Selected commits' })).toBeVisible()
+    expect(await stackedScrollers(page)).toEqual([])
   })
 }

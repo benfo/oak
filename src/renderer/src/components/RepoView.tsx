@@ -48,6 +48,7 @@ import type { WorkspaceLayout } from './LayoutMenu'
 import { CONTENT_MIN, FILES_MIN, SIDEBAR_MIN } from '../lib/layoutMinimums'
 import { usePreviewToggleCommand } from '../preview/activePreview'
 import { TOGGLE_PREVIEW_KEYS } from '../preview/PreviewModeToggle'
+import { rewriteCommands } from '../rewriteCommands'
 
 export type View = 'changes' | 'history' | 'blame'
 
@@ -74,6 +75,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
   useCommitFilesMode()
   const [focus, setFocus] = useState<{ hash: string; n: number; target?: CommitTarget } | null>(null)
   const [selectedCommit, setSelectedCommit] = useState<Commit | null>(null)
+  const [selectedRange, setSelectedRange] = useState<string[] | null>(null)
   const [comparisonRequest, setComparisonRequest] = useState<ComparisonRequest | null>(null)
   const compareBranch: CompareBranch = (source, target) => {
     setView('history')
@@ -190,6 +192,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     setView,
     onSwitch,
     selectedCommit,
+    rewriteSelection: view === 'history' ? (selectedRange ?? (selectedCommit ? [selectedCommit.hash] : [])) : [],
     focusCommit,
     compareBranch,
     showFileHistory,
@@ -329,6 +332,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
                 comparisonRequest={comparisonRequest}
                 onCompareBranch={compareBranch}
                 onSelectedChange={setSelectedCommit}
+                onRangeChange={setSelectedRange}
                 layout={layout}
                 filesHidden={filesCollapsed}
                 filesToggle={filesToggle}
@@ -366,6 +370,8 @@ interface CommandCtx {
   setView: (v: View) => void
   onSwitch: (p: string | null) => void
   selectedCommit: Commit | null
+  /** The hashes History's Squash and Fixup would act on: its range, or its one commit. */
+  rewriteSelection: string[]
   focusCommit: (hash: string) => void
   compareBranch: CompareBranch
   showFileHistory: (file: string) => void
@@ -386,6 +392,7 @@ function buildCommands({
   setView,
   onSwitch,
   selectedCommit: c,
+  rewriteSelection,
   focusCommit,
   compareBranch,
   showFileHistory,
@@ -1111,7 +1118,8 @@ function buildCommands({
             run: () => copyText(c.hash, 'commit hash')
           }
         ] as Command[])
-      : [])
+      : []),
+    ...rewriteCommands(r, rewriteSelection)
   ]
   return commands.map((command) => ({
     ...command,

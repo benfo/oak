@@ -5,7 +5,7 @@ import { confirm, prompt, toast } from './ui'
 import type { Branch, CheckoutKind, Commit, PullMode, ResetMode } from '../../shared/types'
 import { WIP_MESSAGE, WIP_OPTIONS } from '../../shared/commitOptions'
 
-const short = (h: string) => h.slice(0, 8)
+export const short = (h: string) => h.slice(0, 8)
 
 export function validRefName(v: string) {
   if (/[\s~^:?*[\\]|\.\.|@\{|^[-/.]|[/.]$|\.lock$|\/\//.test(v)) return 'Not a valid Git ref name'
@@ -13,12 +13,12 @@ export function validRefName(v: string) {
 }
 
 /** Conflicts need no message: Changes opens by itself and shows them. */
-function reportOpError(r: RepoCtx, e: unknown) {
+export function reportOpError(r: RepoCtx, e: unknown) {
   const msg = errorMessage(e)
   if (!/conflict/i.test(msg)) toast.error(msg)
 }
 
-async function runOp(r: RepoCtx, label: string, fn: () => Promise<unknown>, success?: string) {
+export async function runOp(r: RepoCtx, label: string, fn: () => Promise<unknown>, success?: string) {
   try {
     await r.withBusy(label, fn)
     if (success) toast.success(success)
