@@ -45,12 +45,12 @@
     "site:preview": "npm --prefix website run preview"
   },
   "devDependencies": {
-    "@babel/core": "^8.0.9",
+    "@babel/core": "^8.0.10",
     "@babel/eslint-parser": "^8.0.7",
     "@babel/preset-react": "^8.0.1",
     "@babel/preset-typescript": "^8.0.7",
     "@playwright/test": "^1.64.1",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
@@ -62,7 +62,7 @@
     "react": "^19.3.1",
     "react-aria-components": "^1.22.1",
     "react-dom": "^19.3.1",
-    "react-resizable-panels": "^4.14.5",
+    "react-resizable-panels": "^4.15.2",
     "react-stately": "^3.51.0",
     "shiki": "^4.5.0",
     "stylelint": "^17.16.0",
@@ -161,10 +161,10 @@
     }
   },
   "dependencies": {
-    "@tanstack/react-virtual": "^3.14.22",
+    "@tanstack/react-virtual": "^3.14.24",
     "diff": "^9.0.0",
     "electron-updater": "^6.8.9",
     "fuzzysort": "^4.0.2",
-    "lucide-react": "^1.63.0"
+    "lucide-react": "^1.64.0"
   }
 }
