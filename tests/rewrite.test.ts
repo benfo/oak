@@ -12,10 +12,17 @@ import { manyCommits } from '../tests-ui/repos.ts'
 const run = (cwd: string, ...args: string[]) =>
   execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd, encoding: 'utf8' }).trim()
 
+/** The rewrite commits through the real git, so a repo needs an identity even where none is configured (CI runners). */
+const identify = (dir: string) => {
+  run(dir, 'config', 'user.name', 't')
+  run(dir, 'config', 'user.email', 't@t')
+}
+
 /** A repo whose commits c1..cN each add one file, so every commit has distinct content. */
 function repo(count: number) {
   const dir = mkdtempSync(join(tmpdir(), 'oak-rewrite-'))
   run(dir, 'init', '-q', '-b', 'main')
+  identify(dir)
   const hashes: string[] = []
   for (let i = 1; i <= count; i++) {
     writeFileSync(join(dir, `f${i}.txt`), `${i}`)
@@ -179,6 +186,7 @@ test('the combined message joins the commit messages oldest first', () => {
 test('a long history rewrites fine, though its todo is larger than an environment variable may be', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'oak-rewrite-long-'))
   manyCommits(dir, 800)
+  identify(dir)
   const all = history(dir)
   const oldest = all[all.length - 1].hash
   const check = planRewrite({ commits: all, selection: [all[all.length - 2].hash], mode: 'squash', head: all[0].hash, clean: true })
