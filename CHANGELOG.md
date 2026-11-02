@@ -2,6 +2,18 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.23
+
+### Added
+
+- Squash and fixup. Select a range of commits in History with Shift+click or Shift+arrows, then choose Combine commits from the menu, the summary buttons or the command palette. An Undo toast follows, and pushed commits warn that a force push will be needed. Oak refuses with a reason when the working tree is dirty, a merge commit is in the way or the list is a file history.
+- Big repositories open progressively. Branches, stashes and the commit list show as they arrive instead of all at once, and the sidebar counts show an ellipsis until they are in. Focusing the window refreshes less often, so repeat refreshes do far fewer git calls.
+
+### Fixed
+
+- A History row shows at most 6 ref badges plus a +N chip, and the commit menu lists at most 12 branches, so clicking a commit in a repository with thousands of refs no longer takes seconds.
+- Typing in a menu keeps searching for a second after the first letter, so "ch" or "squash" finds the item.
+
 ## 0.1.22
 
 ### Added

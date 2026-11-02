@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.1.23",
+    "highlights": [
+      { "title": "Squash and fixup", "text": "Select a range of commits in History with Shift+click or Shift+arrows, then choose Combine commits from the menu, the summary buttons or the command palette. An Undo toast follows, and pushed commits warn that a force push will be needed. Oak refuses with a reason when the working tree is dirty, a merge commit is in the way or the list is a file history."},
+      { "title": "Big repositories open progressively", "text": "Branches, stashes and the commit list show as they arrive instead of all at once, and the sidebar counts show an ellipsis until they are in. Focusing the window refreshes less often, so repeat refreshes do far fewer git calls." }
+    ],
+    "fixes": [
+      "A History row shows at most 6 ref badges plus a +N chip, and the commit menu lists at most 12 branches, so clicking a commit in a repository with thousands of refs no longer takes seconds.",
+      "Typing in a menu keeps searching for a second after the first letter, so \"ch\" or \"squash\" finds the item."
+    ]
+  },
+  {
     "version": "0.1.22",
     "highlights": [
       { "title": "SVG preview", "text": "An SVG in Changes or History opens as a picture, with a Diff | Preview switch at the start of the title to see the text diff instead. Before and after sit side by side on a checkerboard at the file's own proportions, and an added or deleted file shows one side. Press Ctrl+Shift+V, or search the command palette for Toggle preview, to switch. SVGs are drawn as images, so scripts inside them never run." },
