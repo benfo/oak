@@ -5,7 +5,8 @@ import { relativeTime } from '../lib/format'
 import { handleListNav, handleNavigation, revealActive } from '../lib/navigation'
 import { useNavigation } from '../lib/useNavigation'
 import { useShortcutScope } from '../lib/useShortcuts'
-import { createStore, Modal, toast } from '../ui'
+import { createStore, Modal } from '../ui'
+import { notify } from '../notices'
 import { Icon } from './Icon'
 import { Tip } from './Tip'
 import type { RecentRepo } from '../../../shared/types'
@@ -76,7 +77,7 @@ export function Welcome({ onOpen }: { onOpen: (repo: string) => void }) {
               try {
                 open(await api.initRepo(dir))
               } catch (e) {
-                toast.error(errorMessage(e))
+                notify.error(errorMessage(e))
               }
             }}
           >
@@ -240,7 +241,7 @@ function CloneDialog({ initialUrl, onClose, onCloned }: { initialUrl: string; on
       localStorage.setItem('cloneParent', parent)
       onCloned(await api.cloneRepo(url.trim(), parent, name.trim()))
     } catch (e) {
-      toast.error(errorMessage(e))
+      notify.error(errorMessage(e))
       setBusy(false)
     }
   }

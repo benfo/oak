@@ -1,6 +1,6 @@
 import { api } from '../api'
 import { getSettings } from '../settings'
-import { toast } from '../ui'
+import { notify } from '../notices'
 
 /**
  * Opens a file (at a line) or, without `file`, the repository folder in the editor chosen in Preferences > External tools.
@@ -10,6 +10,6 @@ export function openInEditor(repo: string, file: string | null, line?: number, n
   const { externalEditor, externalEditorCommand } = getSettings()
   api
     .openInEditor(repo, file, line, { id: externalEditor, command: externalEditorCommand })
-    .then(() => note && toast.info(note))
-    .catch((e) => toast.error(e.message))
+    .then(() => note && notify.warning(note))
+    .catch((e) => notify.error(e.message))
 }

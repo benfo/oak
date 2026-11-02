@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, errorMessage, repoName } from './api'
-import { toast } from './ui'
+import { notify } from './notices'
 import type { Branch, BranchDetail, Commit, HistoryScope, RepoStatus, Stash } from '../../shared/types'
 import { logNeedsBranches, withDetails } from '../../shared/refList'
 import { FOCUS_REFRESH_AFTER_MS } from '../../shared/watchPaths'
@@ -53,6 +53,10 @@ function notifyIfSlow(label: string, ok: boolean, ms: number) {
   }
 }
 
+export interface BusyOptions<T> {
+  done?: string | null | ((result: T) => string | null)
+}
+
 export interface RepoCtx {
   path: string
   name: string
@@ -95,10 +99,13 @@ export interface RepoCtx {
   /** The remote's default branch (for example origin/main), which remote-only hiding keeps. */
   remoteHead: string | null
   setBranchOptions(options: SidebarBranchOptions): void
-  /** Runs an operation with a busy indicator, refreshes afterwards, and rethrows errors. */
-  withBusy<T>(label: string, fn: () => Promise<T>): Promise<T>
+  /**
+   * Runs an operation with a busy indicator, refreshes afterwards, and rethrows errors. `done` is what the
+   * status bar says once it succeeds (null for nothing), either fixed text or built from the result.
+   */
+  withBusy<T>(label: string, fn: () => Promise<T>, options?: BusyOptions<T>): Promise<T>
   /** Like withBusy, but reports errors as a toast instead of throwing. */
-  run<T>(label: string, fn: () => Promise<T>): Promise<T | undefined>
+  run<T>(label: string, fn: () => Promise<T>, options?: BusyOptions<T>): Promise<T | undefined>
 }
 
 export function useRepo(path: string): RepoCtx {
@@ -167,7 +174,7 @@ export function useRepo(path: string): RepoCtx {
       // Another partial patch (or an external edit) can leave that description identical.
       setContentRevision((revision) => revision + 1)
     } catch (e) {
-      toast.error(errorMessage(e))
+      notify.error(errorMessage(e))
     }
   }, [path])
 
@@ -191,7 +198,7 @@ export function useRepo(path: string): RepoCtx {
         setDetailsLoaded(true)
       } while (detailsAgain.current)
     } catch (e) {
-      toast.error(errorMessage(e))
+      notify.error(errorMessage(e))
     } finally {
       loadingDetails.current = false
     }
@@ -210,7 +217,7 @@ export function useRepo(path: string): RepoCtx {
       const fail = (e: unknown) => {
         if (failed) return
         failed = true
-        toast.error(errorMessage(e))
+        notify.error(errorMessage(e))
       }
       try {
         // Each piece is shown the moment it arrives; none waits for the others unless it depends on them.
@@ -396,15 +403,18 @@ export function useRepo(path: string): RepoCtx {
   }, [path, refresh, refreshStatus])
 
   const withBusy = useCallback(
-    async <T>(label: string, fn: () => Promise<T>) => {
+    async <T>(label: string, fn: () => Promise<T>, options?: BusyOptions<T>) => {
       const started = Date.now()
       busyRef.current = true
       setBusy(label)
       setOp({ label, started, output: '' })
       let ok = false
+      let doneText: string | null = null
       try {
         const result = await fn()
         ok = true
+        const done = options?.done
+        doneText = typeof done === 'function' ? done(result) : (done ?? null)
         return result
       } finally {
         const finished = Date.now()
@@ -413,17 +423,18 @@ export function useRepo(path: string): RepoCtx {
         setOp((o) => (o && o.started === started ? { ...o, finished, ok } : o))
         notifyIfSlow(label, ok, finished - started)
         await refresh()
+        if (ok && doneText) notify.success(doneText)
       }
     },
     [refresh]
   )
 
   const run = useCallback(
-    async <T>(label: string, fn: () => Promise<T>) => {
+    async <T>(label: string, fn: () => Promise<T>, options?: BusyOptions<T>) => {
       try {
-        return await withBusy(label, fn)
+        return await withBusy(label, fn, options)
       } catch (e) {
-        toast.error(errorMessage(e))
+        notify.error(errorMessage(e))
         return undefined
       }
     },

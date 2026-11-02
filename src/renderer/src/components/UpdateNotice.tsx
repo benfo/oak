@@ -1,16 +1,16 @@
-import { useState } from 'react'
 import { Button } from 'react-aria-components'
 import { api } from '../api'
-import { installUpdate, useUpdateStatus } from '../updates'
+import { installUpdate, postponeUpdateNotice, useUpdateLater, useUpdateStatus } from '../updates'
 
 /**
  * Floats in the corner once a new version has downloaded (an overlay, so nothing shifts).
- * "Later" hides it until the next update; the update still installs when Oak closes.
+ * "Later" hides it until the next update, leaving "Update ready" in the status bar to bring it back;
+ * the update still installs when Oak closes.
  */
 export function UpdateNotice() {
   const s = useUpdateStatus()
-  const [dismissed, setDismissed] = useState('')
-  if (s.state !== 'ready' || dismissed === s.version) return null
+  const later = useUpdateLater()
+  if (s.state !== 'ready' || later === s.version) return null
   return (
     <div className="update-notice" role="status">
       <div>
@@ -21,7 +21,7 @@ export function UpdateNotice() {
         <Button className="btn" onPress={() => api.openReleaseNotes(s.version)}>
           Release notes
         </Button>
-        <button className="btn" onClick={() => setDismissed(s.version)}>
+        <button className="btn" onClick={() => postponeUpdateNotice(s.version)}>
           Later
         </button>
         <button className="btn primary" onClick={installUpdate}>

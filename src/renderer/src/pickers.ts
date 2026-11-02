@@ -5,7 +5,7 @@ import type { RepoCtx } from './useRepo'
 import type { Branch } from '../../shared/types'
 import { openPalette } from './components/Palette'
 import { openCloneDialog } from './components/Welcome'
-import { toast } from './ui'
+import { notify } from './notices'
 
 /*
  * The branch and repository pickers. They drop down from their toolbar button, whether opened by a
@@ -139,6 +139,6 @@ export const branchListsLoading = (r: Pick<RepoCtx, 'refsLoaded' | 'detailsLoade
  */
 export function waitForBranches(r: RepoCtx, what: string, needDetails = true) {
   const loading = needDetails ? branchListsLoading(r) : !r.refsLoaded
-  if (loading) toast.info(`Still loading ${what}…`)
+  if (loading) notify.info(`Still loading ${what}…`)
   return loading
 }

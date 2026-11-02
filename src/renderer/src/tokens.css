@@ -96,6 +96,7 @@
   --surface: #fbfaf6; /* main panels: lists, diff */
   --surface-sunken: #e4e0d6; /* inputs, headers, wells */
   --overlay: var(--surface); /* menus, popovers, dialogs */
+  --toast: color-mix(in srgb, var(--surface) 80%, var(--foreground)); /* notifications: a tone apart from every panel behind them */
   --muted-foreground: #47443e; /* secondary text */
   --subtle-foreground: #57524b; /* hints, placeholders, line numbers */
   --border: #d9d5ca;
@@ -181,6 +182,7 @@
   --surface-sunken: #101113;
   /* Floating surfaces sit a touch lighter than the panel beneath, in any dark theme */
   --overlay: color-mix(in srgb, var(--surface) 94%, white);
+  --toast: color-mix(in srgb, var(--surface) 80%, var(--foreground));
   --muted-foreground: #d2cfc7;
   --subtle-foreground: #b6b2aa;
   --border: #2c2d30;

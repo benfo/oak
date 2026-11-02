@@ -1,7 +1,8 @@
 import { api } from './api'
 import { reportOpError, runOp, short } from './actions'
 import type { RepoCtx } from './useRepo'
-import { confirm, prompt, toast } from './ui'
+import { confirm, prompt } from './ui'
+import { notify } from './notices'
 import {
   combinedMessage,
   isReadyToRewrite,
@@ -49,7 +50,7 @@ async function undo(r: RepoCtx, result: RewriteResult) {
 export async function rewriteCommits(r: RepoCtx, selection: string[], mode: RewriteMode) {
   const words = REWRITE_WORDS[mode]
   const check = checkRewrite(r, selection, mode)
-  if (!check.ok) return toast.error(`${words.name}: ${check.reason}`)
+  if (!check.ok) return notify.error(`${words.name}: ${check.reason}`)
   const { plan } = check
   const subjects = new Map(r.commits.map((c) => [c.hash, c.subject]))
   const count = plan.combined.length
@@ -85,7 +86,7 @@ export async function rewriteCommits(r: RepoCtx, selection: string[], mode: Rewr
 
   try {
     const result = await r.withBusy(words.busy, () => api.rewriteCommits(r.path, plan, message))
-    toast.withActions(`${words.done} ${count} commits`, [{ label: 'Undo', run: () => void undo(r, result) }])
+    notify({ kind: 'success', text: `${words.done} ${count} commits`, actions: [{ label: 'Undo', run: () => void undo(r, result) }] })
   } catch (e) {
     reportOpError(r, e)
   }

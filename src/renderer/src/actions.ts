@@ -1,7 +1,8 @@
 import { getSettings, updateSettings } from './settings'
 import { api, errorMessage } from './api'
 import type { RepoCtx } from './useRepo'
-import { confirm, prompt, toast } from './ui'
+import { confirm, prompt } from './ui'
+import { notify } from './notices'
 import type { Branch, CheckoutKind, Commit, PullMode, ResetMode } from '../../shared/types'
 import { WIP_MESSAGE, WIP_OPTIONS } from '../../shared/commitOptions'
 
@@ -15,13 +16,12 @@ export function validRefName(v: string) {
 /** Conflicts need no message: Changes opens by itself and shows them. */
 export function reportOpError(r: RepoCtx, e: unknown) {
   const msg = errorMessage(e)
-  if (!/conflict/i.test(msg)) toast.error(msg)
+  if (!/conflict/i.test(msg)) notify.error(msg)
 }
 
 export async function runOp(r: RepoCtx, label: string, fn: () => Promise<unknown>, success?: string) {
   try {
-    await r.withBusy(label, fn)
-    if (success) toast.success(success)
+    await r.withBusy(label, fn, { done: success })
   } catch (e) {
     reportOpError(r, e)
   }
@@ -59,7 +59,7 @@ export async function deleteBranch(r: RepoCtx, name: string) {
     await r.withBusy('Deleting branch', () => api.deleteBranch(r.path, name, false))
   } catch (e) {
     const msg = errorMessage(e)
-    if (!/not fully merged/i.test(msg)) return toast.error(msg)
+    if (!/not fully merged/i.test(msg)) return notify.error(msg)
     const force = await confirm({
       title: 'Branch not fully merged',
       message: `"${name}" has commits that aren't merged anywhere else. Delete it anyway? Those commits may be lost.`,
@@ -84,9 +84,9 @@ export async function merge(r: RepoCtx, ref: string, label = ref) {
   const into = r.status?.branch ?? 'HEAD'
   if (!(await confirm({ title: 'Merge', message: `Merge ${label} into ${into}?`, ok: 'Merge' }))) return
   try {
-    const out = await r.withBusy('Merging', () => api.merge(r.path, ref))
-    if (/already up.to.date/i.test(out)) toast.info(`Nothing to merge: ${into} already contains ${label}`)
-    else toast.success(`Merged ${label}`)
+    const upToDate = (out: string) => /already up.to.date/i.test(out)
+    const out = await r.withBusy('Merging', () => api.merge(r.path, ref), { done: (out) => (upToDate(out) ? null : `Merged ${label}`) })
+    if (upToDate(out)) notify.info(`Nothing to merge: ${into} already contains ${label}`)
   } catch (e) {
     reportOpError(r, e)
   }
@@ -112,15 +112,18 @@ export async function revert(r: RepoCtx, c: Commit) {
 /** A save point instead of a stash: stages everything and commits it as "WIP" without hooks or signing, optionally pushing it as a backup. */
 export async function commitWip(r: RepoCtx, andPush = false) {
   try {
-    await r.withBusy('Committing', async () => {
-      await api.stageAll(r.path)
-      await api.commit(r.path, `${WIP_MESSAGE}\n`, false, WIP_OPTIONS)
-    })
+    await r.withBusy(
+      'Committing',
+      async () => {
+        await api.stageAll(r.path)
+        await api.commit(r.path, `${WIP_MESSAGE}\n`, false, WIP_OPTIONS)
+      },
+      { done: andPush ? null : 'Committed as WIP' }
+    )
   } catch (e) {
-    return toast.error(errorMessage(e))
+    return notify.error(errorMessage(e))
   }
   if (andPush) await push(r, true)
-  else toast.success('Committed as WIP')
 }
 
 export async function undoWipCommit(r: RepoCtx) {
@@ -180,13 +183,12 @@ export async function fetchAll(r: RepoCtx) {
 /** Pull; without a mode, the Preferences default (which itself defaults to git config). */
 export async function pull(r: RepoCtx, mode: PullMode = getSettings().pullMode) {
   try {
-    await r.withBusy('Pulling', () => api.pull(r.path, mode))
-    toast.success('Pulled')
+    await r.withBusy('Pulling', () => api.pull(r.path, mode), { done: 'Pulled' })
   } catch (e) {
     const msg = errorMessage(e)
     if (/divergent|reconcile/i.test(msg))
-      toast.error('Your branch and its upstream have diverged. Use the Pull menu to choose Merge or Rebase.')
-    else if (/no tracking information/i.test(msg)) toast.error('This branch has no upstream yet. Push it first.')
+      notify.error('Your branch and its upstream have diverged. Use the Pull menu to choose Merge or Rebase.')
+    else if (/no tracking information/i.test(msg)) notify.error('This branch has no upstream yet. Push it first.')
     else reportOpError(r, e)
   }
 }
@@ -194,22 +196,27 @@ export async function pull(r: RepoCtx, mode: PullMode = getSettings().pullMode) 
 /** `noVerify` skips the pre-push hook, as for a commit that skipped its own hooks. */
 export async function push(r: RepoCtx, noVerify = false) {
   try {
-    const prUrl = await r.withBusy('Pushing', () => api.push(r.path, false, noVerify))
-    if (prUrl && getSettings().pullRequestPrompt) {
-      toast.withActions('Pushed', [
-        { label: 'Open pull request', run: () => void api.openUrl(prUrl) },
-        {
-          label: 'Don’t show again',
-          run: () => {
-            updateSettings({ pullRequestPrompt: false })
-            toast.info('Turn this back on in Preferences → Git.')
+    const offersPr = (url: string | null) => !!url && getSettings().pullRequestPrompt
+    const prUrl = await r.withBusy('Pushing', () => api.push(r.path, false, noVerify), { done: (url) => (offersPr(url) ? null : 'Pushed') })
+    if (prUrl && offersPr(prUrl)) {
+      notify({
+        kind: 'success',
+        text: 'Pushed',
+        actions: [
+          { label: 'Open pull request', run: () => void api.openUrl(prUrl) },
+          {
+            label: 'Don’t show again',
+            run: () => {
+              updateSettings({ pullRequestPrompt: false })
+              notify.info('Turn this back on in Preferences → Git.')
+            }
           }
-        }
-      ])
-    } else toast.success('Pushed')
+        ]
+      })
+    }
   } catch (e) {
     const msg = errorMessage(e)
-    if (!/rejected|non-fast-forward|fetch first/i.test(msg)) return toast.error(msg)
+    if (!/rejected|non-fast-forward|fetch first/i.test(msg)) return notify.error(msg)
     const force = await confirm({
       title: 'Push rejected',
       message:
@@ -225,7 +232,7 @@ export async function openPullRequest(r: RepoCtx, branch?: string) {
   try {
     await api.openUrl(await api.pullRequestUrl(r.path, branch))
   } catch (e) {
-    toast.error(errorMessage(e))
+    notify.error(errorMessage(e))
   }
 }
 

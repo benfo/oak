@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { GitConfigScope } from '../../../main/handlers'
 import { api, errorMessage } from '../api'
-import { toast } from '../ui'
+import { notify } from '../notices'
+import { createStore } from './createStore'
+
+/** Bumped after Git settings saves, so views that show config (the status bar's identity) read it again. */
+export const gitConfigRevision = createStore(0)
 
 /** Opens the config file in the editor git would use. It may appear behind Oak, so the toast says where it went. */
 export async function openRepoOrGlobalConfig(repo: string | null, scope: GitConfigScope) {
   try {
     const file = await api.openGitConfig(repo, scope)
-    toast.info(`Opened ${file} in your editor`)
+    notify.info(`Opened ${file} in your editor`)
   } catch (e) {
-    toast.error(`Could not open the git config: ${errorMessage(e)}`)
+    notify.error(`Could not open the git config: ${errorMessage(e)}`)
   }
 }
 
@@ -35,7 +39,7 @@ export function useGitConfig(repo: string | null, keys: readonly string[]) {
     let stale = false
     load()
       .then((c) => !stale && setConfig(c))
-      .catch((e) => toast.error(`Could not read git config: ${errorMessage(e)}`))
+      .catch((e) => notify.error(`Could not read git config: ${errorMessage(e)}`))
     return () => {
       stale = true
     }
@@ -50,8 +54,9 @@ export function useGitConfig(repo: string | null, keys: readonly string[]) {
       )
       try {
         for (const [key, value] of Object.entries(entries)) await api.gitConfigSet(repo, scope, key, value)
+        gitConfigRevision.set(gitConfigRevision.get() + 1)
       } catch (e) {
-        toast.error(`Could not save git config: ${errorMessage(e)}`)
+        notify.error(`Could not save git config: ${errorMessage(e)}`)
         await load().then(setConfig, () => undefined)
       }
     },

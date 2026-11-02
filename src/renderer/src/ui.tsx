@@ -2,119 +2,73 @@ import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } fro
 import { Dialog, Heading, Modal as AriaModal, ModalOverlay } from 'react-aria-components'
 import { useShortcutOverlay, shortcutPlatform } from './lib/useShortcuts'
 import { handleShortcutBindings } from './lib/shortcuts'
-import { ZoomIndicator } from './components/ZoomIndicator'
+import { Icon } from './components/Icon'
 import { Tip } from './components/Tip'
+import { dismissNotice, noticeStore, type Notice } from './notices'
 import { DialogDetailsView, type DialogDetails } from './components/DialogDetails'
 
-export function createStore<T>(initial: T) {
-  let value = initial
-  const subs = new Set<() => void>()
-  return {
-    get: () => value,
-    set(next: T) {
-      value = next
-      subs.forEach((s) => s())
-    },
-    subscribe(s: () => void) {
-      subs.add(s)
-      return () => {
-        subs.delete(s)
-      }
-    }
-  }
-}
+import { createStore } from './lib/createStore'
+export { createStore }
 
 // ---------- toasts ----------
 
-type ToastKind = 'error' | 'info' | 'success'
-interface ToastAction {
-  label: string
-  run: () => void
-}
-interface ToastItem {
-  id: number
-  kind: ToastKind
-  text: string
-  actions?: ToastAction[]
-  brief?: boolean
-}
-
-const toastStore = createStore<ToastItem[]>([])
-let toastId = 0
-
-function dismissToast(id: number) {
-  toastStore.set(toastStore.get().filter((t) => t.id !== id))
-}
-
 /** Errors stay until clicked; messages with buttons wait longer so they can be used. */
-function toastDuration(t: ToastItem) {
+function toastDuration(t: Notice) {
   if (t.actions) return 10000
-  if (t.brief) return 1500
   return t.kind === 'error' ? null : 5000
 }
 
-function showToast(kind: ToastKind, text: string, actions?: ToastAction[], brief?: boolean) {
-  const id = ++toastId
-  toastStore.set([...toastStore.get(), { id, kind, text, actions, brief }].slice(-4))
-}
-
-export const toast = {
-  error: (text: string) => showToast('error', text),
-  info: (text: string) => showToast('info', text),
-  success: (text: string) => showToast('success', text),
-  /** A quick confirmation that needs no reading time, such as "Copied". */
-  brief: (text: string) => showToast('success', text, undefined, true),
-  /** A success message with buttons; any button dismisses the toast. */
-  withActions: (text: string, actions: ToastAction[]) => showToast('success', text, actions)
-}
-
-function ToastView({ t }: { t: ToastItem }) {
+function ToastView({ t }: { t: Notice }) {
   const [paused, setPaused] = useState(false)
   useEffect(() => {
     const ms = toastDuration(t)
     if (paused || ms === null) return
-    const timer = setTimeout(() => dismissToast(t.id), ms)
+    const timer = setTimeout(() => dismissNotice(t.id), ms)
     return () => clearTimeout(timer)
   }, [paused, t.id])
   return (
     <Tip label="Click to dismiss" focusable={false}>
       <div
         className={`toast ${t.kind}`}
-        onClick={() => dismissToast(t.id)}
+        role={t.kind === 'error' ? 'alert' : 'status'}
+        onClick={() => dismissNotice(t.id)}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
-        {t.text}
-        {t.actions && (
-          <div className="toast-actions">
-            {t.actions.map((a) => (
-              <button
-                key={a.label}
-                className="btn"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  dismissToast(t.id)
-                  a.run()
-                }}
-              >
-                {a.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {(t.kind === 'error' || t.kind === 'warning') && <Icon name="warning" size={16} className="toast-icon" />}
+        <div className="toast-body">
+          {t.text}
+          {t.actions && (
+            <div className="toast-actions">
+              {t.actions.map((a) => (
+                <button
+                  key={a.label}
+                  className="btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    dismissNotice(t.id)
+                    a.run()
+                  }}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </Tip>
   )
 }
 
 export function Toasts() {
-  const items = useSyncExternalStore(toastStore.subscribe, toastStore.get)
+  const all = useSyncExternalStore(noticeStore.subscribe, noticeStore.get)
+  const items = all.filter((n) => n.surface === 'toast')
   return (
     <div className="toasts">
       {items.map((t) => (
         <ToastView key={t.id} t={t} />
       ))}
-      <ZoomIndicator />
     </div>
   )
 }

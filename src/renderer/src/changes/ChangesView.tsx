@@ -15,7 +15,8 @@ import { useMultipleSelectionState } from 'react-stately'
 import { api, errorMessage, showMenu } from '../api'
 import { splitPath, STATUS_LABEL } from '../lib/format'
 import type { RepoCtx } from '../useRepo'
-import { confirm, toast } from '../ui'
+import { confirm } from '../ui'
+import { notify } from '../notices'
 import { openPreferences } from '../components/Preferences'
 import { useContextLines } from '../diff/useDiffContext'
 import type { DiffKind, FileChange, MenuItem } from '../../../shared/types'
@@ -327,7 +328,7 @@ export function ChangesView({
   /** Enter / double-click: the section's main action, on the selection if the file is part of it. Conflicts have none, so a stray key can't resolve one. */
   const primary = (section: Section, files: Entry[]) => {
     if (section === 'conflicted') {
-      toast.brief('Use "Open in merge tool" or "Mark as resolved" on the file')
+      notify.success('Use "Open in merge tool" or "Mark as resolved" on the file')
       return
     }
     return section === 'staged' ? unstage(files) : stage(files)
@@ -943,7 +944,11 @@ const STATE_TEXT = {
 function runMergeTool(r: RepoCtx, files: string[]) {
   return r.run('Waiting for the merge tool', async () => {
     if (await api.openMergeTool(r.path, files)) return
-    toast.withActions('No merge tool is set.', [{ label: 'Open Git settings', run: () => openPreferences('git') }])
+    notify({
+      kind: 'info',
+      text: 'No merge tool is set.',
+      actions: [{ label: 'Open Git settings', run: () => openPreferences('git') }]
+    })
   })
 }
 

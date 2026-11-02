@@ -125,10 +125,11 @@
   }
 }
 
+/* Bottom-right, just above the status bar, like an IDE's notifications: the newest sits nearest the corner. */
 .toasts {
   position: fixed;
-  top: calc(var(--titlebar-h) + var(--space-2));
   right: var(--space-4);
+  bottom: calc(var(--row-md) + var(--space-2));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -138,11 +139,12 @@
   max-width: min(460px, 100vw - 2 * var(--space-4));
 }
 .toast {
+  display: flex;
+  gap: var(--space-2-5);
   padding: var(--space-2-5) var(--space-3);
   border-radius: var(--radius-lg);
-  background: var(--overlay);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--primary);
+  background: var(--toast);
+  border: 1px solid var(--border-strong);
   box-shadow: var(--shadow);
   white-space: pre-wrap;
   word-break: break-word;
@@ -153,22 +155,18 @@
   max-height: 240px;
   overflow: auto;
 }
-.toast.error {
-  border-left-color: var(--danger);
+.toast-icon {
+  flex: none;
+  margin-top: var(--space-0-5);
 }
-.zoom-indicator {
-  align-self: flex-end;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-1-5) var(--space-1-5) var(--space-1-5) var(--space-3);
-  border-radius: var(--radius-lg);
-  background: var(--overlay);
-  color: var(--foreground);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  font-size: var(--text-sm);
-  animation: pop 0.15s ease-out;
+.toast.error .toast-icon {
+  color: var(--danger);
+}
+.toast.warning .toast-icon {
+  color: var(--warning);
+}
+.toast-body {
+  min-width: 0;
 }
 .toast-actions {
   display: flex;
@@ -176,7 +174,7 @@
   margin-top: var(--space-2);
 }
 
-/* Bottom-left corner; toasts are centred at the top, so they never overlap. */
+/* Bottom-left corner; toasts sit bottom-right, so the two only meet in a very narrow window. */
 .update-notice {
   position: fixed;
   left: var(--space-4);
@@ -246,9 +244,6 @@
 }
 .release-section li + li {
   margin-top: var(--space-2);
-}
-.toast.success {
-  border-left-color: var(--diff-add-foreground);
 }
 
 .modal-list {

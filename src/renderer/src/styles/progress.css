@@ -10,11 +10,6 @@
   border-color: var(--primary-foreground-soft);
   border-top-color: var(--primary-foreground);
 }
-.busy-chip {
-  color: var(--foreground);
-  font-size: var(--text-sm);
-  font-variant-numeric: tabular-nums;
-}
 .op-output {
   margin: 0;
   max-height: 160px;
@@ -68,12 +63,6 @@
 .commit-status.error,
 .commit-status.error .status-text strong {
   color: var(--danger);
-}
-.commit-status.ok {
-  color: var(--diff-add-foreground);
-}
-.commit-status.ok .status-text {
-  color: var(--muted-foreground);
 }
 .btn-count:empty {
   visibility: hidden;

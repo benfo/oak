@@ -1,5 +1,6 @@
 import { api, errorMessage } from './api'
-import { confirm, toast } from './ui'
+import { confirm } from './ui'
+import { notify } from './notices'
 
 /** Opens a folder as a repository, offering to initialise one if it isn't. Returns the repo root. */
 export async function openFolder(dir: string): Promise<string | null> {
@@ -17,11 +18,11 @@ export async function openFolder(dir: string): Promise<string | null> {
       try {
         return await api.initRepo(dir)
       } catch (e2) {
-        toast.error(errorMessage(e2))
+        notify.error(errorMessage(e2))
         return null
       }
     }
-    toast.error(msg)
+    notify.error(msg)
     return null
   }
 }

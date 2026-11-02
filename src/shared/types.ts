@@ -1,3 +1,5 @@
+import type { RebaseStep } from './rebaseStep'
+
 export type RefType = 'head' | 'local' | 'remote' | 'tag'
 
 export interface Ref {
@@ -60,6 +62,8 @@ export interface RepoStatus {
   unstaged: FileChange[]
   conflicted: FileChange[]
   state: RepoState
+  /** Which step a rebase is on; only while `state` is 'rebasing' and git has recorded it. */
+  rebaseStep?: RebaseStep
 }
 
 export interface Branch {

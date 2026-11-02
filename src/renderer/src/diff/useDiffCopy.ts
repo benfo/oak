@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { api, showMenu } from '../api'
-import { toast } from '../ui'
+import { notify } from '../notices'
 import { remoteItem } from '../lib/remoteMenu'
 import { copyFocused, copyDiffAsPatch, hasTextSelection } from '../lib/copy'
 import type { FileDiff } from './diff'
@@ -49,9 +49,9 @@ export function useDiffCopy({ diff, rows, cursor, selected, ref, openInEditor, r
     const picked = rows.filter((r) => selected.has(r.key))
     const refs = (picked.length ? picked : rows[cursor] ? [rows[cursor]] : []).map((r) => ({ hunk: r.hunk, line: r.line }))
     const copied = patch ? copiedPatch(diff, refs) : copiedText(diff, refs)
-    if (!copied) return void toast.info('Nothing to copy')
+    if (!copied) return void notify.info('Nothing to copy')
     void api.copyText(copied.text)
-    toast.brief(copiedLabel(copied.lines, patch))
+    notify.success(copiedLabel(copied.lines, patch))
   }
   const copyRef = useRef(copyLines)
   copyRef.current = copyLines

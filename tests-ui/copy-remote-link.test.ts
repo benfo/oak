@@ -36,7 +36,7 @@ test('Copy > Commit link is unavailable while the commit is unpushed, then copie
   await expectLink('Commit link', true)
   await expect(linkItem('Open in browser', true)).toBeEnabled()
   await linkItem('Commit link', true).click()
-  await expect(page.locator('.toast').last()).toContainText('Copied commit link')
+  await expect(page.locator('.status-message')).toContainText('Copied commit link')
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`https://github.com/acme/app/commit/${hash}`)
 })
 

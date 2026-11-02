@@ -4,7 +4,7 @@ import { Button, ProgressBar } from 'react-aria-components'
 import { buildGraph } from './graph'
 import { singleLane } from '../../../shared/fileLog'
 import type { RepoCtx } from '../useRepo'
-import { toast } from '../ui'
+import { notify } from '../notices'
 import { CommitList } from './CommitList'
 import { CommitDetails } from './CommitDetails'
 import type { BranchComparison } from './commitPreview'
@@ -267,7 +267,7 @@ export function HistoryView({
     void (async () => {
       const resolved = requested ?? (await resolveCompareTarget(r.path, r.branches, source))
       if (resolved) pin(resolved, source)
-      else toast.info('No other branch to compare with.')
+      else notify.info('No other branch to compare with.')
     })()
   }, [comparisonRequest])
 
@@ -283,7 +283,7 @@ export function HistoryView({
   useEffect(() => {
     if (pinned?.source && !sourceBranch && r.branches.length) {
       endComparison()
-      toast.info('Branch no longer exists; comparison ended.')
+      notify.warning('Branch no longer exists; comparison ended.')
     }
   }, [r.branches, pinned?.source?.fullName])
   const select = (hash: string, reveal = true) => {
@@ -347,7 +347,7 @@ export function HistoryView({
       setPinned(null)
       setSelected(r.status.head)
       setCompareBase(null)
-      toast.info('Branch changed; comparison ended.')
+      notify.warning('Branch changed; comparison ended.')
     }
   }, [r.status?.branch, pinned?.owner])
 

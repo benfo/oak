@@ -1,0 +1,124 @@
+/* ---------- status bar ---------- */
+
+.status-bar {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-1);
+  height: var(--row-md);
+  padding: 0 var(--space-1);
+  background: var(--background);
+  border-top: 1px solid var(--border);
+  font-size: var(--text-sm);
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.status-message {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+}
+/* Every item shares one padding and height, so facts and actions line up; only actions tint and show a pointer. */
+.status-button,
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  min-width: 0;
+  margin: var(--space-0-5) 0;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+.status-item {
+  flex: none;
+  white-space: nowrap;
+}
+.status-button {
+  max-width: 100%;
+  cursor: pointer;
+}
+.status-button:hover,
+.status-item.is-action:hover {
+  background: var(--hover);
+  color: var(--foreground);
+}
+.status-item.is-action {
+  cursor: pointer;
+}
+.status-item.is-inert {
+  color: var(--subtle-foreground);
+}
+.status-item.is-attention {
+  color: var(--warning);
+}
+.status-item.is-attention:hover {
+  color: var(--warning);
+}
+.status-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A hover card sits inside the tooltip: a title and key, then what a click does or the facts behind the text. */
+.status-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.status-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+/*
+ * Fixed to the window's corner at a constant physical size and offset: the whole window zooms, so
+ * everything here is divided by --zoom. Otherwise each click on + or - would move the buttons away
+ * from the pointer. The offset clears the status bar at the largest zoom (1.5); a fade would fight
+ * the transform, so there is no animation.
+ */
+.zoom-bubble {
+  position: fixed;
+  right: calc(var(--space-4) / var(--zoom, 1));
+  bottom: calc((var(--row-md) * 1.5 + var(--space-2)) / var(--zoom, 1));
+  transform: scale(calc(1 / var(--zoom, 1)));
+  transform-origin: bottom right;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1-5);
+  border-radius: var(--radius-lg);
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow);
+  z-index: 200;
+  font-size: var(--text-sm);
+}
+/*
+ * Fixed widths: borders and padding snap to whole device pixels at fractional zoom, which would nudge
+ * sized-by-content buttons by a pixel or two between levels. The level box fits "100%" and "150%".
+ */
+.zoom-bubble .btn {
+  flex: none;
+  justify-content: center;
+}
+.zoom-step {
+  width: var(--space-10);
+  padding: 0;
+}
+.zoom-reset {
+  width: calc(var(--space-20) + var(--space-5));
+}
+.zoom-level {
+  flex: none;
+  width: var(--space-10);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

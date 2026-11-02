@@ -6,7 +6,8 @@ import type { Command } from '../commands'
 import { allThemes, loadCustomThemes, previewTheme, setTheme, starterTheme, themeSetting, type Theme } from '../theme'
 import { FILE_ICON_PACKS, type FileIconPackId } from '../fileIcons/packs'
 import { DEFAULTS, stepZoom, updateSettings, useSettings, ZOOM_STEPS, type AvatarSource } from '../settings'
-import { createStore, Modal, toast } from '../ui'
+import { createStore, Modal } from '../ui'
+import { notify } from '../notices'
 import { checkForUpdates, describeUpdate, installUpdate, useUpdateStatus } from '../updates'
 import { DIFF_LAYOUTS, type DiffLayout } from '../diff/diffLayout'
 import { changeDiffLayout } from '../diff/changeDiffLayout'
@@ -116,9 +117,9 @@ function Preferences({ repo, onClose }: { repo: string | null; onClose: () => vo
       const file = await api.createThemeFile(starterTheme())
       await loadCustomThemes()
       refreshThemes((n) => n + 1)
-      toast.info(`Created ${file}`)
+      notify.info(`Created ${file}`)
     } catch (e) {
-      toast.error(errorMessage(e))
+      notify.error(errorMessage(e))
     }
   }
   const pickTheme = (id: string) => {

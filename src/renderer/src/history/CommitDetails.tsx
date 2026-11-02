@@ -19,7 +19,7 @@ import { openInEditor } from '../lib/openInEditor'
 import { copyRemoteLink, openOnRemote } from '../lib/openOnRemote'
 import { isUnpushed } from '../lib/remoteMenu'
 import { isNewFileNotOnRemote } from '../../../shared/remote'
-import { toast } from '../ui'
+import { notify } from '../notices'
 import { useSettings } from '../settings'
 import { buildChangeRows, changeTreeOrder, CHANGE_TREE_INDENT, expandTo, toggled, type ChangeRow } from '../lib/changeTree'
 import { ChevronSpacer, FolderLabel } from '../components/ChangeTreeRow'
@@ -405,9 +405,9 @@ export function CommitDetails({
     if (id === 'save' && hash) {
       try {
         const saved = await api.saveFileCopy(repo, hash, p)
-        if (saved) toast.success(`Saved ${saved}`)
+        if (saved) notify.success(`Saved ${saved}`)
       } catch (e) {
-        toast.error(errorMessage(e))
+        notify.error(errorMessage(e))
       }
     } else runFileMenu(id, repo, [p], onFileHistory, (path) => onBlame(path, working ? null : hash), remoteCommit)
   }

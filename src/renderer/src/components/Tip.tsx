@@ -45,12 +45,15 @@ export function Tip({
   keys,
   placement = 'bottom',
   focusable = true,
+  excludeFromTabOrder = false,
   children
 }: {
   label: ReactNode
   keys?: string
   placement?: Placement
   focusable?: boolean
+  /** Keeps the trigger out of Tab (it still opens on hover): for controls that have a key elsewhere. */
+  excludeFromTabOrder?: boolean
   children: ReactElement
 }) {
   if (!label) return children
@@ -64,7 +67,9 @@ export function Tip({
     <TooltipTrigger delay={500} closeDelay={0}>
       {/* RAC wraps the tooltip's key handler in useKeyboard, which stops propagation
           by default. The tooltip only observes keys; the button and pane own them. */}
-      <Focusable onKeyDown={(e) => e.continuePropagation()}>{children as ReactElement<DOMAttributes<FocusableElement>, string>}</Focusable>
+      <Focusable excludeFromTabOrder={excludeFromTabOrder} onKeyDown={(e) => e.continuePropagation()}>
+        {children as ReactElement<DOMAttributes<FocusableElement>, string>}
+      </Focusable>
       <Tooltip className="tooltip" placement={placement} offset={6}>
         <TipBody label={label} keys={keys} />
       </Tooltip>

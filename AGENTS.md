@@ -10,7 +10,7 @@ Principles are in [PRODUCT.md](PRODUCT.md), the visual system in [DESIGN.md](DES
 
 - `npm run dev` (restart for main-process changes), `build`, `typecheck`, `lint`, `format` (`format:check` in CI), `npm test`. Run typecheck, lint, format and tests before proposing a change.
 - `npm test`: `tests/**/*.test.ts`, Node runner, real git in a temp repo. Node-tested modules import siblings with `.ts` extensions.
-- `npm run test:ui`: builds, then drives the real Electron app with Playwright (`tests-ui/`, serial, real repos and keystrokes). Not in CI yet. Run after changing views, diff or keyboard code. Each test launches a fresh app (about 2 s; about a minute in all), so run only what you touched (`npm run test:ui -- -g "name"`) and keep the full run and `--repeat-each` for the end. Stops at first failure, 5 s assertion timeout. Wait for a view switch to settle (destination focus) before the next shortcut, scope locators when labels repeat, and confirm a bug-fix test fails without the fix.
+- `npm run test:ui`: builds, then drives the real Electron app with Playwright (`tests-ui/`, serial, real repos and keystrokes). Not in CI yet. Run after changing views, diff or keyboard code. Each test launches a fresh app (about 2 s; about a minute in all), so run only what you touched (`npm run test:ui -- -g "name"`) and keep the full run and `--repeat-each` for the end. Stops at first failure, 5 s assertion timeout. Wait for a view switch to settle (destination focus) before the next shortcut, make one `page.mouse.move` before the first hover (the first move after launch only wakes hover up), scope locators when labels repeat, and confirm a bug-fix test fails without the fix.
 - `npm run perf:open -- <label> <runs> <repo>...` (after `npm run build`): launches the real app per repo and prints median open timings and git command counts (`scripts/perf-open.cjs`). Compare commits by running it on each with another label.
 - `npm run dist` (Windows installer), `dist:linux`, `icon` (renders `build/icon.png` from `build/icon.svg`).
 - Releases are the maintainer's job (`docs/releasing.md`): never run `npm run release`, push `vX.Y.Z` tags or trigger website publication.
@@ -44,7 +44,7 @@ Principles are in [PRODUCT.md](PRODUCT.md), the visual system in [DESIGN.md](DES
 | Open in editor | `src/shared/editors.ts`, `src/main/editor.ts`, `R/lib/openInEditor.ts` |
 | File preview (SVG today) | `R/preview/previewers.ts` (registry), `src/shared/filePreview.ts`, `src/main/fileVersions.ts` |
 | File icons | `R/components/FileIcon.tsx` (the only place icons draw), `R/fileIcons/packs.tsx`, `R/fileIcons/materialPack.ts`; licences in `THIRD-PARTY-NOTICES.md` |
-| Toast or dialog | `R/ui.tsx` (`toast`, dialogs; a commit list or warning inside one is `R/components/DialogDetails.tsx`) |
+| Toast, status bar or dialog | Say what happened with `notify` from `R/notices.ts` (the routing policy is `src/shared/notice.ts`); toasts and dialogs render from `R/ui.tsx` (a commit list or warning inside a dialog is `R/components/DialogDetails.tsx`). The bar is `R/components/StatusBar.tsx` with its items built on `R/components/StatusItem.tsx` (beside it: FetchStatus, RepoStateItem, IdentityStatus, HeadCommitStatus, UpdateStatusItem, ZoomItem and ZoomBubble); wording and timings are `src/shared/status.ts` |
 | Long virtualized list | `R/lib/useVirtualRows.ts` |
 | Unit test (Node, real git) | `tests/*.test.ts`; UI tests (Playwright) in `tests-ui/`, fixtures `tests-ui/fixtures.ts`, `tests-ui/repos.ts` |
 | Release or website | `docs/releasing.md`, `scripts/`, `website/README.md` |
@@ -77,6 +77,7 @@ Principles are in [PRODUCT.md](PRODUCT.md), the visual system in [DESIGN.md](DES
 - **Show the user's unit.** Counts say what a person sees (find counts occurrences, not lines). A hint for a key that does nothing reads as a bug: say why in reserved space, never a corner toast about the cursor line.
 - **Reloads keep the screen.** A setting that reloads the same file keeps old rows until new ones arrive; show loading only when the file or revision changes. After a content-changing step, restore the cursor row.
 - **Mouse matches keyboard.** Every widget key gets a visible button (key in its tooltip); every button action is reachable by key.
+- **Say what happened with `notify`,** never which surface: errors, warnings and anything with buttons are toasts (bottom-right, `--toast` tone, icon for errors and warnings); results and hints are the status bar's line (about 4 s); a running operation is the bar's progress after 300 ms, so give `withBusy` a `done` text instead of toasting after it. Status items are actions (hover tint, a hover card, the same command as everywhere) or plain facts, never Tab stops, and every action has a key. A form's own failure stays beside the form (the commit box).
 - **Accurate feedback:** refresh the working diff after content changes even when status codes match. A successful operation never looks like nothing happened.
 
 ## Keyboard model

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, errorMessage, showMenu } from '../api'
 import type { RepoCtx } from '../useRepo'
-import { confirmWithChoices, toast } from '../ui'
+import { confirmWithChoices } from '../ui'
+import { notify } from '../notices'
 import * as act from '../actions'
 import { lastOutputLine } from '../lib/output'
-import { Elapsed, OutputLog } from '../components/OpStatus'
+import { OutputLog } from '../components/OpStatus'
 import { Icon } from '../components/Icon'
 import { focusFiles, handleToolNavigation } from '../lib/navigation'
 import { Tip } from '../components/Tip'
@@ -12,8 +13,6 @@ import { getSettings, updateSettings, useSettings } from '../settings'
 import { handleShortcutBindings } from '../lib/shortcuts'
 import { shortcutPlatform } from '../lib/useShortcuts'
 import { activeOptionLabels, chooseCommitOption, commitOptionsMenu, freshCommitOptions } from './commitOptionsMenu'
-
-const SLOW_AFTER_MS = 300
 
 export function CommitBox({ r }: { r: RepoCtx }) {
   const { subjectLimit } = useSettings()
@@ -27,9 +26,6 @@ export function CommitBox({ r }: { r: RepoCtx }) {
   const [committing, setCommitting] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
   const [showLog, setShowLog] = useState(false)
-  // Progress only appears if the commit is slow, so hook-less commits don't flash.
-  const [slow, setSlow] = useState(false)
-  const [done, setDone] = useState<string | null>(null)
   const st = r.status
 
   useEffect(() => {
@@ -65,7 +61,7 @@ export function CommitBox({ r }: { r: RepoCtx }) {
         try {
           setMessage(await api.lastCommitMessage(r.path))
         } catch (e) {
-          toast.error(errorMessage(e))
+          notify.error(errorMessage(e))
         }
       }
     } else if (!beforeAmend.current.trim()) setMessage('')
@@ -115,7 +111,7 @@ export function CommitBox({ r }: { r: RepoCtx }) {
     try {
       await r.withBusy('Staging', () => api.stage(r.path, includeNew ? [...tracked, ...untracked] : tracked))
     } catch (e) {
-      toast.error(errorMessage(e))
+      notify.error(errorMessage(e))
       return false
     }
     return true
@@ -128,25 +124,22 @@ export function CommitBox({ r }: { r: RepoCtx }) {
     const subjectLine = message.trim().split('\n')[0]
     setFailure(null)
     setShowLog(false)
-    setDone(null)
     setCommitting(true)
-    const slowTimer = setTimeout(() => setSlow(true), SLOW_AFTER_MS)
     try {
-      await r.withBusy(amend ? 'Amending' : 'Committing', () => api.commit(r.path, message.trim() + '\n', amend, options))
+      await r.withBusy(amend ? 'Amending' : 'Committing', () => api.commit(r.path, message.trim() + '\n', amend, options), {
+        done: `${amend ? 'Amended' : 'Committed'} “${subjectLine}”`
+      })
     } catch (e) {
       // Keep the message; the status line shows the failure, with the full output under Details.
       setFailure(errorMessage(e))
       return
     } finally {
-      clearTimeout(slowTimer)
-      setSlow(false)
       setCommitting(false)
     }
     const skippedHooks = options.noVerify
     setMessage('')
     setAmend(false)
     setOptions(freshCommitOptions(getSettings().signoff))
-    setDone(`Committed “${subjectLine}”`)
     if (andPush) await act.push(r, skippedHooks)
   }
 
@@ -170,7 +163,6 @@ export function CommitBox({ r }: { r: RepoCtx }) {
         spellCheck
         onChange={(e) => {
           setMessage(e.target.value)
-          setDone(null)
         }}
         onKeyDown={(e) => {
           handleShortcutBindings(
@@ -208,25 +200,10 @@ export function CommitBox({ r }: { r: RepoCtx }) {
           )
         }}
       />
-      {/* A fixed-height status line: hints, progress and results swap in place, so nothing shifts. */}
-      <div id="commit-status" className={`commit-status ${failure ? 'error' : done ? 'ok' : ''}`} role="status" aria-live="polite">
-        {committing ? (
-          slow &&
-          r.op && (
-            <>
-              <span className="spinner" />
-              <span className="status-text">
-                <strong>
-                  {amend ? 'Amending' : 'Committing'}… <Elapsed since={r.op.started} />
-                </strong>{' '}
-                <span className="mono">{lastOutputLine(r.op.output) || 'waiting for git'}</span>
-              </span>
-              <button className="link" onClick={() => setShowLog((s) => !s)} aria-expanded={showLog}>
-                {showLog ? 'Hide output' : 'Output'}
-              </button>
-            </>
-          )
-        ) : failure ? (
+      {/* A fixed-height line for what only this form can say: why Commit is unavailable, or why it failed.
+          Progress and results live in the status bar. */}
+      <div id="commit-status" className={`commit-status ${failure ? 'error' : ''}`} role="status" aria-live="polite">
+        {failure ? (
           <>
             <Icon name="x" size={14} />
             <Tip label={failure} focusable={false}>
@@ -241,16 +218,11 @@ export function CommitBox({ r }: { r: RepoCtx }) {
               Dismiss
             </button>
           </>
-        ) : done ? (
-          <>
-            <Icon name="check" size={14} />
-            <span className="status-text">{done}</span>
-          </>
         ) : (
           blocker && (message.trim() || conflicts) && <span className="status-text muted">{blocker}</span>
         )}
       </div>
-      {showLog && (committing ? r.op && <OutputLog text={r.op.output} /> : failure && <OutputLog text={failure} />)}
+      {showLog && failure && <OutputLog text={failure} />}
       <div className="commit-box-row">
         <Tip label={head ? 'Nothing to amend yet' : 'Replace the last commit'} focusable={false}>
           <label className="check">

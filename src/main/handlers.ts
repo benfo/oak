@@ -17,6 +17,8 @@ import { addRecent, listRecent, removeRecent } from './recent'
 import { listThemes, setWindowTheme, themesDir, type WindowTheme } from './windowTheme'
 import { checkForUpdates, installUpdate, updateStatus } from './updater'
 import { checkoutBranchNames } from '../shared/recentBranches'
+import { parseRebaseStep, type RebaseStep } from '../shared/rebaseStep'
+import type { TipCommit } from '../shared/status'
 import { setsLineEndings } from '../shared/gitTools'
 import { splitFileLogChunk } from '../shared/fileLog'
 import { blameArgs, mapLineToOlder, parseBlame, type BlameResult } from '../shared/blame'
@@ -84,6 +86,19 @@ async function currentBranch(repo: string) {
   } catch {
     return null
   }
+}
+
+/** The step a rebase is on, from git's progress files (see parseRebaseStep). */
+async function rebaseStep(repo: string): Promise<RebaseStep | undefined> {
+  const dir = await gitDir(repo)
+  const read = (f: string) => fs.readFile(path.join(dir, f), 'utf8').catch(() => null)
+  const [msgnum, end, next, last] = await Promise.all([
+    read('rebase-merge/msgnum'),
+    read('rebase-merge/end'),
+    read('rebase-apply/next'),
+    read('rebase-apply/last')
+  ])
+  return parseRebaseStep(msgnum, end) ?? parseRebaseStep(next, last) ?? undefined
 }
 
 async function repoState(repo: string): Promise<RepoState> {
@@ -191,6 +206,7 @@ epo`), if any. */
       conflicted: [],
       state: await repoState(repo)
     }
+    if (s.state === 'rebasing') s.rebaseStep = await rebaseStep(repo)
     const t = splitZ(out)
     for (let i = 0; i < t.length; i++) {
       const line = t[i]
@@ -740,6 +756,26 @@ epo`), if any. */
       }
     }
     return message
+  },
+
+  /** The commit HEAD points at (author, time, subject), or null in a repository with no commits yet. */
+  async headCommit(repo: string): Promise<TipCommit | null> {
+    try {
+      const out = await git(repo, ['log', '-1', `--format=%H${US}%an${US}%ae${US}%at${US}%s`, 'HEAD'])
+      const [hash, author, email, at, subject] = out.trim().split(US)
+      return hash ? { hash, author, email, time: Number(at), subject: subject ?? '' } : null
+    } catch {
+      return null
+    }
+  },
+
+  /** When this repository last fetched, from git's own FETCH_HEAD (any fetch counts, in Oak or a terminal); null if never. */
+  async lastFetched(repo: string): Promise<number | null> {
+    try {
+      return (await fs.stat(path.join(await gitDir(repo), 'FETCH_HEAD'))).mtimeMs
+    } catch {
+      return null
+    }
   },
 
   async fetch(repo: string, prune = true) {

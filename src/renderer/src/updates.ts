@@ -12,6 +12,11 @@ import type { UpdateStatus } from '../../shared/types'
 
 const store = createStore<UpdateStatus>({ state: 'idle' })
 export const useUpdateStatus = () => useSyncExternalStore(store.subscribe, store.get)
+/** The version whose "ready" card the user chose "Later" for; the status bar offers it back. */
+const laterFor = createStore('')
+export const useUpdateLater = () => useSyncExternalStore(laterFor.subscribe, laterFor.get)
+export const postponeUpdateNotice = (version: string) => laterFor.set(version)
+export const reopenUpdateNotice = () => laterFor.set('')
 export const checkForUpdates = () => api.checkForUpdates()
 export const installUpdate = () => api.installUpdate()
 

@@ -200,7 +200,7 @@ A fixed shell: 44px title bar, toolbar, branch sidebar, main area with History a
 
 ## Elevation & Depth
 
-Flat by default. Surfaces separate by tone (chrome, surface, sunken) and 1px borders. A single shadow token lifts floating layers (menus, popovers, dialogs, palette): in Light `0 8px 30px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08)`, in Dark a heavier `0 10px 40px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.4)`. Modal scrims are 35% black (25% soft). Selection and active rows use inset bars (2px to 3px in primary), not shadows.
+Flat by default. Surfaces separate by tone (chrome, surface, sunken) and 1px borders. A single shadow token lifts floating layers (menus, popovers, dialogs, palette, toasts, the zoom bubble): in Light `0 8px 30px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08)`, in Dark a heavier `0 10px 40px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.4)`. Modal scrims are 35% black (25% soft). Selection and active rows use inset bars (2px to 3px in primary), not shadows.
 
 ### Named Rules
 **The Flat Until Floating Rule.** Only layers that float over the app carry the shadow token; panels, rows and buttons never do.
@@ -229,6 +229,12 @@ Branch sidebar on the chrome tone with a filter field, badge counts and chevron 
 
 ### Menus
 Overlay-tone popover, 4px radius, 1px strong border, floating shadow, 4px padding, 100ms pop-in. Items use 6px by 12px padding and 2px corners; the focused item takes the strong selection tint.
+
+### Status bar
+A 28px strip (`--row-md`) on the chrome tone with a 1px top border, 12px text and tabular figures, below every repository view and kept in expanded Code. The left side says what is happening (a running operation with its elapsed time, shown after 300 ms) or what just happened (a result or hint, about 4 seconds). The right side holds facts and actions. An action tints with `--hover` on hover and opens a hover card (title, key, the facts behind it); a plain fact does neither; an item that needs attention uses the warning colour. Items are never Tab stops. The zoom bubble floats at the window corner and divides its size and offset by `--zoom`, so it stays put while the whole window rescales.
+
+### Toasts
+Bottom-right, just above the status bar, newest nearest the corner. The fill is `--toast` (the surface mixed 20% toward the text colour, so it differs from any panel behind it in either theme), with a strong border and the floating shadow. Errors and warnings carry a warning icon in the danger or warning colour; there is no side stripe. Errors stay until clicked; others fade after 5 seconds, or 10 when they have buttons.
 
 ### The Transit Graph (signature)
 The commit list draws history as a route map in SVG, one 28px row per commit, with lanes 18px apart.

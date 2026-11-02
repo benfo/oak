@@ -1,14 +1,14 @@
 import { api, errorMessage } from '../api'
 import type { RemotePageTarget } from '../../../shared/remote'
 import type { Branch } from '../../../shared/types'
-import { toast } from '../ui'
+import { notify } from '../notices'
 
 /** Opens the repository, a branch, a commit or a file line on the remote's website. A `hash` of 'HEAD' means the current commit. */
 export async function openOnRemote(repo: string, target: RemotePageTarget, remoteName?: string) {
   try {
     await api.openUrl(await api.remotePage(repo, target, remoteName))
   } catch (e) {
-    toast.error(errorMessage(e))
+    notify.error(errorMessage(e))
   }
 }
 
@@ -16,9 +16,9 @@ export async function openOnRemote(repo: string, target: RemotePageTarget, remot
 export async function copyRemoteLink(repo: string, target: RemotePageTarget, what: string, remoteName?: string) {
   try {
     await api.copyText(await api.remotePage(repo, target, remoteName))
-    toast.brief(`Copied ${what}`)
+    notify.success(`Copied ${what}`)
   } catch (e) {
-    toast.error(errorMessage(e))
+    notify.error(errorMessage(e))
   }
 }
 

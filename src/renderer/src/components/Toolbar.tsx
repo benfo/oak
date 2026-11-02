@@ -7,9 +7,9 @@ import * as act from '../actions'
 import type { RepoCtx } from '../useRepo'
 import type { PullMode } from '../../../shared/types'
 import { Icon } from './Icon'
-import { Elapsed, showOutput } from './OpStatus'
 import { openPreferences } from './Preferences'
 import { branchListsLoading, showBranchPicker, showRepoPicker } from '../pickers'
+import { hasRemotes } from '../lib/remotes'
 import { Tip } from './Tip'
 import { LayoutMenu, type LayoutControls } from './LayoutMenu'
 
@@ -28,8 +28,7 @@ export function Toolbar({
   const busy = !!r.busy
   // The spinner takes the chevron's place while the lists load; the button is inert until they are in.
   const branchesLoading = branchListsLoading(r)
-  // Until the lists arrive nobody knows there are no remotes, so Fetch and Pull stay available.
-  const hasRemotes = !r.refsLoaded || r.branches.some((b) => b.type === 'remote')
+  const remotesAvailable = hasRemotes(r)
 
   const branchLabel = st ? (st.branch ?? (st.head ? `detached @ ${st.head.slice(0, 7)}` : 'no commits')) : '…'
 
@@ -51,18 +50,10 @@ export function Toolbar({
           {branchesLoading ? <span className="spinner" /> : <Icon name="chevronDown" size={12} className="dim" />}
         </button>
       </Tip>
-      {r.busy && r.op && (
-        <Tip label="Show live output">
-          <button className="tb-btn busy-chip" onClick={showOutput}>
-            <span className="spinner" />
-            {r.busy}… <Elapsed since={r.op.started} />
-          </button>
-        </Tip>
-      )}
       <div className="spacer" />
       <div className="tb-group">
         <Tip label="Fetch all remotes" keys="Ctrl+Shift+F">
-          <button className="tb-btn" disabled={busy || !hasRemotes} onClick={() => act.fetchAll(r)}>
+          <button className="tb-btn" disabled={busy || !remotesAvailable} onClick={() => act.fetchAll(r)}>
             <Icon name="fetch" />
             Fetch
           </button>

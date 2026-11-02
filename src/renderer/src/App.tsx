@@ -4,7 +4,8 @@ import { openFolder } from './repoActions'
 import { CloneHost, Welcome } from './components/Welcome'
 import { GitMissing } from './components/GitMissing'
 import { RepoView } from './components/RepoView'
-import { DialogHost, Toasts, toast } from './ui'
+import { DialogHost, Toasts } from './ui'
+import { notify } from './notices'
 import { PaletteHost } from './components/Palette'
 import { ContextMenuHost } from './components/ContextMenu'
 import { commandBinding, NAVIGATION_COMMANDS } from './commands'
@@ -21,7 +22,7 @@ import { activeListCopy } from './lib/listCopy'
 const LAST_REPO = 'lastRepo'
 
 export default function App() {
-  useShortcutRoot(toast.info)
+  useShortcutRoot(notify.info)
   useWheelZoom()
   useShortcutScope({
     id: 'app',

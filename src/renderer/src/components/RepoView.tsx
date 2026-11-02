@@ -22,6 +22,7 @@ import type { CompareBranch } from '../lib/branchMenu'
 import { Split } from './Split'
 import { RESIZE_KEYS, resizeFocusedPane } from '../lib/paneResize'
 import { Toolbar } from './Toolbar'
+import { hasRemotes } from '../lib/remotes'
 import { Sidebar } from '../sidebar/Sidebar'
 import { PaneToggle } from './PaneToggle'
 import { SidebarRail } from '../sidebar/SidebarRail'
@@ -33,6 +34,7 @@ import { ChangesView } from '../changes/ChangesView'
 import { BlameView, type BlameRequest, type CommitTarget } from '../blame/BlameView'
 import { openPalette, openShortcuts } from './Palette'
 import { OutputDialog, showOutput } from './OpStatus'
+import { StatusBar } from './StatusBar'
 import { APP_COMMANDS } from './Preferences'
 import { FILE_ICON_PACKS } from '../fileIcons/packs'
 import { getSettings, updateSettings, useSettings } from '../settings'
@@ -42,7 +44,7 @@ import { toggleDiffLayout } from '../diff/diffLayout'
 import { toggleWhitespace } from '../diff/toggleWhitespace'
 import { changeDiffLayout } from '../diff/changeDiffLayout'
 import { showLessContext, showMoreContext, toggleFullContext } from '../diff/useDiffContext'
-import { toast } from '../ui'
+import { notify } from '../notices'
 import { openRepoOrGlobalConfig } from '../lib/useGitConfig'
 import type { WorkspaceLayout } from './LayoutMenu'
 import { CONTENT_MIN, FILES_MIN, SIDEBAR_MIN } from '../lib/layoutMinimums'
@@ -186,6 +188,12 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     } else focusPane('[data-pane="sidebar"]')
   }
   const previewToggleCommand = usePreviewToggleCommand()
+  // The Go to Changes command and the status bar share this, so both land in the same place.
+  const goToChanges = () => {
+    setView('changes')
+    if (layout === 'code') focusLater('.changes-diff .diff')
+    else setTimeout(focusFiles, 0)
+  }
   const commands = buildCommands({
     r,
     view,
@@ -204,7 +212,8 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     focusSidebar,
     layout,
     revealPanes,
-    toggleFocus
+    toggleFocus,
+    goToChanges
   })
 
   const focusMainRef = useRef(focusMain)
@@ -238,7 +247,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
       const error = await api.backgroundFetch(cur.path, getSettings().fetchPrune)
       if (!error) return cur.refresh()
       // Say so once; a repeating failure (e.g. needs a login) shouldn't nag every few minutes.
-      if (!warned) toast.error(`Automatic fetch failed: ${error}`)
+      if (!warned) notify.error(`Automatic fetch failed: ${error}`)
       warned = true
     }, autoFetchMinutes * 60_000)
     return () => clearInterval(id)
@@ -360,6 +369,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
           </main>
         </Split>
       </div>
+      <StatusBar r={r} onOpenChanges={goToChanges} onOpenCommit={(hash) => focusCommit(hash)} />
     </div>
   )
 }
@@ -384,6 +394,7 @@ interface CommandCtx {
   layout: WorkspaceLayout
   revealPanes: () => void
   toggleFocus: () => void
+  goToChanges: () => void
 }
 
 function buildCommands({
@@ -404,12 +415,13 @@ function buildCommands({
   focusSidebar,
   layout,
   revealPanes,
-  toggleFocus
+  toggleFocus,
+  goToChanges
 }: CommandCtx): Command[] {
   const st = r.status
   // A WIP commit takes everything, so a merge in progress or conflicts must be settled first.
   const canCommitWip = !!st && st.state === 'clean' && st.staged.length + st.unstaged.length > 0
-  const hasRemotes = !r.refsLoaded || r.branches.some((b) => b.type === 'remote')
+  const remotesAvailable = hasRemotes(r)
   const currentBranch = r.branches.find((b) => b.type === 'local' && b.current) ?? null
   const hasOtherBranch = r.branches.some((b) => b.type !== 'tag' && !b.current)
   const isHead = !!c && c.hash === st?.head
@@ -522,7 +534,7 @@ function buildCommands({
         try {
           files = await api.commitTree(r.path, 'HEAD')
         } catch {
-          toast.info('No committed files yet.')
+          notify.info('No committed files yet.')
           return
         }
         openPalette({
@@ -540,7 +552,7 @@ function buildCommands({
         try {
           files = await api.commitTree(r.path, 'HEAD')
         } catch {
-          toast.info('No committed files yet.')
+          notify.info('No committed files yet.')
           return
         }
         openPalette({
@@ -571,11 +583,7 @@ function buildCommands({
       title: 'Go to Changes',
       category: 'View',
       keys: VIEW_KEYS.changes,
-      run: () => {
-        setView('changes')
-        if (layout === 'code') focusLater('.changes-diff .diff')
-        else setTimeout(focusFiles, 0)
-      }
+      run: goToChanges
     },
     {
       id: 'view-history',
@@ -594,7 +602,7 @@ function buildCommands({
       keys: VIEW_KEYS.blame,
       shortcutDisabledReason: blame ? undefined : 'Open a file blame first, from a file menu or Blame file…',
       run: () => {
-        if (!blame) return toast.info('No blame is open. Use a file menu or Blame file…')
+        if (!blame) return notify.info('No blame is open. Use a file menu or Blame file…')
         setView('blame')
         focusLater('.blame-view .diff')
       }
@@ -968,7 +976,7 @@ function buildCommands({
       title: 'Fetch all remotes',
       category: 'Remote',
       keys: 'Ctrl+Shift+F',
-      enabled: hasRemotes,
+      enabled: remotesAvailable,
       run: () => act.fetchAll(r)
     },
     {
@@ -1022,7 +1030,7 @@ function buildCommands({
       id: 'open-pull-request',
       title: 'Open pull request for current branch',
       category: 'Remote',
-      enabled: !!st?.branch && hasRemotes,
+      enabled: !!st?.branch && remotesAvailable,
       run: () => act.openPullRequest(r)
     },
 
