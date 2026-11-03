@@ -1,4 +1,12 @@
-import type { FileDiff } from './diff.ts'
+import type { DiffLine, FileDiff } from './diff.ts'
+
+/** A location in the displayed side; additions and deletions belong to their only numbered side. */
+export function copiedLocation(path: string, oldPath: string | undefined, line: DiffLine | undefined, side: 'old' | 'new') {
+  if (!line || line.type === 'note') return null
+  const before = line.newNo === null || (side === 'old' && line.oldNo !== null)
+  const number = before ? line.oldNo : line.newNo
+  return number === null ? null : `${before ? (oldPath ?? path) : path}:${number}`
+}
 
 /** One diff line, as hunk index and line index within that hunk, in display order. */
 export interface CopyRef {
@@ -44,6 +52,7 @@ export const copiedLabel = (lines: number, patch: boolean) => `Copied ${lines} $
 export interface DiffCopySource {
   element: () => HTMLElement | null
   copy: (patch: boolean) => void
+  location: () => string | null
 }
 
 const sources = new Set<DiffCopySource>()

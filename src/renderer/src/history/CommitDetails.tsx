@@ -700,6 +700,7 @@ export function CommitDetails({
             </div>
           )}
           <DiffView
+            file={showContent ? (treeSelection ? { path: treeSelection } : undefined) : (file ?? undefined)}
             revealLine={revealLine}
             onRevealed={() => jump && setJumped(jump.n)}
             title={

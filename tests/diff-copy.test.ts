@@ -1,12 +1,24 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { parseDiff } from '../src/renderer/src/diff/diff.ts'
-import { copiedLabel, copiedPatch, copiedText } from '../src/renderer/src/diff/diffCopy.ts'
+import { copiedLabel, copiedLocation, copiedPatch, copiedText } from '../src/renderer/src/diff/diffCopy.ts'
 
 const diff = parseDiff(
   '--- a/f.ts\n+++ b/f.ts\n@@ -1,3 +1,3 @@\n keep\n-old\n+new\n@@ -10,2 +10,2 @@\n-gone\n+\n\\ No newline at end of file\n'
 )
 const at = (hunk: number, line: number) => ({ hunk, line })
+
+test('line locations use the displayed revision and preserve renamed paths', () => {
+  const context = { type: 'ctx' as const, text: 'same', oldNo: 4, newNo: 7 }
+  assert.equal(copiedLocation('new.ts', 'old.ts', context, 'new'), 'new.ts:7')
+  assert.equal(copiedLocation('new.ts', 'old.ts', context, 'old'), 'old.ts:4')
+  assert.equal(copiedLocation('new.ts', 'old.ts', { ...context, type: 'del', newNo: null }, 'new'), 'old.ts:4')
+  assert.equal(copiedLocation('new.ts', 'old.ts', { ...context, type: 'add', oldNo: null }, 'old'), 'new.ts:7')
+  assert.equal(copiedLocation('file.ts', undefined, context, 'old'), 'file.ts:4')
+  assert.equal(copiedLocation('file.ts', undefined, undefined, 'new'), null)
+  assert.equal(copiedLocation('file.ts', undefined, { ...context, type: 'note' }, 'new'), null)
+  assert.equal(copiedLocation('file.ts', undefined, { ...context, oldNo: null, newNo: null }, 'old'), null)
+})
 
 test('plain copy has code only: no +/- signs, line numbers or headers', () => {
   assert.deepEqual(copiedText(diff, [at(0, 1), at(0, 2)]), { text: 'old\nnew', lines: 2 })

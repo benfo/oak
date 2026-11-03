@@ -33,6 +33,7 @@ export type { DiffActions }
 
 interface Props {
   title?: string
+  file?: { path: string; oldPath?: string }
   metadata?: ReactNode
   text: string | null
   loading?: boolean
@@ -63,6 +64,7 @@ interface Props {
 
 export function DiffView({
   title,
+  file,
   metadata,
   text,
   loading,
@@ -121,6 +123,8 @@ export function DiffView({
     cursor,
     selected,
     ref,
+    file,
+    side: cursorSide,
     openInEditor: onOpenInEditor,
     remote
   })

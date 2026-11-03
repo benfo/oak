@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { api, showMenu } from '../api'
 import { notify } from '../notices'
 import { remoteItem } from '../lib/remoteMenu'
-import { copyFocused, copyDiffAsPatch, hasTextSelection } from '../lib/copy'
+import { copyFocused, copyDiffAsPatch, copyDiffLocation, hasTextSelection } from '../lib/copy'
 import type { FileDiff } from './diff'
-import { copiedLabel, copiedPatch, copiedText, registerDiffCopy, type DiffCopySource } from './diffCopy'
+import { copiedLabel, copiedLocation, copiedPatch, copiedText, registerDiffCopy, type DiffCopySource } from './diffCopy'
 import type { Row } from './diffTypes'
 
 interface Options {
@@ -13,6 +13,8 @@ interface Options {
   cursor: number
   selected: Set<string>
   ref: RefObject<HTMLDivElement | null>
+  file?: { path: string; oldPath?: string }
+  side: 'old' | 'new'
   /** Adds "Open in editor" to the menu; called with the new-side line at the cursor. */
   openInEditor?: (line?: number) => void
   /** Adds "Open in browser" and a "Line link" copy item (History diffs); called with the new-side line at the cursor. */
@@ -43,7 +45,7 @@ function newLineAt(diff: FileDiff, row: Row | undefined): number | undefined {
 }
 
 /** Copying the picked lines (or the cursor line) as text or a patch, and the menu offering it. */
-export function useDiffCopy({ diff, rows, cursor, selected, ref, openInEditor, remote }: Options) {
+export function useDiffCopy({ diff, rows, cursor, selected, ref, file, side, openInEditor, remote }: Options) {
   const copyLines = (patch: boolean) => {
     if (!diff) return
     const picked = rows.filter((r) => selected.has(r.key))
@@ -55,7 +57,14 @@ export function useDiffCopy({ diff, rows, cursor, selected, ref, openInEditor, r
   }
   const copyRef = useRef(copyLines)
   copyRef.current = copyLines
-  const copySource = useMemo<DiffCopySource>(() => ({ element: () => ref.current, copy: (patch) => copyRef.current(patch) }), [])
+  const row = rows[cursor]
+  const location = file && row ? copiedLocation(file.path, file.oldPath, diff?.hunks[row.hunk]?.lines[row.line], side) : null
+  const locationRef = useRef(location)
+  locationRef.current = location
+  const copySource = useMemo<DiffCopySource>(
+    () => ({ element: () => ref.current, copy: (patch) => copyRef.current(patch), location: () => locationRef.current }),
+    []
+  )
   useEffect(() => registerDiffCopy(copySource), [copySource])
 
   const showCopyMenu = async (viaKeyboard: boolean) => {
@@ -71,6 +80,7 @@ export function useDiffCopy({ diff, rows, cursor, selected, ref, openInEditor, r
           label: 'Copy',
           submenu: [
             { id: 'copy', label: hasTextSelection() ? 'Selection' : lines ? 'Lines' : 'Line' },
+            ...(location ? [{ id: 'location', label: 'Location' }] : []),
             { id: 'patch', label: lines ? 'Lines as patch' : 'Line as patch' },
             ...(remote ? [remoteItem('copylink', 'Line link', notOnRemote)] : [])
           ]
@@ -80,6 +90,7 @@ export function useDiffCopy({ diff, rows, cursor, selected, ref, openInEditor, r
     )
     if (id === 'copy') copyFocused()
     else if (id === 'patch') copyDiffAsPatch()
+    else if (id === 'location') copyDiffLocation()
     else if (id === 'remote' && diff) remote?.open(newLineAt(diff, rows[cursor]))
     else if (id === 'copylink' && diff) remote?.copyLink(newLineAt(diff, rows[cursor]))
     else if (id === 'editor' && diff) openInEditor?.(newLineAt(diff, rows[cursor]))

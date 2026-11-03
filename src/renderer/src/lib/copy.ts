@@ -42,3 +42,8 @@ export function copyDiffAsPatch() {
   else notify.info('Nothing to copy')
 }
 
+export function copyDiffLocation() {
+  const location = activeDiffCopy()?.location()
+  if (location) copyText(location, 'location')
+  else notify.info('No line location to copy')
+}
