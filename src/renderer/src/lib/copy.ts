@@ -13,8 +13,9 @@ export function copyText(text: string, what: string) {
   notify.success(`Copied ${what}`)
 }
 
-/** Ctrl+C: the selected text if there is any, otherwise the focused diff's lines. */
+/** Ctrl+C: the focused list's item, selected text, or diff lines (including palette fallback). */
 export function copyFocused() {
+  if (copyListItem(false)) return
   const text = selectedText()
   if (text) {
     void api.copyText(text)
@@ -23,7 +24,7 @@ export function copyFocused() {
   }
   const diff = activeDiffCopy()
   if (diff) return diff.copy(false)
-  if (!copyListItem(false)) notify.info('Nothing to copy')
+  notify.info('Nothing to copy')
 }
 
 /** Ctrl+C / Ctrl+Shift+C on a focused list: the selection's primary or alternate copy (file paths, commit hash, ref name). */
@@ -40,3 +41,4 @@ export function copyDiffAsPatch() {
   if (diff) diff.copy(true)
   else notify.info('Nothing to copy')
 }
+
