@@ -2,6 +2,12 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.24
+
+### Added
+
+- Status bar. A bar along the bottom shows results, hints and running operations, so a finished action says what happened without a toast. Errors, warnings and anything with buttons still appear as toasts, now restyled.
+
 ## 0.1.23
 
 ### Added

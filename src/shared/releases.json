@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.1.24",
+    "highlights": [
+      { "title": "Status bar", "text": "A bar along the bottom shows results, hints and running operations, so a finished action says what happened without a toast. Errors, warnings and anything with buttons still appear as toasts, now restyled." }
+    ],
+    "fixes": []
+  },
+  {
     "version": "0.1.23",
     "highlights": [
       { "title": "Squash and fixup", "text": "Select a range of commits in History with Shift+click or Shift+arrows, then choose Combine commits from the menu, the summary buttons or the command palette. An Undo toast follows, and pushed commits warn that a force push will be needed. Oak refuses with a reason when the working tree is dirty, a merge commit is in the way or the list is a file history."},
