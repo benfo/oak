@@ -897,7 +897,9 @@ function FileGrid(p: FileGridProps) {
                       <Tip label={e!.oldPath ? `${e!.oldPath} → ${e!.path}` : e!.path} focusable={false}>
                         <span className="file-name">{row ? row.name : name}</span>
                       </Tip>
-                      <span className="file-dir">{row ? '' : dir}</span>
+                      <span className="file-dir">
+                        <bdi dir="ltr">{row ? '' : dir}</bdi>
+                      </span>
                     </>
                   )}
                   <span className="row-actions">{p.rowActions(owners)}</span>
