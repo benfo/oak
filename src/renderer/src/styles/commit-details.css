@@ -335,6 +335,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* rtl truncates long folders from the left; the text sits in a <bdi dir="ltr"> so `.mca/` keeps its dot and slash in place. */
 .file-dir {
   flex: 1;
   min-width: 0;
