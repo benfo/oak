@@ -6,7 +6,7 @@ import { commandBinding, NAVIGATION_COMMANDS, type Command } from '../commands'
 import { shortcutPlatform, useShortcutScope } from '../lib/useShortcuts'
 import { requestPaneSearch } from '../lib/keymap'
 import { activeDiffCopy } from '../diff/diffCopy'
-import { copyDiffAsPatch, copyListItem, copyText } from '../lib/copy'
+import { copyDiffLocation, copyListItem, copyText } from '../lib/copy'
 import { activeListCopy } from '../lib/listCopy'
 import { openInEditor } from '../lib/openInEditor'
 import { copyRemoteLink, openOnRemote } from '../lib/openOnRemote'
@@ -743,12 +743,12 @@ function buildCommands({
       run: sidebarToggle.toggle
     },
     {
-      id: 'copy-diff-patch',
-      title: 'Copy diff lines as patch',
+      id: 'copy-diff-location',
+      title: 'Copy line location',
       category: 'Diff',
       keys: 'Ctrl+Shift+C',
       when: () => !!activeDiffCopy(true),
-      run: copyDiffAsPatch
+      run: copyDiffLocation
     },
     {
       id: 'copy-alternate',

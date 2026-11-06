@@ -612,6 +612,7 @@ export function ChangesView({
       </div>
       <div className="diff-pane changes-diff">
         <DiffView
+          file={lead ?? undefined}
           title={lead ? (lead.oldPath ? `${lead.oldPath} → ${lead.path}` : lead.path) : undefined}
           metadata={lead && selected.length > 1 && <span className="diff-kind count">{selected.length} files selected</span>}
           text={diff}

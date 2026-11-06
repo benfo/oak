@@ -53,6 +53,8 @@ interface TreeNode {
   activate?: () => void
   /** Double-click, e.g. checkout. */
   secondary?: () => void
+  /** Branches use their checkout action for Enter while clicks preview. */
+  enterUsesSecondary?: boolean
   menu?: (anchor?: Element) => void
   /** A small close button at the row's end, for rows that stand for something that can be closed. */
   close?: { label: string; run: () => void }
@@ -108,8 +110,8 @@ interface Props {
 
 /**
  * Views, branches, remotes, tags and stashes as one React Aria Tree: arrow keys move and
- * expand/collapse, Enter or click activates, double-click checks out, Shift+F10 / right-click
- * opens the item's menu, and typing a letter starts filtering.
+ * expand/collapse, clicks preview branches, Enter or double-click checks them out,
+ * Shift+F10 / right-click opens the item's menu. Other rows activate on Enter or click.
  */
 export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blameFile, onCloseBlame, headerAction }: Props) {
   const [filter, setFilter] = useState('')
@@ -208,7 +210,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       kind: 'item',
       label: b.name,
       icon: 'branch',
-      title: b.subject,
+      title: b.name === st?.branch ? b.subject : `${b.subject}: Enter or double-click to check out`,
       current: b.name === st?.branch,
       badges: [
         ...(b.gone ? [{ text: 'gone', warn: true }] : []),
@@ -217,6 +219,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       ],
       activate: () => live.current.onFocusCommit(b.hash),
       secondary: () => b.name !== live.current.r.status?.branch && act.checkout(live.current.r, b.name, 'local'),
+      enterUsesSecondary: true,
       copy: branchCopy(b, 'branch name'),
       menu: () => showBranchMenu(live.current.r, b, live.current.onCompareBranch, live.current.hidePattern)
     })
@@ -259,7 +262,7 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       .filter((b) => match(b.name))
       .map((b) => ({
         ...localNode(b, `recent:${b.fullName}`),
-        title: `${b.subject}: Enter to view, double-click to check out`
+        title: `${b.subject}: Enter or double-click to check out`
       }))
     const quick: TreeNode[] = []
     const matchingCurrent = current.filter((n) => match(n.label))
@@ -284,9 +287,10 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
             kind: 'item',
             label: b.name.slice(remote.length + 1),
             icon: 'branch',
-            title: b.subject,
+            title: `${b.subject}: Enter or double-click to check out as a local branch`,
             activate: () => live.current.onFocusCommit(b.hash),
             secondary: () => act.checkout(live.current.r, b.name, 'remote'),
+            enterUsesSecondary: true,
             copy: branchCopy(b, 'branch name'),
             menu: () => showBranchMenu(live.current.r, b, live.current.onCompareBranch, live.current.hidePattern)
           })),
@@ -446,7 +450,8 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
     )
       return
     if (handleDismissNavigation(e, [filter ? () => setFilter('') : undefined])) return
-    if (handleNavigation(e, { menu: focusedNode()?.menu })) return
+    const node = focusedNode()
+    if (handleNavigation(e, { menu: node?.menu, activate: node?.enterUsesSecondary ? node.secondary : undefined })) return
     if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
       // → / ← open and close sections here: their rows aren't in React Aria's collection while
       // collapsed, so it doesn't know they can expand. Enter expanded sections explicitly as well.
