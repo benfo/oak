@@ -457,7 +457,9 @@ export function CommitDetails({
           </Tip>
           <FileIcon path={f.path} kind="file" />
           <span className="file-name">{name}</span>
-          <span className="file-dir">{spacer ? '' : dir}</span>
+          <span className="file-dir">
+            <bdi dir="ltr">{spacer ? '' : dir}</bdi>
+          </span>
           {f.additions !== null && (
             <span className="numstat">
               <span className="add">+{f.additions}</span> <span className="del">−{f.deletions}</span>
