@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.1.25",
+    "highlights": [
+      { "title": "Keyboard checkout and copy", "text": "Enter on a sidebar branch checks it out; clicking still previews its commit. In a file list, Ctrl+C copies the relative path and Ctrl+Shift+C the full path. In a diff, Ctrl+Shift+C copies the cursor line's location as path:line, also offered in the Copy menu." }
+    ],
+    "fixes": [
+      "Folders beside file names in Changes and History keep their punctuation in place, so .mca shows as .mca instead of /mca., and folders no longer show a stray slash."
+    ]
+  },
+  {
     "version": "0.1.24",
     "highlights": [
       { "title": "Status bar", "text": "A bar along the bottom shows results, hints and running operations, so a finished action says what happened without a toast. Errors, warnings and anything with buttons still appear as toasts, now restyled." }

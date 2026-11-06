@@ -2,6 +2,16 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.25
+
+### Added
+
+- Keyboard checkout and copy. Enter on a sidebar branch checks it out; clicking still previews its commit. In a file list, Ctrl+C copies the relative path and Ctrl+Shift+C the full path. In a diff, Ctrl+Shift+C copies the cursor line's location as path:line, also offered in the Copy menu.
+
+### Fixed
+
+- Folders beside file names in Changes and History keep their punctuation in place, so .mca shows as .mca instead of /mca., and folders no longer show a stray slash.
+
 ## 0.1.24
 
 ### Added
