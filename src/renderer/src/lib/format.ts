@@ -21,7 +21,7 @@ export const fullDate = (ms: number) => full.format(ms)
 
 export function splitPath(p: string) {
   const i = p.lastIndexOf('/')
-  return i === -1 ? { dir: '', name: p } : { dir: p.slice(0, i + 1), name: p.slice(i + 1) }
+  return i === -1 ? { dir: '', name: p } : { dir: p.slice(0, i), name: p.slice(i + 1) }
 }
 
 export function initials(name: string) {
