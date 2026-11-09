@@ -43,6 +43,8 @@ export interface BlameRequest {
   file: string
   /** A commit to blame at, or null for the working tree. */
   rev: string | null
+  /** Where the cursor starts (0-based), when returning to a blame. */
+  line?: number
   n: number
 }
 
@@ -56,10 +58,12 @@ interface Props {
   active: boolean
   /** Enter on a line: show its commit (null for lines that are not committed yet) at the file and line it changed. */
   onOpenCommit: (hash: string | null, target: CommitTarget) => void
+  /** The 0-based cursor line, reported as it moves so a later request can return to it. */
+  onCursor?: (line: number) => void
   onClose: () => void
 }
 
-export function BlameView({ repo, request, status, contentRevision, active, onOpenCommit, onClose }: Props) {
+export function BlameView({ repo, request, status, contentRevision, active, onOpenCommit, onCursor, onClose }: Props) {
   const { vimNavigation, syntaxHighlighting, showWhitespace: whitespace } = useSettings()
   // Stepping back replaces the version shown; the steps are dropped with the view, so closing starts afresh.
   const [steps, setSteps] = useState<BlameStep[]>([])
@@ -77,7 +81,10 @@ export function BlameView({ repo, request, status, contentRevision, active, onOp
   const [ignoreWhitespace, setIgnoreWhitespace] = useState(false)
   // On by default, as it always was.
   const [useIgnoreRevs, setUseIgnoreRevs] = useState(true)
-  const [cursor, setCursor] = useState(0)
+  const [cursor, setCursor] = useState(request.line ?? 0)
+  useEffect(() => {
+    onCursor?.(cursor)
+  }, [cursor, onCursor])
   const ref = useRef<HTMLDivElement>(null)
   const toolsRef = useRef<HTMLDivElement>(null)
   const pane = usePane('blame', { kind: 'diff' })

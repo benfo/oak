@@ -25,6 +25,11 @@ export function navigationAction(e: KeyInput): NavigationAction | undefined {
   return action && COMMON_ACTIONS.has(action) ? (action as NavigationAction) : undefined
 }
 
+/** Alt+Left and Alt+Right: Back and Forward belong to the shortcut dispatcher, never to a collection's arrow keys. */
+export function isHistoryChord(e: Pick<KeyboardEvent, 'key' | 'altKey' | 'shiftKey' | 'ctrlKey' | 'metaKey' | 'isComposing'>) {
+  return e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.isComposing && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')
+}
+
 /** Native controls own their keys, including buttons nested inside a collection row. */
 export function isNavigationControl(target: EventTarget | null) {
   return !!(target as HTMLElement | null)?.closest?.(
