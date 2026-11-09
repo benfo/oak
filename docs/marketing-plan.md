@@ -54,4 +54,4 @@ GitHub stars and clones, release downloads, winget installs, issue and discussio
 
 ## Sequence
 
-Signing application and winget first, then squash and fixup commits plus the README refresh, then Show HN after 2 to 3 weeks.
+Signing application and winget first, then the README refresh, then Show HN after 2 to 3 weeks.

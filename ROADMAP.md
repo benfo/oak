@@ -1,64 +1,56 @@
 # Roadmap
 
-Status, decisions and ideas. [PRODUCT.md](PRODUCT.md) holds who Oak is for and its principles; [AGENTS.md](AGENTS.md) the conventions and design rules; `CHANGELOG.md` the per-release detail. Keep this short: when something ships, fold it into Shipped.
+Where Oak is, what is next, and the decisions worth keeping. [PRODUCT.md](PRODUCT.md) holds who Oak is for and its principles; [AGENTS.md](AGENTS.md) the conventions and design rules; `CHANGELOG.md` the per-release detail.
 
-## Current status (2026-11-06)
+How to keep this file: it has one place for each kind of fact. When work moves, edit **Now** first. When something ships, fold it into **Shipped** and delete it from **Now**, **Open items** and **Backlog**. Ideas live only in **Backlog** (details) and, once agreed, in **Features** (order only, no detail).
 
-**Open source (done 2026-10-23).** `benfo/oak` is the single public MIT repo; the private `benfo/oak-source` is archived and `OAK_PUBLIC_TOKEN` revoked. `main` is one root commit ("Initial open-source release"); older releases and tags were deleted on purpose. Workflows use the built-in `GITHUB_TOKEN` and the site publishes to this repo's `gh-pages` (release steps in `docs/releasing.md`). Community files exist (`CONTRIBUTING.md`, `SECURITY.md` with private vulnerability reporting, `CODE_OF_CONDUCT.md`, issue and PR templates); contributions are MIT with no CLA and the maintainer approves every PR. `main` is protected (no force pushes or deletion, PRs for outside contributors; the owner can push directly). Impeccable tooling stays local and gitignored.
+## Now (2026-11-09)
 
-Lessons for a future history rewrite or tag move:
+- **Released:** 0.1.25 (2026-11-06), after 0.1.24 (2026-11-03) and 0.1.23 (2026-11-02). The website downloads follow the latest published release (`website/src/data/release.json`, updated once the packages are public).
+- **Unreleased on `main`:** Back and Forward (Alt+Left and Alt+Right, [#40](https://github.com/benfo/oak/pull/40)). Add a CHANGELOG entry and release when the maintainer chooses (`docs/releasing.md`).
+- **Not run:** the full Electron UI suite for #35, #36 and #40 (focused tests pass).
 
-- Force-pushing a tag triggers **Release packages**; it fails safely (`scripts/release.cjs` refuses to republish) but is noise.
-- A force push to `main` may not redeploy the site: run `gh workflow run website.yml --ref main` and check the live version text.
-- Remove branch protection before a force push and restore it after. GitHub may keep old SHAs reachable until Support garbage-collects them.
-- This clone excludes `gh-pages` from fetch: `git config --add remote.origin.fetch "^refs/heads/gh-pages"` then `git branch -dr origin/gh-pages`. A fresh clone needs the same.
+## Next
 
-**Release state.** 0.1.24 is the latest release (2026-11-03), after 0.1.23 (2026-11-02) and 0.1.22 (2026-10-29). `main` has unreleased work since then (see Resume next). The website downloads follow the latest published release (`website/src/data/release.json`, updated after the packages are public). The next release follows `docs/releasing.md`. Open items:
+Not features: the work that unblocks growth and keeps the project healthy.
 
-- Open in editor: self-hosted GitHub, GitLab or Bitbucket servers need a host to provider setting (add it beside the provider list); a line link from a working file with local edits on a pushed commit can point a few lines off.
-- "Merge into" a branch already contained in the current one says "Nothing to merge". A disabled "(already merged)" item was reverted because the check delayed the menu; if wanted, compute it in the background like the compare-target cache.
-- Transit-map redesign of the Light and Dark themes (tokens only; see `PRODUCT.md`, `DESIGN.md`). Still open: `--radius-full` pills could use the signage radius, Dark grounds could take an ink tint, the Light selection tint is cool on warm paper, `.icon-btn` has a literal `24px` width. The 5,000-commit scroll test is removed with a TODO in `tests-ui/smoke.test.ts`; restore and stabilise it before adding `test:ui` to CI.
+1. **Release** the next version with Back and Forward.
+2. **Code signing.** Windows marks downloads with Mark of the Web, so users must Unblock the installer (the website explains). Plan: apply to SignPath Foundation (free for open source; the wait is the slow part), fall back to Azure Artifact Signing (about $10 a month, `win.azureSignOptions`, no hardware token), sign only in the release workflow, never locally. SmartScreen may warn until reputation builds. Meanwhile publish SHA-256 checksums and build provenance; once signing works, drop the Unblock instructions from the README and website. Needs the maintainer to set up the account.
+3. **Distribution.** `winget` package, README refresh, release checksums, "good first issue" labels; launch after signing and a clean install. The plan is in [docs/marketing-plan.md](docs/marketing-plan.md).
+4. **CI.** Add a `test:ui` job to `checks.yml` once the suite is stable (needs a display on Linux, for example xvfb). First restore the 5,000-commit scroll test removed with a TODO in `tests-ui/smoke.test.ts` and stabilise it.
+5. **Linux.** Confirm in more real-world testing.
 
-## Resume next
+## Features (proposed order, not agreed)
 
-0. **Unreleased on `main` (2026-11-06).** Keyboard checkout and copy (#35): Enter on a local, recent or remote sidebar branch checks it out through the existing flow, clicks still preview; file lists copy relative paths with Ctrl+C and full paths with Ctrl+Shift+C, ahead of a previous diff or lingering text selection; in diffs Ctrl+Shift+C copies the cursor's `path:line` (displayed side's path and number), and the Copy menu offers Location beside patch copying. Folder column fix (#36): the folder beside a file name kept `direction: rtl` punctuation in the wrong place (`.mca/` showed as `/mca.`, every folder had a leading slash); it is now an LTR isolate without the trailing slash, so folders read `backend/.../Query`. Each fix has a focused Electron test that fails without it; CI passed on both PRs. Full UI suite not run. Next: release when the maintainer chooses (`docs/releasing.md`), adding a CHANGELOG entry for both.
-1. **Status bar follow-ups (shipped in 0.1.24).** Still open: the Welcome screen has no bar, so zoom gives no on-screen feedback there; a bar item that loads a moment after its neighbours (the identity, the latest commit) shifts the items beside it for about a frame (reserve space or order late items leftmost if noticed); opening the git output has a click and a palette command but no key (decided: no new global key for now). Candidate items not built: a working-tree summary for expanded Code. Next after it: the output log (see Backlog).
-2. **Performance (reported 2026-11-01, shipped in 0.1.23).** First fix: a History row drew thousands of ref badges and the commit menu listed every branch (about 3.7 s per click on about 9,200 refs; now 40 to 200 ms). Then opening a big repo became progressive. Branches, stashes and the commit list each show as they arrive; the branch listing is split into a fast call (`src/main/refs.ts` `listBranches`: names, hashes, peeled tag hashes, upstream, `gone` derived from the ref list) and a background `branchDetails` call (ahead/behind, date, subject). Until the lists are in, the sidebar counts show "…", History says "Loading history…", the toolbar branch button is inert with a spinner, and pickers and ref menus show a "Still loading…" toast instead of opening incomplete. The commit list starts alongside branches unless hidden branches or a comparison scope need them (`logNeedsBranches`). Only ref-changing `.git` paths refresh refs and history (`src/shared/watchPaths.ts`); window focus refreshes refs only after 30 s. A commit's refs are looked up through an index (`findBranch`), which took Shift+Menu on 13,800 refs from about 660 ms to under 80 ms. Measured in the real app on 13,800 packed refs (before to after, ms since launch): first commits 2,464 to 1,309, sidebar complete 2,464 to 969, Changes unchanged; 5 focuses 11 git commands to 5, an external stage 8 to 2. Small and 5,000-commit repos did not regress (`npm run perf:open` repeats the measurement). Still open: History on 13,800 refs on one commit waits on `git log` decorations (about 0.6 s alone; git cannot cap them); pickers wait for the details (about 2 s there); not measured: a commit with thousands of changed files, a very large working-tree status, huge diffs (fixtures `commits5k` and `hugeDiff` exist), a real-world large repo. A focus-triggered refresh and an external `git commit` while Oak is open were not driven by hand.
-3. **Website follow-ups.** Panels differ in height, so content below the map shifts a little when a station changes; revisit if it bothers anyone. Keep "planned" in step with this file. Notes and rules are in `website/README.md`.
-4. **Refactor.** Add the `test:ui` job to `checks.yml` once the suite is stable (needs a display on Linux, for example xvfb). Work down the `max-lines` warnings when touching those files.
-5. **Agent contributions.** `AGENTS.md` is contributor-facing; the maintainer's workflow lives in gitignored `AGENTS.local.md` (plus a `CLAUDE.local.md` import, both in `.git/info/exclude`), so a fresh clone must recreate them. Open: how to check that agent-written PRs follow the rules (PR template checklist, CI).
-6. **Code signing.** Windows marks downloads with Mark of the Web, so users must Unblock the installer (the website explains). The fix is signing: SignPath Foundation is free for open source and Oak is now public; compare Azure Artifact Signing (about $10 a month, `win.azureSignOptions`, no hardware token). SmartScreen may warn until reputation builds (EV certificates no longer skip that). Plan: apply to SignPath Foundation first (the wait is the slow part), fall back to Azure Artifact Signing, sign only in the release workflow, never locally. Meanwhile publish SHA-256 checksums and build provenance; once signing works, drop the Unblock instructions from the README and website. Needs the maintainer to set up the account.
-7. **Conflict follow-ups** (one small step at a time): stash-pop conflict banner, ours/theirs labels (swapped in a rebase), modify/delete conflicts, pulling conflicts from Pull/Rebase into the same flow.
-8. **Housekeeping.** Confirm Linux in more real-world testing.
-9. **Marketing and distribution.** The plan is in [docs/marketing-plan.md](docs/marketing-plan.md). First steps: `winget` package, README refresh, release checksums, "good first issue" labels; launch after signing and a clean install.
+Priority is parity with the most-used and most-asked-for features of other Git clients. Each needs its workflow discussed first; the idea's detail is in Backlog. "Not built" was checked against `src/main/handlers.ts` on 2026-11-01; recheck before starting one.
 
-## Features still to build
-
-Proposed order, not yet agreed (each still needs its workflow discussed first). Priority is parity with the most-used and most-asked-for features of other Git clients. Details of each idea are in Backlog. "Not built" was checked against `src/main/handlers.ts` on 2026-11-01; recheck before starting one.
-
-**Next (the usual reasons people reject a client)**
-
-1. Interactive rebase: reorder, drop, reword, merge-aware (squash and fixup are built, see Backlog).
+1. Interactive rebase: reorder, drop, reword, merge-aware (squash and fixup are built).
 2. Submodules: status, update, open (not built).
-3. Git LFS: visible state for tracked files and pending uploads (works through `git`, no UI).
-4. Clone and init flow check (a `clone` handler exists; confirm recent repositories and default folder).
-
-**Then**
-
-5. Full text search: `git grep`, `git log --grep`, `-S` and `-G` in one panel.
-6. Worktrees: create, view, switch, clean up.
+3. Git LFS: visible state for tracked files and pending uploads.
+4. Clone and init flow check (a `clone` handler exists; confirm recent repositories and the default folder).
+5. Full text search.
+6. Worktrees.
 7. Bisect as a short guided flow (not built).
 8. Compare the working tree against any commit.
-9. Commit options follow-ups: author and date overrides, `--reset-author`, Co-authored-by trailers.
+9. Commit options follow-ups.
 10. Partial code expansion in diffs.
-11. Conflict follow-ups (item 4 under Resume next).
+11. Conflict follow-ups, one small step at a time: stash-pop conflict banner, ours/theirs labels (swapped in a rebase), modify/delete conflicts, pulling conflicts from Pull and Rebase into the same flow.
 
-**Later or by request**
+Later or by request: everything else in Backlog (a built-in merge editor contradicts the "rely on the merge tool" decision, so only on clear demand).
 
-- Built-in merge editor (contradicts the "rely on the merge tool" decision; only on clear demand).
-- Verified signature badge, Blame this line from diffs, shared find options, hover commit details, `oak://` links.
-- Pull request support beyond links, more previewers, user-installable icon packs, rebindable shortcuts, more themes.
-- Terminal panel, macOS installers and testing, more Linux distributions.
+## Open items
+
+Known gaps in shipped work. Small; fix when touching the area.
+
+- **Back and Forward:** file history and Compare results are not restored (Back returns to the previous view); blame scroll offset is not restored. Extend `NavPlace` (`src/shared/navPlace.ts`) if daily use shows a need.
+- **Open in editor:** self-hosted GitHub, GitLab or Bitbucket servers need a host to provider setting (add it beside the provider list); a line link from a working file with local edits on a pushed commit can point a few lines off.
+- **Merge into** a branch already contained in the current one says "Nothing to merge". A disabled "(already merged)" item was reverted because the check delayed the menu; if wanted, compute it in the background like the compare-target cache.
+- **Status bar:** the Welcome screen has no bar, so zoom gives no on-screen feedback there; an item that loads a moment after its neighbours (identity, latest commit) shifts the items beside it for about a frame (reserve space or order late items leftmost if noticed); opening the git output has a click and a palette command but no key (decided: no new global key for now).
+- **Performance** (opening big repos is progressive since 0.1.23; `npm run perf:open` repeats the measurement): History on 13,800 refs on one commit waits on `git log` decorations (about 0.6 s alone; git cannot cap them); pickers wait for branch details (about 2 s there). Not measured: a commit with thousands of changed files, a very large working-tree status, huge diffs (fixtures `commits5k` and `hugeDiff` exist), a real-world large repo. A focus-triggered refresh and an external `git commit` while Oak is open were not driven by hand.
+- **Themes:** the transit-map redesign is tokens only (see `PRODUCT.md`, `DESIGN.md`). Still open: `--radius-full` pills could use the signage radius, Dark grounds could take an ink tint, the Light selection tint is cool on warm paper, `.icon-btn` has a literal `24px` width.
+- **Website:** panels differ in height, so content below the map shifts a little when a station changes. Keep "planned" in step with this file; rules are in `website/README.md`.
+- **Refactor:** work down the `max-lines` warnings when touching those files.
+- **Agent contributions:** open question is how to check that agent-written PRs follow the rules (PR template checklist, CI). `AGENTS.md` is contributor-facing; the maintainer's workflow lives in gitignored `AGENTS.local.md` plus a `CLAUDE.local.md` import (both in `.git/info/exclude`), so a fresh clone must recreate them.
 
 ## Shipped
 
@@ -72,11 +64,13 @@ One line per release; details are in `CHANGELOG.md`. Versions are approximate be
 - **0.1.22:** SVG preview, Open in editor, remote links (open in browser, pull request, copy link), commit options and WIP commits, one menu group order, small-window layout fixes (`lib/layoutMinimums.ts`).
 - **0.1.23:** squash and fixup from History (range select, Undo), progressive opening of big repositories with fewer repeat refreshes, ref badge and commit menu caps for repositories with thousands of refs, menu type-ahead.
 - **0.1.24:** status bar with results, hints and progress; toasts restyled bottom-right.
+- **0.1.25:** keyboard checkout (Enter on a sidebar branch), copy relative or full path and `path:line` from file lists and diffs, folder column punctuation fix.
 
 ## Decisions worth keeping
 
 Rules for menus, Escape, layouts, styles, previews, tokens and reuse are in `AGENTS.md`. These are decisions it does not cover:
 
+- **Open source:** `benfo/oak` is the single public MIT repo with one root commit; older releases and tags were deleted on purpose. Contributions are MIT with no CLA and the maintainer approves every PR. `main` is protected (no force pushes or deletion; PRs for outside contributors; the owner can push directly). Workflows use the built-in `GITHUB_TOKEN`; the site publishes to this repo's `gh-pages` (`docs/releasing.md`). Impeccable tooling stays local and gitignored. If history is ever rewritten again: remove branch protection first and restore it after, expect a force-pushed tag to trigger a Release packages run that fails safely (`scripts/release.cjs` refuses to republish), and run `gh workflow run website.yml --ref main` because a force push may not redeploy the site. This clone excludes `gh-pages` from fetch (`git config --add remote.origin.fetch "^refs/heads/gh-pages"`, then `git branch -dr origin/gh-pages`); a fresh clone needs the same.
 - **Styles:** pairs split by the old cascade (toolbar and toolbar-buttons, sidebar and sidebar-tree, changes and file-lists, diff and line-selection, focus and keyboard-navigation) stay separate; merge one only after checking specificity and order. No colocation, CSS Modules or Tailwind.
 - **Menus:** never assume a main branch or infer a comparison target from a branch name. Plain labels, colons for explanation.
 - **Comparison:** starts only from explicit actions (context menu, palette), never from selecting a sidebar row; its controls live with the results in commit details.
@@ -85,29 +79,27 @@ Rules for menus, Escape, layouts, styles, previews, tokens and reuse are in `AGE
 - **Conflicts:** rely on Git and the user's merge tool. A first attempt with ours/theirs labels, a dropped-changes confirm, an Undo toast and Skip was removed as too much.
 - **Layouts:** the named layouts, Layout menu, Resize panes picker, an overlaying file list drawer and hiding the toolbar in focus mode were removed. No docking or automatic collapsing.
 - **File icons:** the default stays None until the maintainer has tried it (one value in `settings.ts`).
-- **Website:** factual copy, no sales language or unsupported "only"/"unique" claims, the command palette featured, no live demo, screenshots are real captures of a synthetic repo, section backgrounds alternate strictly after the hero.
+- **Website:** factual copy, no sales language or unsupported "only" or "unique" claims, the command palette featured, no live demo, screenshots are real captures of a synthetic repo, section backgrounds alternate strictly after the hero.
 - **Big collections:** the sidebar lists the newest 100 tags with a searchable "Go to tag…" picker. A commit row shows at most 6 ref badges and a "+N" chip (the checked-out ref always stays); a menu lists at most 12 refs per list with a disabled "N more" row and points to the sidebar. Never render an unbounded list in a row, a menu or a tooltip.
-- **Libraries (audited 2026-10-20):** Git produces diffs, Shiki highlights, React Aria and react-resizable-panels own UI behaviour, `fuzzysort` ranks the palette behind `lib/fuzzy.ts`; nothing worth replacing. Toasts stay in-house (audited 2026-11-02, reading each library's source): React Aria's `ToastRegion` adds a document F6 landmark listener, Sonner and Base UI make every toast a Tab stop (Base UI also hard-codes F6), Radix hooks Escape; react-hot-toast in headless mode is the only one without keyboard behaviour and adds little over our host. The graph and diff stay custom (`diff`'s `parsePatch` lacks combined diffs).
-- **Back and Forward:** per repository, in memory only, recorded on deliberate jumps (view switches, opening a commit or a blame, a parent link) and never on arrowing. Alt+Left and Alt+Right (not in text fields), mouse back and forward buttons, palette commands; no toolbar buttons. A place is the view plus its commit, or the blame file, revision and cursor line; a commit that has left the graph is skipped silently. Known gaps: file history and Compare results are not restored; add them to `NavPlace` (`src/shared/navPlace.ts`) if daily use shows a need.
+- **Libraries (audited 2026-10-20):** Git produces diffs, Shiki highlights, React Aria and react-resizable-panels own UI behaviour, `fuzzysort` ranks the palette behind `lib/fuzzy.ts`; nothing worth replacing. Toasts stay in-house (audited 2026-11-02): React Aria's `ToastRegion` adds a document F6 landmark listener, Sonner and Base UI make every toast a Tab stop (Base UI also hard-codes F6), Radix hooks Escape; react-hot-toast in headless mode has no keyboard behaviour and adds little over our host. The graph and diff stay custom (`diff`'s `parsePatch` lacks combined diffs).
+- **Back and Forward:** per repository, in memory only, recorded on deliberate jumps (view switches, opening a commit or a blame, a parent link) and never on arrowing. Alt+Left and Alt+Right (not in text fields), mouse back and forward buttons, palette commands; no toolbar buttons. A place is the view plus its commit, or the blame file, revision and cursor line; a commit that has left the graph is skipped silently.
 - **Packaging:** the app includes only `out/main`, `out/preload` and `out/renderer`; scratch repos, profiles and screenshots under `out/` must never ship.
 
 ## Backlog
 
-Ideas only. None is agreed, and each needs a concrete workflow and a discussion first.
+Ideas only. None is agreed, and each needs a concrete workflow and a discussion first. Agreed order is in Features above.
 
 **Git features**
 
-- Interactive rebase, three-way merge editor, Git command log panel.
-- Squash and fixup from History shipped in 0.1.23: Shift+click or Shift+arrows select a contiguous range, then Combine commits in the menu, the summary buttons or the palette; Undo toast; force-push warning for pushed commits. Refused with a reason when the tree is dirty, a merge commit is in the way, or the list is a file history. Interactive rebase should reuse its planner (`src/shared/rewrite.ts`) and scripted-todo engine (`src/main/rewrite.ts`). Squashing around a skipped commit is a reorder, so it belongs to interactive rebase, not to Ctrl+click (Ctrl+click compares). Measured with 2,000 loaded commits selected: 200 ms to the summary and 350 ms to the dialog, rows not virtualised; revisit near 10,000.
+- Interactive rebase should reuse the squash planner (`src/shared/rewrite.ts`) and scripted-todo engine (`src/main/rewrite.ts`). Squashing around a skipped commit is a reorder, so it belongs here, not to Ctrl+click (Ctrl+click compares). Squash and fixup currently refuse with a reason when the tree is dirty, a merge commit is in the way, or the list is a file history. Measured with 2,000 loaded commits selected: 200 ms to the summary and 350 ms to the dialog, rows not virtualised; revisit near 10,000.
 - Output log: a running stream of what Oak ran, from many places (every git command with its result, background fetches, errors), like VS Code's Output, replacing the single current-or-last output dialog; the status bar message already opens that dialog. Needs a design first: what counts as an entry, how many to keep, whether it persists, filters, and whether the stream is the one place a missed result can be recovered.
 - More status bar items, each only with a concrete workflow benefit and never a duplicate of something already on screen: a working-tree summary for expanded Code (it repeats the Changes badge, so only if its absence there is missed).
-- Menu-wide type-ahead: typing in a menu only searches its own level, so "squash" does not find an item inside a submenu. Leaving it for the palette was chosen for now; revisit if people ask.
+- Menu-wide type-ahead: typing in a menu only searches its own level, so "squash" does not find an item inside a submenu. Left to the palette for now; revisit if people ask.
 - Submodules: list them with status (clean, modified, uninitialised), initialise and update, open one as a repository. Everyday actions only; no `submodule add` wizard until asked.
 - Git LFS: show which files are LFS pointers and whether uploads are pending, using `git lfs` output. LFS itself already works through the user's `git`.
 - Bisect as a guided flow: mark good and bad from History, show progress and the found commit, always offer Reset.
-- User-installable file icon packs, like custom themes: folders in an `icon-packs` folder under the app data folder, each with a `pack.json` (names, extensions, folders, light variants) and SVGs; "Import icon pack…" would validate and extract a zip into it. Needs SVG sanitising (render as `<img>` only), zip-slip and size limits, and a decision on depending on the `material-icon-theme` npm package instead of vendoring. A Seti-based monochrome pack is an option if Simple feels too generic.
-- Skip for rebase, cherry-pick and revert conflicts (prototyped and removed as niche and destructive; revisit if asked, with a confirm naming the dropped commit). Conflict safeguards (branch-named ours/theirs, a confirm when one side drops the other's changes, an Undo toast); revisit if users report lost work.
-- Commit options follow-ups: author and date overrides, `--reset-author` for amend, trailers such as Co-authored-by, a "Verified" signature badge in History (no git commit flag exists for checking signatures; it is a display feature), and a hint when an undone WIP commit was already pushed (the remote still has it and the next push needs a force push). Not wanted: `--no-post-rewrite`.
+- Skip for rebase, cherry-pick and revert conflicts (prototyped and removed as niche and destructive; revisit if asked, with a confirm naming the dropped commit), and conflict safeguards (branch-named ours/theirs, a confirm when one side drops the other's changes, an Undo toast); revisit if users report lost work.
+- Commit options follow-ups: author and date overrides, `--reset-author` for amend, trailers such as Co-authored-by, a "Verified" signature badge in History (a display feature; no git commit flag checks signatures), and a hint when an undone WIP commit was already pushed (the remote still has it and the next push needs a force push). Not wanted: `--no-post-rewrite`.
 - Compare the working tree against any selected commit.
 - "Blame this line" from the diff line menu (decide deleted lines: blame the old side at the parent; History diffs: blame as of that commit).
 - Shared find options for diffs and Blame: case, whole word, regular expression.
@@ -121,10 +113,11 @@ Ideas only. None is agreed, and each needs a concrete workflow and a discussion 
 
 **Diff and files**
 
-- Partial code expansion: show hidden unchanged regions as gap rows with expand up, expand down and expand all (about 20 lines a click, like GitHub), reading the file at that revision. Expanded lines become ordinary context rows so find and line selection keep working; the context steps set the initial gap. Replaces the older "fold long unchanged regions" idea.
+- Partial code expansion: show hidden unchanged regions as gap rows with expand up, expand down and expand all (about 20 lines a click, like GitHub), reading the file at that revision. Expanded lines become ordinary context rows so find and line selection keep working; the context steps set the initial gap.
 - Mouse alternatives for the layout toggle, only if testing shows a need.
 - Whole-file syntax tokenizing (a hunk that starts mid-construct can be mis-coloured).
 - More previewers for non-source files (PNG and other images, PDF, safe formats) instead of "binary file differs": add one file under `preview/` and a line in `previewers.ts`; never run scripts. Follow-ups for the SVG one: zoom and pan (`react-zoom-pan-pinch`), swipe and onion-skin comparison, a fit and actual size toggle, a minimum display size for tiny icons, and a per-user default mode (Preview or Diff) that survives restarts (today the choice lasts until Oak restarts).
+- User-installable file icon packs, like custom themes: folders in an `icon-packs` folder under the app data folder, each with a `pack.json` (names, extensions, folders, light variants) and SVGs; "Import icon pack…" would validate and extract a zip into it. Needs SVG sanitising (render as `<img>` only), zip-slip and size limits, and a decision on depending on the `material-icon-theme` npm package instead of vendoring. A Seti-based monochrome pack is an option if Simple feels too generic.
 - "Open" and "Show in folder" from file menus (read-only temporary copy for historical revisions); never execute automatically, confirm for executable and script types.
 - Browse the repository at the working tree or a commit, including unchanged files, with filename search (History "All files" covers part of this; a working-tree browser is not built).
 - Neighbour diff prefetch if History stepping feels slow; a state library such as Zustand for shared selection and scope, only if needed.
