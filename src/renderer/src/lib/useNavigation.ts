@@ -8,6 +8,7 @@ import {
   movementDelta,
   isListSearchKey,
   canHandleNavigation,
+  isHistoryChord,
   navigationAction
 } from './navigation'
 import { resizeChord, resizeFocusedPane } from './paneResize'
@@ -28,6 +29,16 @@ export function useNavigation({
   }, [vimNavigation, motions])
   const navigate = (e: ReactKeyboardEvent, search?: () => void): boolean => {
     const target = e.target as HTMLElement
+    if (kind === 'list' && isHistoryChord(e.nativeEvent)) {
+      // The collection would read Alt+Left/Right as a plain arrow, even from a button inside a row, and swallow it.
+      // Hand it straight to the shortcut dispatcher, which listens on window.
+      e.preventDefault()
+      e.stopPropagation()
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', { key: e.key, code: e.code, altKey: true, bubbles: true, cancelable: true, repeat: e.repeat })
+      )
+      return true
+    }
     if (!canHandleNavigation(e)) {
       motions.reset()
       return false

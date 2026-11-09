@@ -39,6 +39,18 @@ test('Alt+Left and Alt+Right walk back and forward through view switches', async
   await expect(page.locator('.status-message')).toContainText('Nothing earlier')
 })
 
+test('Alt+Left works while a button inside a file row has focus', async ({ open, small }) => {
+  const page = await open(small)
+  const app = page.locator('.app')
+  const rowButton = page.locator('.file-section [role="row"] button.icon-btn').first()
+
+  await expect(app).toHaveAttribute('data-workspace-view', 'changes')
+  await rowButton.focus()
+  await expect(rowButton).toBeFocused()
+  await page.keyboard.press('Alt+ArrowLeft')
+  await expect(app).toHaveAttribute('data-workspace-view', 'history')
+})
+
 test('Back to a blame returns to the line the cursor was on', async ({ open, small }) => {
   const page = await open(small)
   const app = page.locator('.app')
