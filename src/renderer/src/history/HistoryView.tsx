@@ -108,7 +108,8 @@ export function HistoryView({
   onRangeChange,
   onCompareBranch,
   onOpenChanges,
-  onBlame
+  onBlame,
+  onOpenCommit
 }: {
   r: RepoCtx
   focus: { hash: string; n: number; target?: CommitTarget } | null
@@ -122,6 +123,8 @@ export function HistoryView({
   onCompareBranch: CompareBranch
   onOpenChanges: () => void
   onBlame: (path: string, rev: string | null) => void
+  /** The user opened another commit from the details (a parent link): a jump worth returning from. */
+  onOpenCommit?: (hash: string) => void
 }) {
   const { emphasizeCurrentBranch } = useSettings()
   const graph = useMemo(() => {
@@ -661,7 +664,10 @@ export function HistoryView({
             setCompareBase(selected)
           }}
           onClearComparison={() => endComparison()}
-          onSelectCommit={(h) => select(h)}
+          onSelectCommit={(h) => {
+            onOpenCommit?.(h)
+            select(h)
+          }}
         />
       )}
     </Split>

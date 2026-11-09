@@ -88,11 +88,12 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
 
   // Back and Forward: only deliberate jumps (a view switch, opening a commit or a blame) are recorded, never arrowing.
   const nav = useNavHistory<NavPlace>(samePlace)
+  const blameLine = useRef(0)
   const livePlace = (): NavPlace =>
     view === 'history'
       ? { view, commit: selectedCommit?.hash ?? null }
       : view === 'blame' && blame
-        ? { view, file: blame.file, rev: blame.rev }
+        ? { view, file: blame.file, rev: blame.rev, line: blameLine.current }
         : { view: 'changes' }
   const setView = (next: View) => {
     if (next === view) return
@@ -110,7 +111,8 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
   const restorePlace = (place: NavPlace) => {
     if (place.view === 'blame') {
       if (view !== 'blame') blameFrom.current = view === 'changes' ? 'changes' : 'history'
-      if (blame?.file !== place.file || blame.rev !== place.rev) setBlame({ file: place.file, rev: place.rev, n: Date.now() })
+      if (blame?.file !== place.file || blame.rev !== place.rev)
+        setBlame({ file: place.file, rev: place.rev, line: place.line, n: Date.now() })
       showView('blame')
       focusLater('.blame-view .diff')
     } else if (place.view === 'history') {
@@ -403,6 +405,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
                 filesHidden={filesCollapsed}
                 filesToggle={filesToggle}
                 onBlame={showBlame}
+                onOpenCommit={(hash) => nav.jump(livePlace(), { view: 'history', commit: hash })}
                 onOpenChanges={() => {
                   setView('changes')
                   setTimeout(focusFiles, 0)
@@ -419,6 +422,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
                   contentRevision={r.contentRevision}
                   active={view === 'blame'}
                   onOpenCommit={showBlameCommit}
+                  onCursor={(line) => (blameLine.current = line)}
                   onClose={closeBlame}
                 />
               </div>

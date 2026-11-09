@@ -1,6 +1,6 @@
 /** A place the user can return to: a view plus the one thing that view was showing. */
 export type NavPlace =
-  { view: 'changes' } | { view: 'history'; commit: string | null } | { view: 'blame'; file: string; rev: string | null }
+  { view: 'changes' } | { view: 'history'; commit: string | null } | { view: 'blame'; file: string; rev: string | null; line?: number }
 
 export function samePlace(a: NavPlace, b: NavPlace): boolean {
   if (a.view !== b.view) return false
