@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.1.26",
+    "highlights": [
+      { "title": "Back and Forward", "text": "Alt+Left and Alt+Right step back and forward through the places you have visited, such as commits, files and views, like a browser. Also in the command palette as Back and Forward." }
+    ],
+    "fixes": []
+  },
+  {
     "version": "0.1.25",
     "highlights": [
       { "title": "Keyboard checkout and copy", "text": "Enter on a sidebar branch checks it out; clicking still previews its commit. In a file list, Ctrl+C copies the relative path and Ctrl+Shift+C the full path. In a diff, Ctrl+Shift+C copies the cursor line's location as path:line, also offered in the Copy menu." }

@@ -2,6 +2,12 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.26
+
+### Added
+
+- Back and Forward. Alt+Left and Alt+Right step back and forward through the places you have visited, such as commits, files and views, like a browser. Also in the command palette as Back and Forward.
+
 ## 0.1.25
 
 ### Added
