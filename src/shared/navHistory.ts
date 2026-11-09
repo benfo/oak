@@ -3,12 +3,16 @@ export type NavHistory<T> = { readonly entries: readonly T[]; readonly index: nu
 
 export const MAX_NAV_ENTRIES = 50
 
-export const emptyNavHistory = <T>(): NavHistory<T> => ({ entries: [], index: -1 })
+export function emptyNavHistory<T>(): NavHistory<T> {
+  return { entries: [], index: -1 }
+}
 
-export const currentEntry = <T>(h: NavHistory<T>): T | undefined => h.entries[h.index]
+export function currentEntry<T>(h: NavHistory<T>): T | undefined {
+  return h.entries[h.index]
+}
 
-export const canGoBack = <T>(h: NavHistory<T>) => h.index > 0
-export const canGoForward = <T>(h: NavHistory<T>) => h.index < h.entries.length - 1
+export const canGoBack = (h: NavHistory<unknown>) => h.index > 0
+export const canGoForward = (h: NavHistory<unknown>) => h.index < h.entries.length - 1
 
 /** Records a deliberate jump. Drops the forward entries, and ignores a repeat of the current place. */
 export function pushEntry<T>(h: NavHistory<T>, entry: T, same: (a: T, b: T) => boolean): NavHistory<T> {

@@ -51,6 +51,8 @@ import { CONTENT_MIN, FILES_MIN, SIDEBAR_MIN } from '../lib/layoutMinimums'
 import { usePreviewToggleCommand } from '../preview/activePreview'
 import { TOGGLE_PREVIEW_KEYS } from '../preview/PreviewModeToggle'
 import { rewriteCommands } from '../rewriteCommands'
+import { useNavHistory } from '../lib/useNavHistory'
+import { placeExists, samePlace, type NavPlace } from '../../../shared/navPlace.ts'
 
 export type View = 'changes' | 'history' | 'blame'
 
@@ -69,7 +71,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
   const [filesHidden, setFilesHidden] = useState(false)
   const lastWorkFocus = useRef<HTMLElement | null>(null)
   const restoreFocus = useRef<HTMLElement | null>(null)
-  const setView = (next: View) => {
+  const showView = (next: View) => {
     if (next === 'changes') setCommitFilesMode('changes')
     setViewState(next)
   }
@@ -79,13 +81,63 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
   const [selectedCommit, setSelectedCommit] = useState<Commit | null>(null)
   const [selectedRange, setSelectedRange] = useState<string[] | null>(null)
   const [comparisonRequest, setComparisonRequest] = useState<ComparisonRequest | null>(null)
+
+  // Blame stays open (and keeps its place) while other views are used; it closes only when asked.
+  const [blame, setBlame] = useState<BlameRequest | null>(null)
+  const blameFrom = useRef<'changes' | 'history'>('history')
+
+  // Back and Forward: only deliberate jumps (a view switch, opening a commit or a blame) are recorded, never arrowing.
+  const nav = useNavHistory<NavPlace>(samePlace)
+  const livePlace = (): NavPlace =>
+    view === 'history'
+      ? { view, commit: selectedCommit?.hash ?? null }
+      : view === 'blame' && blame
+        ? { view, file: blame.file, rev: blame.rev }
+        : { view: 'changes' }
+  const setView = (next: View) => {
+    if (next === view) return
+    if (next === 'blame' && !blame) return showView(next)
+    nav.jump(
+      livePlace(),
+      next === 'changes'
+        ? { view: next }
+        : next === 'history'
+          ? { view: next, commit: selectedCommit?.hash ?? null }
+          : { view: next, file: blame!.file, rev: blame!.rev }
+    )
+    showView(next)
+  }
+  const restorePlace = (place: NavPlace) => {
+    if (place.view === 'blame') {
+      if (view !== 'blame') blameFrom.current = view === 'changes' ? 'changes' : 'history'
+      if (blame?.file !== place.file || blame.rev !== place.rev) setBlame({ file: place.file, rev: place.rev, n: Date.now() })
+      showView('blame')
+      focusLater('.blame-view .diff')
+    } else if (place.view === 'history') {
+      showView('history')
+      if (place.commit && place.commit !== selectedCommit?.hash) setFocus({ hash: place.commit, n: Date.now() })
+      focusLater('.commit-list')
+    } else {
+      showView('changes')
+      setTimeout(focusFiles, 0)
+    }
+  }
+  const navigateHistory = (direction: -1 | 1) => {
+    const commitExists = (hash: string) => hash === WORKING_HASH || r.commits.some((c) => c.hash === hash)
+    const place = nav.step(direction, livePlace(), (p) => placeExists(p, commitExists))
+    if (place) restorePlace(place)
+    else notify.info(direction < 0 ? 'Nothing earlier to go back to' : 'Nothing later to go forward to')
+  }
+  const historyNav = { back: () => navigateHistory(-1), forward: () => navigateHistory(1) }
+
   const compareBranch: CompareBranch = (source, target) => {
     setView('history')
     setComparisonRequest({ source, target, n: Date.now() })
   }
 
   const focusCommit = (hash: string, target?: CommitTarget) => {
-    setView('history')
+    nav.jump(livePlace(), { view: 'history', commit: hash })
+    showView('history')
     setFocus({ hash, n: Date.now(), target })
   }
 
@@ -95,19 +147,17 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     focusLater('.commit-list')
   }
 
-  // Blame stays open (and keeps its place) while other views are used; it closes only when asked.
-  const [blame, setBlame] = useState<BlameRequest | null>(null)
-  const blameFrom = useRef<'changes' | 'history'>('history')
   const showBlame = (file: string, rev: string | null) => {
     if (view !== 'blame') blameFrom.current = view
+    nav.jump(livePlace(), { view: 'blame', file, rev })
     setBlame({ file, rev, n: Date.now() })
-    setView('blame')
+    showView('blame')
   }
   const closeBlame = () => {
     setBlame(null)
     // Closed from the sidebar while another view is showing: that view stays.
     if (view !== 'blame') return
-    setView(blameFrom.current)
+    showView(blameFrom.current)
     if (blameFrom.current === 'changes') setTimeout(focusFiles, 0)
     else focusLater('.commit-list')
   }
@@ -213,7 +263,8 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
     layout,
     revealPanes,
     toggleFocus,
-    goToChanges
+    goToChanges,
+    historyNav
   })
 
   const focusMainRef = useRef(focusMain)
@@ -231,7 +282,7 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
   const conflictCount = r.status?.conflicted.length ?? 0
   const hadConflicts = useRef(conflictCount > 0)
   useEffect(() => {
-    if (conflictCount > 0 && !hadConflicts.current) setView('changes')
+    if (conflictCount > 0 && !hadConflicts.current) showView('changes')
     hadConflicts.current = conflictCount > 0
   }, [conflictCount])
 
@@ -285,6 +336,12 @@ export function RepoView({ repo, onSwitch }: { repo: string; onSwitch: (p: strin
       data-workspace-layout={layout}
       data-workspace-view={view}
       data-workspace-busy={!!r.busy}
+      onMouseUp={(e) => {
+        if (e.button !== 3 && e.button !== 4) return
+        e.preventDefault()
+        if (e.button === 3) historyNav.back()
+        else historyNav.forward()
+      }}
       onFocusCapture={(e) => {
         const target = e.target as HTMLElement
         if (target.closest('main') && target.closest('[data-pane], [data-pane-owner], [data-search-pane]')) lastWorkFocus.current = target
@@ -395,6 +452,7 @@ interface CommandCtx {
   revealPanes: () => void
   toggleFocus: () => void
   goToChanges: () => void
+  historyNav: { back: () => void; forward: () => void }
 }
 
 function buildCommands({
@@ -416,7 +474,8 @@ function buildCommands({
   layout,
   revealPanes,
   toggleFocus,
-  goToChanges
+  goToChanges,
+  historyNav
 }: CommandCtx): Command[] {
   const st = r.status
   // A WIP commit takes everything, so a merge in progress or conflicts must be settled first.
@@ -606,6 +665,22 @@ function buildCommands({
         setView('blame')
         focusLater('.blame-view .diff')
       }
+    },
+    {
+      id: 'history-back',
+      title: 'Go back',
+      category: 'View',
+      keys: 'Alt+Left',
+      allowInInput: false,
+      run: historyNav.back
+    },
+    {
+      id: 'history-forward',
+      title: 'Go forward',
+      category: 'View',
+      keys: 'Alt+Right',
+      allowInInput: false,
+      run: historyNav.forward
     },
     {
       id: 'focus-commit-msg',
