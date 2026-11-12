@@ -2,6 +2,12 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.27
+
+### Added
+
+- Expand hidden context in diffs. Hunk headers have Expand down, Expand up and Expand all buttons (20 lines a click), and E expands around the cursor. Expanded lines work with staging, find and ignore whitespace.
+
 ## 0.1.26
 
 ### Added

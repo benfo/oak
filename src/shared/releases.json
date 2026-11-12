@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.1.27",
+    "highlights": [
+      { "title": "Expand hidden context in diffs", "text": "Hunk headers have Expand down, Expand up and Expand all buttons (20 lines a click), and E expands around the cursor. Expanded lines work with staging, find and ignore whitespace." }
+    ],
+    "fixes": []
+  },
+  {
     "version": "0.1.26",
     "highlights": [
       { "title": "Back and Forward", "text": "Alt+Left and Alt+Right step back and forward through the places you have visited, such as commits, files and views, like a browser. Also in the command palette as Back and Forward." }
