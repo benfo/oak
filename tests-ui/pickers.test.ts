@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures'
-import { git } from './repos'
+import { git, write } from './repos'
 import type { Locator, Page } from '@playwright/test'
 
 async function settle(picker: Locator) {
@@ -48,6 +48,37 @@ test('theme picker keeps its search box in place while searching and previews, r
   await expect(picker).toHaveCount(0)
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe('dracula')
+})
+
+test('a glowing theme lights up syntax-coloured code only while it is shown', async ({ open, small }) => {
+  write(small, 'src/app.ts', "export const greeting = 'hello'\n")
+  const page = await open(small)
+  await page.getByRole('row', { name: /app\.ts/ }).click()
+  const token = page.locator('.changes-diff .diff .syntax').first()
+  const glow = () => token.evaluate((span) => getComputedStyle(span).textShadow)
+  await expect(token).toBeVisible()
+  expect(await glow()).toBe('none')
+
+  let input = await openThemes(page)
+  await input.fill("SynthWave '84")
+  await page.keyboard.press('ArrowDown')
+  await expect(page.locator('html')).toHaveAttribute('data-glow')
+  expect(await glow()).not.toBe('none')
+  await page.keyboard.press('Escape')
+  await expect(page.locator('html')).not.toHaveAttribute('data-glow')
+
+  input = await openThemes(page)
+  await input.fill("SynthWave '84")
+  await page.keyboard.press('ArrowDown')
+  await page.keyboard.press('Enter')
+  await expect(page.locator('html')).toHaveAttribute('data-glow')
+  expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe('synthwave-84')
+  input = await openThemes(page)
+  await input.fill('Dracula')
+  await page.keyboard.press('ArrowDown')
+  await page.keyboard.press('Enter')
+  await expect(page.locator('html')).not.toHaveAttribute('data-glow')
+  expect(await glow()).toBe('none')
 })
 
 test('branch and repository pickers keep current markers and size results to matches', async ({ open, small }) => {
