@@ -1,0 +1,4 @@
+/* Themes with `glow` (SynthWave '84) light up syntax-coloured code; plain text stays crisp. */
+[data-glow] .syntax {
+  text-shadow: var(--syntax-glow);
+}

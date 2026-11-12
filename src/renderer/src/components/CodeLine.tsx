@@ -40,7 +40,7 @@ export function CodeLine({ text, tokens, whitespace, hits, currentHit }: Props) 
         <span
           key={i}
           className={
-            [p.changed ? 'word-change' : '', p.hit < 0 ? '' : p.hit === currentHit ? 'find-hit current' : 'find-hit']
+            [p.c ? 'syntax' : '', p.changed ? 'word-change' : '', p.hit < 0 ? '' : p.hit === currentHit ? 'find-hit current' : 'find-hit']
               .filter(Boolean)
               .join(' ') || undefined
           }

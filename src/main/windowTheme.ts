@@ -2,6 +2,7 @@ import { app, BrowserWindow, nativeTheme } from 'electron'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { parseThemeFile, type ThemeFile } from '../shared/themeFile'
 
 /**
  * The native parts of the window that CSS can't reach (title bar buttons, the background shown
@@ -58,33 +59,15 @@ export function setWindowTheme(t: WindowTheme) {
 
 // ---------- custom themes ----------
 
-export interface ThemeFile {
-  id: string
-  name: string
-  base: 'light' | 'dark'
-  colors: Record<string, string>
-}
-
 export const themesDir = () => path.join(app.getPath('userData'), 'themes')
 
-/**
- * Custom themes are JSON files in the themes folder:
- * `{ "name": "Midnight", "base": "dark", "colors": { "primary": "#e5534b", "background": "#0d1117" } }`
- * `colors` overrides any CSS variable from tokens.css (name without `--`). Bad files are skipped.
- */
+/** Custom themes are JSON files in the themes folder (format in `parseThemeFile`). Bad files are skipped. */
 export async function listThemes(): Promise<ThemeFile[]> {
   const files = await readdir(themesDir()).catch(() => [] as string[])
   const out: ThemeFile[] = []
   for (const f of files.filter((f) => f.toLowerCase().endsWith('.json'))) {
     try {
-      const raw = JSON.parse(await readFile(path.join(themesDir(), f), 'utf8'))
-      const colors = Object.fromEntries(Object.entries(raw.colors ?? {}).filter(([, v]) => typeof v === 'string')) as Record<string, string>
-      out.push({
-        id: `custom:${f.slice(0, -5)}`,
-        name: String(raw.name ?? f.slice(0, -5)),
-        base: raw.base === 'light' ? 'light' : 'dark',
-        colors
-      })
+      out.push(parseThemeFile(JSON.parse(await readFile(path.join(themesDir(), f), 'utf8')), f.slice(0, -5)))
     } catch {
       // not valid JSON: skip it
     }

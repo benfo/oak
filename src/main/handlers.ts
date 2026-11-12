@@ -19,6 +19,7 @@ import { checkForUpdates, installUpdate, updateStatus } from './updater'
 import { checkoutBranchNames } from '../shared/recentBranches'
 import { parseRebaseStep, type RebaseStep } from '../shared/rebaseStep'
 import type { TipCommit } from '../shared/status'
+import type { ThemeStarter } from '../shared/themeFile'
 import { setsLineEndings } from '../shared/gitTools'
 import { splitFileLogChunk } from '../shared/fileLog'
 import { blameArgs, mapLineToOlder, parseBlame, type BlameResult } from '../shared/blame'
@@ -1014,7 +1015,7 @@ epo`), if any. */
   },
 
   /** Writes a new custom theme file (never overwriting one) and shows it in the folder. */
-  async createThemeFile(theme: { name: string; base: 'light' | 'dark'; colors: Record<string, string> }) {
+  async createThemeFile(theme: ThemeStarter) {
     await fs.mkdir(themesDir(), { recursive: true })
     const slug =
       theme.name

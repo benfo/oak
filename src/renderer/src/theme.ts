@@ -1,5 +1,6 @@
 import { api } from './api'
 import { BUILT_IN_THEMES } from './builtInThemes'
+import type { ThemeStarter } from '../../shared/themeFile'
 
 /**
  * Themes. Every colour in the app is a CSS variable (see the top of tokens.css): the built-in
@@ -13,6 +14,8 @@ export interface Theme {
   base: 'light' | 'dark'
   /** CSS variable overrides without the leading `--`, e.g. `{ primary: '#e5534b' }`. */
   colors?: Record<string, string>
+  /** Neon glow on syntax-coloured code (styles/theme-glow.css). */
+  glow?: true
 }
 
 /** 'system' follows the OS light/dark setting; anything else is a theme id. */
@@ -56,6 +59,7 @@ function apply() {
   const theme = resolve(setting)
   const root = document.documentElement
   root.dataset.theme = theme.base
+  root.toggleAttribute('data-glow', theme.glow === true)
   for (const name of applied) root.style.removeProperty(name)
   applied = []
   for (const [key, value] of Object.entries(theme.colors ?? {})) {
@@ -132,7 +136,7 @@ const STARTER_KEYS = [
 ]
 
 /** A ready-to-edit copy of the theme currently shown, with its resolved colour for each key. */
-export function starterTheme(): { name: string; base: 'light' | 'dark'; colors: Record<string, string> } {
+export function starterTheme(): ThemeStarter {
   const theme = resolve(preview ?? themeSetting())
   const probe = document.createElement('span')
   document.body.appendChild(probe)
@@ -142,7 +146,7 @@ export function starterTheme(): { name: string; base: 'light' | 'dark'; colors: 
     colors[key] = normalize(getComputedStyle(probe).color)
   }
   probe.remove()
-  return { name: `${theme.name} copy`, base: theme.base, colors }
+  return { name: `${theme.name} copy`, base: theme.base, ...(theme.glow ? { glow: true } : {}), colors }
 }
 
 /** Re-reads the custom theme files (themes folder) and re-applies, in case the current one changed. */

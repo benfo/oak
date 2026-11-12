@@ -75,6 +75,11 @@
   /* Every list row keeps this inner padding on both sides; nesting adds --indent per level. */
   --row-pad: var(--space-2-5);
 
+  /* Glowing code for themes with `glow`: a dark edge keeps glyphs legible, then a halo in their own colour. */
+  --syntax-glow:
+    0 0 2px rgba(0, 0, 0, 0.6), 0 0 5px color-mix(in srgb, currentColor 45%, transparent),
+    0 0 10px color-mix(in srgb, currentColor 30%, transparent);
+
   /* Focus: one ring for the whole app (see styles/focus.css). */
   --focus-ring: 2px solid var(--ring);
 
