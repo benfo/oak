@@ -102,11 +102,12 @@ export const lines: Line[] = [
         name: 'Inline or side by side',
         text: [
           'View additions and deletions in one column, or compare before and after in two columns. Both layouts include syntax colours and word-level change highlighting.',
-          'Switching keeps your place. Show more or less surrounding code with the context buttons in the diff header, or the whole file with the shortcut below.',
+          'Switching keeps your place. Show more or less surrounding code with the context buttons in the diff header, expand the hidden lines above or below a hunk, or show the whole file with the shortcuts below.',
         ],
         keys: [
           { label: 'Switch layout', keys: ['Ctrl', 'Shift', 'D'] },
           { label: 'Whole file', keys: ['Ctrl', 'Shift', 'W'] },
+          { label: 'Expand around the cursor', keys: ['E'] },
         ],
         shots: [
           { image: 'oak-diff-split', title: 'A diff in the side by side layout', caption: 'Side by side', ...strip },
@@ -166,6 +167,19 @@ export const lines: Line[] = [
         points: ['Arrow keys move in lists, diffs and menus', 'Slash or Ctrl F searches the focused list, a diff or a file preview; type :120 to go to a line', 'Optional h, j, k and l keys work alongside the arrows'],
       },
       {
+        id: 'back-forward',
+        name: 'Back, forward and along a line',
+        text: [
+          'Step back and forward through the places you have visited, such as commits, files and views, like a browser.',
+          "In History, follow the selected commit's line through the graph. Other branches' commits in between are skipped, and the commit details link the child beside the parents.",
+        ],
+        keys: [
+          { label: 'Back or forward', keys: ['Alt', '← / →'] },
+          { label: "Along the commit's line", keys: ['Alt', '↓ / ↑'] },
+        ],
+        points: ['Open a commit, then a file, then another view', 'Alt Left returns to each place in turn, and Alt Right goes forward again', "In History, Alt Down follows a commit's first parent and Alt Up the commit that continues it"],
+      },
+      {
         id: 'focus',
         name: 'Give the diff the window',
         text: ['Expand the code area. The sidebar and, in History, the commit graph step aside and the file list stays beside the diff. Press F to hide or show that list. Press F11 again, or Escape when nothing else is selected, to restore your layout, focus and pane sizes.', 'While reading a diff, Alt PageUp and Alt PageDown move between files. The toolbar\'s expand button does the same as F11. Outside focus mode, Ctrl [ collapses the sidebar to a strip of view icons.'],
@@ -200,6 +214,15 @@ export const lines: Line[] = [
         points: ['A merge stops with conflicts, and a banner appears in Changes', 'Open each conflicted file in your merge tool', 'Marking a file resolved warns you if conflict markers remain'],
       },
       {
+        id: 'open-elsewhere',
+        name: 'Open on your host or in your editor',
+        text: [
+          'Open the repository, a branch, a commit, a file or a line on GitHub, GitLab, Bitbucket or Azure DevOps, copy a link to it, or open a pull request for a branch. Oak offers a page only when it exists, so a commit that has not been pushed has no browser link.',
+          "Open a file at the cursor's line, or the whole repository, in VS Code, Cursor, Sublime Text, Notepad++ or a command you set in Preferences.",
+        ],
+        points: ['Right-click a branch, commit, file or diff line', 'Choose Open in browser, Open pull request or Open in editor', 'Or copy the link from the Copy menu'],
+      },
+      {
         id: 'installed-git',
         name: 'Uses your installed Git',
         text: ['Oak runs the Git CLI. It uses your existing credentials, configuration, hooks and Git LFS setup.', 'The working tree refreshes automatically when local files change and when you return to the window. Fetch checks for changes on the remote.'],
@@ -211,9 +234,9 @@ export const lines: Line[] = [
 
 export const planned: { name: string; text: string }[] = [
   { name: 'Smoother conflicts', text: 'Say which side is ours and theirs, handle modify and delete conflicts, and bring Pull and Rebase conflicts into the same flow.' },
-  { name: 'Interactive rebase', text: 'Reorder, reword and drop commits from the history graph. Squash and fixup are already in History.' },
+  { name: 'Interactive rebase', text: 'Reorder, reword and drop commits from the history graph. Squash and fixup, with Undo, are already in History.' },
   { name: 'Pull request review', text: "Fetch a pull request's branches and open the comparison in Oak. Comments and approvals would stay on the provider's website at first." },
-  { name: 'Open and preview more files', text: 'Preview images, PDFs and other safe files, and open anything else in its default app or show it in its folder.' },
+  { name: 'Preview more files', text: 'Preview images, PDFs and other safe files the way SVGs already preview beside their diff.' },
   { name: 'Git command log', text: 'A list of every command Oak ran, with its output.' },
   { name: 'Signed installer', text: 'Code-sign the Windows installer so it no longer needs unblocking.' },
 ]
