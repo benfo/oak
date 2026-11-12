@@ -45,7 +45,7 @@ test('widget help searches actual bindings and keeps key labels free of explanat
   const next = help.filter((entry) => matchesShortcutHelp(entry, 'Alt+Down'))
   assert.deepEqual(
     next.map((entry) => entry.category),
-    ['Diff', 'Blame']
+    ['History', 'Diff', 'Blame']
   )
   assert.ok(help.every((entry) => !entry.keys.includes('(')))
   const menu = shortcutNavigationHelp.find(([title]) => title.includes('context menu'))!
