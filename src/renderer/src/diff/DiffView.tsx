@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import type { GapEdge } from './GapControls'
+import { captureDiffViewport } from './diffViewport'
 import type { FileDiff } from './diff'
 import { resolveDiffLayout } from './diffLayout'
 import { usePane } from '../lib/usePane'
@@ -82,7 +84,7 @@ export function DiffView({
   remote,
   preview
 }: Props) {
-  const { diff, source, displayText, reviewMode } = useDiffDocument(text, plain)
+  const { diff, source, displayText, reviewMode, gaps, expand } = useDiffDocument(text, plain)
   const filePreview = useFilePreview(preview, text)
   const acts = diff && actions ? actions(diff) : null
   const notice = diff && !acts && readOnlyReason ? readOnlyReason(diff) : null
@@ -94,7 +96,8 @@ export function DiffView({
 
   const { syntaxHighlighting, showWhitespace, diffLayout, vimNavigation } = useSettings()
   const split = !plain && resolveDiffLayout(diffLayout, paneWidth) === 'split'
-  const { rows, truncated, sideRows, positions, items, rowItem, posItem, itemRow } = useDiffRows(diff, showAll, split)
+  const footer = !!diff && gaps.some((g) => g.before === diff.hunks.length)
+  const { rows, truncated, sideRows, positions, items, rowItem, posItem, itemRow } = useDiffRows(diff, showAll, split, footer)
   const lineType = rows[cursor] && diff?.hunks[rows[cursor].hunk].lines[rows[cursor].line].type
   const cursorSide = lineType === 'del' ? 'old' : lineType === 'add' ? 'new' : side
   const cursorHunk = rows[cursor]?.hunk ?? 0
@@ -171,6 +174,31 @@ export function DiffView({
     if (diff.hunks.length === 1) ref.current?.focus({ preventScroll: true })
   }
 
+  // Revealed lines push the cursor line down; keep it where it was on screen. The first expand loads the whole file
+  // before anything is revealed, so the position is restored when the gaps actually change.
+  const gapsKey = JSON.stringify(gaps)
+  const pendingView = useRef<{ restore: () => boolean; gapsKey: string; timer: number } | null>(null)
+  const keepExpand = (key: number, edge: GapEdge) => {
+    if (pendingView.current) window.clearTimeout(pendingView.current.timer)
+    const timer = window.setTimeout(() => (pendingView.current = null), 3000)
+    pendingView.current = { restore: captureDiffViewport(true), gapsKey, timer }
+    expand(key, edge)
+  }
+  useLayoutEffect(() => {
+    const pending = pendingView.current
+    if (!pending || pending.gapsKey === gapsKey || !pending.restore()) return
+    window.clearTimeout(pending.timer)
+    pendingView.current = null
+    requestAnimationFrame(pending.restore)
+  }, [gapsKey, diff])
+
+  const expandAroundCursor = () => {
+    for (const gap of gaps) {
+      if (gap.before === cursorHunk) keepExpand(gap.key, 'up')
+      else if (gap.before === cursorHunk + 1) keepExpand(gap.key, 'down')
+    }
+  }
+
   const pane = usePane('diff', { kind: 'diff' })
   const { moveFile, onFileKey } = useDiffFileNavigation(files, ref)
 
@@ -191,7 +219,8 @@ export function DiffView({
     onSwitchView,
     onBack,
     showCopyMenu,
-    jumpHunk
+    jumpHunk,
+    expandAroundCursor
   })
 
   const paneProps = {
@@ -303,6 +332,8 @@ export function DiffView({
         cursorSide,
         cursorHunk,
         selected,
+        gaps,
+        expand: keepExpand,
         codeOf,
         measure: scroll.measure,
         windowed: scroll.windowed,

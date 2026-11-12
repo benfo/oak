@@ -25,6 +25,22 @@ function setOverride(value: number | null) {
 
 export const setContextLines = (value: number) => setOverride(value)
 
+/** Diffs load the whole file (and are cut to the context here) once any hidden lines are asked for. */
+let wholeFile = false
+
+export function useFetchContext() {
+  const context = useContextLines()
+  return useSyncExternalStore(subscribe, () => wholeFile) ? FULL_CONTEXT : context
+}
+
+export const useWholeFileLoaded = () => useSyncExternalStore(subscribe, () => wholeFile)
+
+export function requestWholeFile() {
+  if (wholeFile) return
+  wholeFile = true
+  subs.forEach((fn) => fn())
+}
+
 export const showMoreContext = () => setOverride(moreContext(getContextLines()))
 export const showLessContext = () => setOverride(lessContext(getContextLines()))
 export const toggleFullContext = () => setOverride(isFullContext(getContextLines()) ? null : FULL_CONTEXT)

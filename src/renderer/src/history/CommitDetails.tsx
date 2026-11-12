@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useVirtualRows } from '../lib/useVirtualRows'
 import { Button, ProgressBar } from 'react-aria-components'
 import { api, errorMessage } from '../api'
-import { useContextLines } from '../diff/useDiffContext'
+import { useFetchContext } from '../diff/useDiffContext'
 import { fullDate, splitPath, STATUS_LABEL } from '../lib/format'
 import { Avatar } from '../components/Avatar'
 import type { ChangedFile, Commit } from '../../../shared/types'
@@ -87,7 +87,7 @@ export function CommitDetails({
   /** Blame's Enter: put the diff cursor on this line of `file` (the commit's version), once per `n`. */
   jump?: { file: string; line: number; n: number }
 }) {
-  const contextLines = useContextLines()
+  const contextLines = useFetchContext()
   const loadPreview = useMemo(() => createCommitPreviewLoader(api), [])
   const [view, setView] = useState<{ key: string; preview: CommitPreview } | null>(null)
   const [selectedFile, setSelectedFile] = useState<{ key: string; path: string } | null>(null)

@@ -216,6 +216,20 @@
   padding: 0 var(--space-2);
   font-size: var(--text-sm);
 }
+.gap-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font);
+}
+.gap-controls .btn {
+  height: var(--control-sm);
+  padding: 0 var(--space-1-5);
+}
+.gap-count {
+  padding: 0 var(--space-1);
+  font-size: var(--text-sm);
+}
 .dl {
   display: flex;
   white-space: pre;

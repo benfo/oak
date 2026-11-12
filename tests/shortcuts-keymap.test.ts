@@ -78,6 +78,12 @@ test('T switches the history file list only in lists, never with modifiers', () 
   assert.equal(widgetAction(key('t'), 'diff'), undefined)
 })
 
+test('E expands context in the diff only, never with modifiers', () => {
+  assert.equal(widgetAction(key('e'), 'diff'), 'expandContext')
+  assert.equal(widgetAction(key('e'), 'list'), undefined)
+  assert.equal(widgetAction(key('e', { ctrlKey: true, code: 'KeyE' }), 'diff'), undefined)
+})
+
 test('V switches changed files between list and tree in lists and the diff, never with modifiers', () => {
   assert.equal(widgetAction(key('v'), 'list'), 'switchView')
   assert.equal(widgetAction(key('v'), 'diff'), 'switchView')

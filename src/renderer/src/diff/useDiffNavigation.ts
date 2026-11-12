@@ -32,6 +32,7 @@ interface Options {
   onBack?: () => void
   showCopyMenu: (keyboard: boolean) => Promise<void>
   jumpHunk: (delta: number) => void
+  expandAroundCursor: () => void
 }
 
 /** Diff widget keys, kept separate from rendering and data loading. */
@@ -52,7 +53,8 @@ export function useDiffNavigation({
   onSwitchView,
   onBack,
   showCopyMenu,
-  jumpHunk
+  jumpHunk,
+  expandAroundCursor
 }: Options) {
   const { selected } = selection
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -130,6 +132,9 @@ export function useDiffNavigation({
     } else if (widget === 'prevHunk') {
       e.preventDefault()
       jumpHunk(-1)
+    } else if (widget === 'expandContext') {
+      e.preventDefault()
+      expandAroundCursor()
     } else if (widget === 'toggleSelect' && acts) {
       e.preventDefault()
       selection.toggle(cursor)

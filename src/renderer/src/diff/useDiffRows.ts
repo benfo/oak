@@ -9,7 +9,7 @@ const LINE_LIMIT = 4000
  * Everything the pane renders, derived from the parsed diff: the lines (cut short unless `showAll`), their
  * hunks, the side-by-side pairs, and the flat list of headers and lines or pairs that is windowed when long.
  */
-export function useDiffRows(diff: FileDiff | null, showAll: boolean, split: boolean) {
+export function useDiffRows(diff: FileDiff | null, showAll: boolean, split: boolean, footer: boolean) {
   const { rows, truncated } = useMemo(() => {
     const rows: Row[] = []
     let budget = showAll ? Infinity : LINE_LIMIT
@@ -75,8 +75,10 @@ export function useDiffRows(diff: FileDiff | null, showAll: boolean, split: bool
         }
       }
     })
+    if (footer && diff && !truncated && diff.hunks.length)
+      items.push({ key: 'footer', hunk: diff.hunks.length - 1, footer: true, change: false })
     return { items, rowItem, posItem }
-  }, [diff, rows, hunkRows, sideHunks, split])
+  }, [diff, rows, hunkRows, sideHunks, split, footer, truncated])
 
   /** The row an item stands for (a header stands for its hunk's first row). */
   const itemRow = (item: Item | undefined) =>
