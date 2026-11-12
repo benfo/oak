@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import type { GapEdge } from './GapControls'
+import { captureDiffViewport } from './diffViewport'
 import type { FileDiff } from './diff'
 import { resolveDiffLayout } from './diffLayout'
 import { usePane } from '../lib/usePane'
@@ -172,10 +174,28 @@ export function DiffView({
     if (diff.hunks.length === 1) ref.current?.focus({ preventScroll: true })
   }
 
+  // Revealed lines push the cursor line down; keep it where it was on screen. The first expand loads the whole file
+  // before anything is revealed, so the position is restored when the gaps actually change.
+  const gapsKey = JSON.stringify(gaps)
+  const pendingView = useRef<{ restore: () => boolean; gapsKey: string; timer: number } | null>(null)
+  const keepExpand = (key: number, edge: GapEdge) => {
+    if (pendingView.current) window.clearTimeout(pendingView.current.timer)
+    const timer = window.setTimeout(() => (pendingView.current = null), 3000)
+    pendingView.current = { restore: captureDiffViewport(true), gapsKey, timer }
+    expand(key, edge)
+  }
+  useLayoutEffect(() => {
+    const pending = pendingView.current
+    if (!pending || pending.gapsKey === gapsKey || !pending.restore()) return
+    window.clearTimeout(pending.timer)
+    pendingView.current = null
+    requestAnimationFrame(pending.restore)
+  }, [gapsKey, diff])
+
   const expandAroundCursor = () => {
     for (const gap of gaps) {
-      if (gap.before === cursorHunk) expand(gap.key, 'up')
-      else if (gap.before === cursorHunk + 1) expand(gap.key, 'down')
+      if (gap.before === cursorHunk) keepExpand(gap.key, 'up')
+      else if (gap.before === cursorHunk + 1) keepExpand(gap.key, 'down')
     }
   }
 
@@ -313,7 +333,7 @@ export function DiffView({
         cursorHunk,
         selected,
         gaps,
-        expand,
+        expand: keepExpand,
         codeOf,
         measure: scroll.measure,
         windowed: scroll.windowed,
