@@ -32,6 +32,7 @@ export type WidgetAction =
   | 'switchView'
   | 'nextHunk'
   | 'prevHunk'
+  | 'expandContext'
   | 'nextBlock'
   | 'prevBlock'
   | 'commitMessage'
@@ -156,6 +157,12 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
     roles: ['diff'],
     keys: ['p', 'Shift+p', 'Alt+ArrowUp'],
     help: { title: 'Diff: previous change (hunk)', keys: 'P or Alt+↑', category: 'Diff' }
+  },
+  {
+    action: 'expandContext',
+    roles: ['diff'],
+    keys: ['e'],
+    help: { title: 'Diff: show 20 more lines around the current change', keys: 'E', category: 'Diff' }
   },
   {
     action: 'nextBlock',

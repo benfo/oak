@@ -40,7 +40,7 @@ export function useDiffScroll({ ref, diff, split, cursor, cursorSide, rows, item
   } = useVirtualRows({
     count: virtualize ? items.length : 0,
     getScrollElement: () => (split ? ref.current?.querySelector<HTMLElement>('.side-column[data-side="old"]') : ref.current) ?? null,
-    estimateSize: (i) => (items[i]?.header ? HEADER_ESTIMATE : LINE_ESTIMATE),
+    estimateSize: (i) => (items[i]?.header || items[i]?.footer ? HEADER_ESTIMATE : LINE_ESTIMATE),
     overscan: 30,
     getItemKey: (i) => items[i]?.key ?? i
   })

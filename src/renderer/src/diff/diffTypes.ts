@@ -15,11 +15,13 @@ export interface Row {
   change: boolean
 }
 
-/** One entry of the flat list the pane renders: a hunk header, or a line (inline) or line pair (side by side). */
+/** One entry of the flat list the pane renders: a hunk header, a line (inline) or line pair (side by side), or the end of the diff. */
 export interface Item {
   key: string
   hunk: number
   header?: boolean
+  /** The row after the last hunk, which offers the lines that follow it. */
+  footer?: boolean
   row?: number
   pos?: number
   change: boolean

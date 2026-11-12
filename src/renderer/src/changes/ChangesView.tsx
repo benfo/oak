@@ -18,7 +18,7 @@ import type { RepoCtx } from '../useRepo'
 import { confirm } from '../ui'
 import { notify } from '../notices'
 import { openPreferences } from '../components/Preferences'
-import { useContextLines } from '../diff/useDiffContext'
+import { useFetchContext } from '../diff/useDiffContext'
 import type { DiffKind, FileChange, MenuItem } from '../../../shared/types'
 import { CommitBox } from './CommitBox'
 import oakIcon from '../../../../build/icon.svg'
@@ -180,7 +180,7 @@ export function ChangesView({
   }, [lists])
 
   // Reloads keep the current diff on screen; it's only cleared when switching to another file.
-  const contextLines = useContextLines()
+  const contextLines = useFetchContext()
   const shownKey = useRef<string | null>(null)
   useEffect(() => {
     if (!lead) {

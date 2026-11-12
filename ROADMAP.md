@@ -34,8 +34,7 @@ Priority is parity with the most-used and most-asked-for features of other Git c
 7. Bisect as a short guided flow (not built).
 8. Compare the working tree against any commit.
 9. Commit options follow-ups.
-10. Partial code expansion in diffs.
-11. Conflict follow-ups, one small step at a time: stash-pop conflict banner, ours/theirs labels (swapped in a rebase), modify/delete conflicts, pulling conflicts from Pull and Rebase into the same flow.
+10. Conflict follow-ups, one small step at a time: stash-pop conflict banner, ours/theirs labels (swapped in a rebase), modify/delete conflicts, pulling conflicts from Pull and Rebase into the same flow.
 
 Later or by request: everything else in Backlog (a built-in merge editor contradicts the "rely on the merge tool" decision, so only on clear demand).
 
@@ -114,7 +113,7 @@ Ideas only. None is agreed, and each needs a concrete workflow and a discussion 
 
 **Diff and files**
 
-- Partial code expansion: show hidden unchanged regions as gap rows with expand up, expand down and expand all (about 20 lines a click, like GitHub), reading the file at that revision. Expanded lines become ordinary context rows so find and line selection keep working; the context steps set the initial gap.
+- Partial code expansion (built, awaiting hand testing): hunk headers and a footer carry expand up, expand down and expand all buttons (20 lines a click), and E expands around the cursor. The first expand refetches diffs at whole-file context for the session and cuts them client-side; expanded lines are ordinary context rows so find, selection and staging keep working. Not yet checked: very large files.
 - Mouse alternatives for the layout toggle, only if testing shows a need.
 - Whole-file syntax tokenizing (a hunk that starts mid-construct can be mis-coloured).
 - More previewers for non-source files (PNG and other images, PDF, safe formats) instead of "binary file differs": add one file under `preview/` and a line in `previewers.ts`; never run scripts. Follow-ups for the SVG one: zoom and pan (`react-zoom-pan-pinch`), swipe and onion-skin comparison, a fit and actual size toggle, a minimum display size for tiny icons, and a per-user default mode (Preview or Diff) that survives restarts (today the choice lasts until Oak restarts).
