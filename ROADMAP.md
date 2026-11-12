@@ -113,7 +113,7 @@ Ideas only. None is agreed, and each needs a concrete workflow and a discussion 
 
 **Diff and files**
 
-- Partial code expansion (built, awaiting hand testing): hunk headers and a footer carry expand up, expand down and expand all buttons (20 lines a click), and E expands around the cursor. The first expand refetches diffs at whole-file context for the session and cuts them client-side; expanded lines are ordinary context rows so find, selection and staging keep working. Not yet checked: very large files.
+- Partial code expansion (shipped in 0.1.27): hunk headers and a footer carry expand up, expand down and expand all buttons (20 lines a click), and E expands around the cursor. The first expand refetches diffs at whole-file context for the session and cuts them client-side; expanded lines are ordinary context rows so find, selection and staging keep working. Not yet checked: very large files.
 - Mouse alternatives for the layout toggle, only if testing shows a need.
 - Whole-file syntax tokenizing (a hunk that starts mid-construct can be mis-coloured).
 - More previewers for non-source files (PNG and other images, PDF, safe formats) instead of "binary file differs": add one file under `preview/` and a line in `previewers.ts`; never run scripts. Follow-ups for the SVG one: zoom and pan (`react-zoom-pan-pinch`), swipe and onion-skin comparison, a fit and actual size toggle, a minimum display size for tiny icons, and a per-user default mode (Preview or Diff) that survives restarts (today the choice lasts until Oak restarts).
