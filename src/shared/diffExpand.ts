@@ -49,7 +49,7 @@ const expandable = (diff: FileDiff) =>
   !diff.binary && !diff.isNew && !diff.isDeleted && diff.hunks.length > 0 && diff.hunks.every((h) => RANGE.test(h.header))
 
 /** The gaps of a diff cut by git itself, from the hunk headers; what follows the last hunk is unknown. */
-function headerGaps(diff: FileDiff): Gap[] {
+function headerGaps(diff: FileDiff, context: number): Gap[] {
   if (!expandable(diff)) return []
   const gaps: Gap[] = []
   let end = 1
@@ -58,7 +58,11 @@ function headerGaps(diff: FileDiff): Gap[] {
     if (first > end) gaps.push({ key: end, before: i, hidden: first - end })
     end = first + count
   })
-  gaps.push({ key: end, before: diff.hunks.length, hidden: null })
+  // Git keeps `context` unchanged lines after the last change, so fewer means the file ended there.
+  const lines = diff.hunks[diff.hunks.length - 1].lines.filter((l) => l.type !== 'note')
+  let trailing = 0
+  while (trailing < lines.length && lines[lines.length - 1 - trailing].type === 'ctx') trailing++
+  if (context < 1 || trailing >= context) gaps.push({ key: end, before: diff.hunks.length, hidden: null })
   return gaps
 }
 
@@ -68,7 +72,7 @@ function headerGaps(diff: FileDiff): Gap[] {
  * returned as it is, with the gaps its headers imply.
  */
 export function expandDiff(diff: FileDiff, context: number, expansion: Expansion, wholeLoaded: boolean): ExpandedDiff {
-  if (!wholeLoaded || !expandable(diff) || !isWholeFile(diff)) return { diff, gaps: headerGaps(diff) }
+  if (!wholeLoaded || !expandable(diff) || !isWholeFile(diff)) return { diff, gaps: headerGaps(diff, context) }
   const hunk = diff.hunks[0]
   const lines = hunk.lines
   const pad = Math.max(1, context)

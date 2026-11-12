@@ -87,10 +87,14 @@ test('a diff git cut itself keeps its hunks and reports the gaps from their head
     gaps.map((g) => [g.key, g.before, g.hidden]),
     [
       [1, 0, 7],
-      [11, 1, 29],
-      [42, 2, null]
+      [11, 1, 29]
     ]
   )
+})
+
+test('no gap is offered after a hunk that ends short of the context, since the file ended there', () => {
+  const end = parseDiff('diff --git a/f b/f\n--- a/f\n+++ b/f\n@@ -1,3 +1,3 @@\n-a\n+b\n c\n d\n')
+  assert.deepEqual(expandDiff(end, 3, none, false).gaps, [])
 })
 
 test('a change at the top of a file that is not fully loaded still offers what follows it', () => {
