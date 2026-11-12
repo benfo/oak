@@ -8,7 +8,7 @@ How to keep this file: it has one place for each kind of fact. When work moves, 
 
 - **Released:** 0.1.25 (2026-11-06), after 0.1.24 (2026-11-03) and 0.1.23 (2026-11-02). The website downloads follow the latest published release (`website/src/data/release.json`, updated once the packages are public).
 - **Unreleased on `main`:** Back and Forward (Alt+Left and Alt+Right, [#40](https://github.com/benfo/oak/pull/40)). Add a CHANGELOG entry and release when the maintainer chooses (`docs/releasing.md`).
-- **In progress (`feature/graph-follow-line`):** in History, Alt+Down and Alt+Up step along the selected commit's line (first parent down; up prefers the checked-out line, then the same lane, then a merge that took the commit in), skipping other branches' rows; commit details link the child beside the parents. Next, agreed to try: highlight the followed line, if it helps more than it distracts.
+- **In progress (`feature/graph-follow-line`):** in History, Alt+Down and Alt+Up step along the selected commit's line (first parent down; up prefers the checked-out line, then the same lane, then a merge that took the commit in), skipping other branches' rows; commit details link the child beside the parents. Highlighting the followed line was considered and declined (2026-11-12): the existing current-branch emphasis is enough.
 - **Not run:** the full Electron UI suite for #35, #36 and #40 (focused tests pass).
 
 ## Next
