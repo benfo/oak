@@ -18,6 +18,14 @@ test('builds new pull request pages for known hosts', () => {
     'https://gitlab.com/group/sub/app/-/merge_requests/new?merge_request[source_branch]=fix'
   )
   assert.equal(pullRequestUrl('git@bitbucket.org:team/app.git', 'a/b'), 'https://bitbucket.org/team/app/pull-requests/new?source=a%2Fb')
+  // Bitbucket's newer remote host still opens pages on bitbucket.org, in every URL form.
+  for (const remote of [
+    'https://ssh.bitbucket.org/team/app.git',
+    'ssh://git@ssh.bitbucket.org/team/app.git',
+    'git@ssh.bitbucket.org:team/app.git'
+  ]) {
+    assert.equal(pullRequestUrl(remote, 'a/b'), 'https://bitbucket.org/team/app/pull-requests/new?source=a%2Fb', remote)
+  }
   assert.equal(
     pullRequestUrl('https://org@dev.azure.com/org/proj/_git/repo', 'x'),
     'https://dev.azure.com/org/proj/_git/repo/pullrequestcreate?sourceRef=x'

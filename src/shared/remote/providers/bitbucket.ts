@@ -6,7 +6,7 @@ const base = (path: string) => `https://bitbucket.org/${path}`
 export const bitbucket: RemoteProvider = {
   id: 'bitbucket',
   label: 'Bitbucket',
-  hosts: (host) => host === 'bitbucket.org',
+  hosts: (host) => host === 'bitbucket.org' || host === 'ssh.bitbucket.org',
   repoUrl: ({ path }) => base(path),
   pageUrl: ({ path }, target) => {
     if (target.kind === 'branch') return `${base(path)}/branch/${encodeSegments(target.name)}`

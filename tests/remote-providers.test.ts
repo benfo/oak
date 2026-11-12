@@ -15,6 +15,7 @@ test('each host picks its provider, and anything else the generic one', () => {
   assert.equal(providerFor(repoOn('github.com')).id, 'github')
   assert.equal(providerFor(repoOn('gitlab.com')).id, 'gitlab')
   assert.equal(providerFor(repoOn('bitbucket.org')).id, 'bitbucket')
+  assert.equal(providerFor(repoOn('ssh.bitbucket.org')).id, 'bitbucket')
   assert.equal(providerFor(repoOn('dev.azure.com')).id, 'azure')
   assert.equal(providerFor(repoOn('ssh.dev.azure.com')).id, 'azure')
   assert.equal(providerFor(repoOn('git.example.com')).id, 'generic')
