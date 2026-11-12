@@ -4,23 +4,20 @@ Where Oak is, what is next, and the decisions worth keeping. [PRODUCT.md](PRODUC
 
 How to keep this file: it has one place for each kind of fact. When work moves, edit **Now** first. When something ships, fold it into **Shipped** and delete it from **Now**, **Open items** and **Backlog**. Ideas live only in **Backlog** (details) and, once agreed, in **Features** (order only, no detail).
 
-## Now (2026-11-09)
+## Now (2026-11-12)
 
-- **Released:** 0.1.25 (2026-11-06), after 0.1.24 (2026-11-03) and 0.1.23 (2026-11-02). The website downloads follow the latest published release (`website/src/data/release.json`, updated once the packages are public).
-- **Unreleased on `main`:** Back and Forward (Alt+Left and Alt+Right, [#40](https://github.com/benfo/oak/pull/40)). Add a CHANGELOG entry and release when the maintainer chooses (`docs/releasing.md`).
-- **In progress (`feature/graph-follow-line`):** in History, Alt+Down and Alt+Up step along the selected commit's line (first parent down; up prefers the checked-out line, then the same lane, then a merge that took the commit in), skipping other branches' rows; commit details link the child beside the parents. Highlighting the followed line was considered and declined (2026-11-12): the existing current-branch emphasis is enough.
-- **Not run:** the full Electron UI suite for #35, #36 and #40 (focused tests pass).
+- **Released:** 0.1.28 (2026-11-12), after 0.1.27 and 0.1.26. The website downloads follow the latest published release (`website/src/data/release.json`, updated once the packages are public).
+- **Not run:** the full Electron UI suite for #35, #36, #40 and line stepping (focused tests pass).
 
 ## Next
 
 Not features: the work that unblocks growth and keeps the project healthy.
 
-1. **Release** the next version with Back and Forward.
-2. **Code signing.** Windows marks downloads with Mark of the Web, so users must Unblock the installer (the website explains). Plan: apply to SignPath Foundation (free for open source; the wait is the slow part), fall back to Azure Artifact Signing (about $10 a month, `win.azureSignOptions`, no hardware token), sign only in the release workflow, never locally. SmartScreen may warn until reputation builds. Meanwhile publish SHA-256 checksums and build provenance; once signing works, drop the Unblock instructions from the README and website. Needs the maintainer to set up the account.
-3. **Microsoft Store listing.** The maintainer has a Partner Center developer account (confirm individual or company). The Store signs packages it certifies, so Store installs skip Mark of the Web and SmartScreen; it does not sign the GitHub or website installer, so it complements signing. Steps, each needing its own discussion: reserve the app name and note the package identity and publisher ID; add an `appx` (MSIX) target to `electron-builder` for a Store build only; switch the in-app updater off there; check the packaged app still runs the user's `git`, opens repositories anywhere and keeps its settings; run the Windows App Certification Kit; write the listing (Windows 11 primary), screenshots, a privacy policy page and the age rating; submit. Decide whether the release workflow produces the Store build.
-4. **Distribution.** `winget` package, README refresh, release checksums, "good first issue" labels; launch after signing and a clean install. The plan is in [docs/marketing-plan.md](docs/marketing-plan.md).
-5. **CI.** Add a `test:ui` job to `checks.yml` once the suite is stable (needs a display on Linux, for example xvfb). First restore the 5,000-commit scroll test removed with a TODO in `tests-ui/smoke.test.ts` and stabilise it.
-6. **Linux.** Confirm in more real-world testing.
+1. **Code signing.** Windows marks downloads with Mark of the Web, so users must Unblock the installer (the website explains). Plan: apply to SignPath Foundation (free for open source; the wait is the slow part), fall back to Azure Artifact Signing (about $10 a month, `win.azureSignOptions`, no hardware token), sign only in the release workflow, never locally. SmartScreen may warn until reputation builds. Meanwhile publish SHA-256 checksums and build provenance; once signing works, drop the Unblock instructions from the README and website. Needs the maintainer to set up the account.
+2. **Microsoft Store listing.** The maintainer has a Partner Center developer account (confirm individual or company). The Store signs packages it certifies, so Store installs skip Mark of the Web and SmartScreen; it does not sign the GitHub or website installer, so it complements signing. Steps, each needing its own discussion: reserve the app name and note the package identity and publisher ID; add an `appx` (MSIX) target to `electron-builder` for a Store build only; switch the in-app updater off there; check the packaged app still runs the user's `git`, opens repositories anywhere and keeps its settings; run the Windows App Certification Kit; write the listing (Windows 11 primary), screenshots, a privacy policy page and the age rating; submit. Decide whether the release workflow produces the Store build.
+3. **Distribution.** `winget` package, README refresh, release checksums, "good first issue" labels; launch after signing and a clean install. The plan is in [docs/marketing-plan.md](docs/marketing-plan.md).
+4. **CI.** Add a `test:ui` job to `checks.yml` once the suite is stable (needs a display on Linux, for example xvfb). First restore the 5,000-commit scroll test removed with a TODO in `tests-ui/smoke.test.ts` and stabilise it.
+5. **Linux.** Confirm in more real-world testing.
 
 ## Features (proposed order, not agreed)
 
@@ -66,6 +63,9 @@ One line per release; details are in `CHANGELOG.md`. Versions are approximate be
 - **0.1.23:** squash and fixup from History (range select, Undo), progressive opening of big repositories with fewer repeat refreshes, ref badge and commit menu caps for repositories with thousands of refs, menu type-ahead.
 - **0.1.24:** status bar with results, hints and progress; toasts restyled bottom-right.
 - **0.1.25:** keyboard checkout (Enter on a sidebar branch), copy relative or full path and `path:line` from file lists and diffs, folder column punctuation fix.
+- **0.1.26:** Back and Forward through visited places (Alt+Left and Alt+Right).
+- **0.1.27:** expand hidden diff context (hunk header buttons, E around the cursor).
+- **0.1.28:** step along a commit's line in History (Alt+Down and Alt+Up, child link in commit details; highlighting the followed line declined), SynthWave '84 theme with the `glow` theme property, Bitbucket `ssh.bitbucket.org` remotes.
 
 ## Decisions worth keeping
 
