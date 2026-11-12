@@ -158,11 +158,12 @@ export const lines: Line[] = [
       {
         id: 'keyboard',
         name: 'Navigate by keyboard',
-        text: ['Move between history, files and diffs using the keyboard. Tab steps through the controls inside a pane, such as the buttons in a file list. F6 switches panes.'],
+        text: ['Move between history, files and diffs using the keyboard. Tab steps through the controls inside a pane, such as the buttons in a file list. F6 switches panes, and Shift Alt with an arrow key moves the nearest divider.'],
         keys: [
           { label: 'Find in a list, diff or file', keys: ['Ctrl', 'F'] },
           { label: 'All shortcuts', keys: ['Ctrl', '/'] },
           { label: 'Switch panes', keys: ['F6'] },
+          { label: 'Move the nearest divider', keys: ['Shift', 'Alt', '←→↑↓'] },
         ],
         points: ['Arrow keys move in lists, diffs and menus', 'Slash or Ctrl F searches the focused list, a diff or a file preview; type :120 to go to a line', 'Optional h, j, k and l keys work alongside the arrows'],
       },
@@ -190,13 +191,6 @@ export const lines: Line[] = [
           { label: 'Previous or next file', keys: ['Alt', 'PageUp / PageDown'] },
         ],
         shots: [{ image: 'oak-focus', title: 'Oak in focus mode with the file lists beside a side by side diff', caption: 'After pressing F11, the diff fills the window and the file lists stay beside it.' }],
-      },
-      {
-        id: 'resize',
-        name: 'Resize with the keyboard',
-        text: ['Move the divider of the pane you are in. Dragging a divider still works.'],
-        keys: [{ label: 'Move the nearest divider', keys: ['Shift', 'Alt', '←→↑↓'] }],
-        points: ['Focus a pane', 'Press Shift Alt and an arrow key', 'The nearest divider moves'],
       },
     ],
   },
