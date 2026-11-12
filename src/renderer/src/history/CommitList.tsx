@@ -48,6 +48,8 @@ interface Props {
   /** Bumped whenever the selected row should be scrolled into view. */
   revealKey: number
   onSelect: (hash: string) => void
+  /** Alt+Down or Alt+Up from this row: select the next or previous commit on its line. */
+  onFollowLine?: (from: string, direction: 'parent' | 'child') => void
   onContextMenu?: (c: Commit, e: React.SyntheticEvent) => void
   /** Returns the open menu when it opened a ref menu; otherwise the click falls through to the commit menu. */
   onRefContextMenu?: (c: Commit, ref: Ref, e: React.MouseEvent) => Promise<unknown> | undefined
@@ -80,6 +82,7 @@ export function CommitList({
   onDismissMode,
   revealKey,
   onSelect,
+  onFollowLine,
   onContextMenu,
   onRefContextMenu,
   refMenuHint,
@@ -157,6 +160,11 @@ export function CommitList({
         if (widget === 'extendSelect') onExtend(keys[i])
         return
       }
+    }
+    if (widget === 'lineParent' || widget === 'lineChild') {
+      e.preventDefault()
+      if (cursor) onFollowLine?.(cursor, widget === 'lineParent' ? 'parent' : 'child')
+      return
     }
     const commitAtCursor = cursorIndex >= offset ? commits[cursorIndex - offset] : undefined
     if (widget === 'refMenu') {

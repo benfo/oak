@@ -34,6 +34,13 @@ test('diff widget keys use exact modifiers, so app commands keep their combos', 
   assert.equal(widgetAction(key('n', { ctrlKey: true, code: 'KeyN' }), 'diff'), undefined)
 })
 
+test('Alt+arrows follow the commit line in the graph, as they skip hunks in the diff', () => {
+  assert.equal(widgetAction(key('ArrowDown', { altKey: true }), 'graph'), 'lineParent')
+  assert.equal(widgetAction(key('ArrowUp', { altKey: true }), 'graph'), 'lineChild')
+  assert.equal(widgetAction(key('ArrowDown', { altKey: true, shiftKey: true }), 'graph'), undefined, 'Shift+Alt moves dividers')
+  assert.equal(widgetAction(key('ArrowDown', { altKey: true }), 'list'), undefined)
+})
+
 test('typed letters follow the layout; chords use the physical key', () => {
   assert.equal(widgetAction(key('n', { code: 'KeyL' }), 'diff'), 'nextHunk')
   assert.equal(widgetAction(key('Ctrl', { ctrlKey: true, code: 'KeyA' }), 'diff'), 'selectAll')

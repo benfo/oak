@@ -52,6 +52,7 @@ export function CommitDetails({
   comparisonSource,
   onPickTarget,
   commits,
+  lineChild,
   onSwap,
   onClearComparison,
   onSelectCommit,
@@ -70,6 +71,8 @@ export function CommitDetails({
   compareBase?: string
   branchComparison?: BranchComparison
   commits: Commit[]
+  /** The loaded child continuing this commit's line (what Alt+Up selects), shown beside the parents. */
+  lineChild?: string
   comparisonSource: string
   onPickTarget: (anchor: Element) => void
   onSwap: () => void
@@ -572,11 +575,25 @@ export function CommitDetails({
                       </button>
                     </Tip>
                     {details.parents.length > 0 && <span className="muted small">{details.parents.length > 1 ? 'parents' : 'parent'}</span>}
-                    {details.parents.map((p) => (
-                      <button key={p} className="link mono" disabled={!detailsCurrent} onClick={() => onSelectCommit(p)}>
-                        {p.slice(0, 8)}
-                      </button>
+                    {details.parents.map((p, i) => (
+                      <Tip
+                        key={p}
+                        label={i === 0 ? 'Go to the parent on this line' : 'Go to the merged parent'}
+                        keys={i === 0 ? 'Alt+↓' : undefined}
+                      >
+                        <button className="link mono" disabled={!detailsCurrent} onClick={() => onSelectCommit(p)}>
+                          {p.slice(0, 8)}
+                        </button>
+                      </Tip>
                     ))}
+                    {lineChild && <span className="muted small">child</span>}
+                    {lineChild && (
+                      <Tip label="Go to the child on this line" keys="Alt+↑">
+                        <button className="link mono" disabled={!detailsCurrent} onClick={() => onSelectCommit(lineChild)}>
+                          {lineChild.slice(0, 8)}
+                        </button>
+                      </Tip>
+                    )}
                   </div>
                 </div>
               </>

@@ -32,6 +32,8 @@ import { DETAILS_MIN } from '../lib/layoutMinimums'
 import { useCommitRange } from './useCommitRange'
 import { RangeSummary } from './RangeSummary'
 import { showRangeMenu } from './rewriteMenu'
+import { followLine } from './followLineAction'
+import { lineChild } from './followLine'
 
 export interface ComparisonRequest {
   source: Branch
@@ -424,6 +426,11 @@ export function HistoryView({
     [r.commits, query]
   )
   const current = r.commits.findIndex((c) => c.hash === activeHash)
+  const child = useMemo(() => {
+    if (current < 0 || r.commitsFile) return undefined
+    const step = lineChild(r.commits, graph.rows, current)
+    return 'hash' in step ? step.hash : undefined
+  }, [r.commits, r.commitsFile, graph, current])
   const searchMatches = useSearchMatches(search, matches, current)
   const find = (backwards: boolean) => {
     if (!query) return
@@ -558,6 +565,9 @@ export function HistoryView({
             onDismissMode={dismissMode}
             revealKey={revealKey}
             onSelect={(h) => select(h, false)}
+            onFollowLine={(from, direction) =>
+              followLine({ r, rows: graph.rows, working: showWorking && !pinned, comparing: !!pinned, select }, from, direction)
+            }
             onNearEnd={r.hasMore ? r.loadMore : undefined}
             onOpen={() => {
               focusPane('.details-files')
@@ -659,6 +669,7 @@ export function HistoryView({
           comparisonSource={`${pinned?.followHead ? `${pinned.source?.name ?? r.status?.branch ?? 'HEAD'} ` : ''}${activeHash?.slice(0, 8) ?? ''}`}
           onPickTarget={(anchor) => showComparisonBranchPicker(r, anchor, sourceBranch ?? null, (t) => pin(t, sourceBranch ?? null))}
           commits={r.commits}
+          lineChild={child}
           onSwap={() => {
             setSelected(compareBase)
             setCompareBase(selected)

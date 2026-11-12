@@ -43,6 +43,8 @@ export type WidgetAction =
   | 'filePrev'
   | 'fileFirst'
   | 'fileLast'
+  | 'lineParent'
+  | 'lineChild'
 
 export interface WidgetKey {
   action: WidgetAction
@@ -142,6 +144,22 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
       keys: 'Ctrl+↑ / Ctrl+↓ / Ctrl+Home / Ctrl+End / Ctrl+PageUp / Ctrl+PageDown',
       category: 'History'
     }
+  },
+  {
+    action: 'lineParent',
+    roles: ['graph'],
+    keys: ['Alt+ArrowDown'],
+    help: {
+      title: 'History commit list: next commit on this line (first parent), skipping other branches',
+      keys: 'Alt+↓',
+      category: 'History'
+    }
+  },
+  {
+    action: 'lineChild',
+    roles: ['graph'],
+    keys: ['Alt+ArrowUp'],
+    help: { title: 'History commit list: previous commit on this line (its child)', keys: 'Alt+↑', category: 'History' }
   },
 
   { action: 'toggleSelect', roles: ['diff'], keys: ['Space', 'Shift+Space', 'Mod+Space'] },
