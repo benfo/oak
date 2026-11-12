@@ -2,6 +2,17 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.28
+
+### Added
+
+- Step along a commit's line. In History, Alt+Down moves to the next commit on the selected commit's line (its first parent) and Alt+Up to the commit that continues it, skipping other branches' rows. Commit details link that child beside the parents.
+- SynthWave '84 theme, with a soft glow on syntax-coloured code. Custom theme files can turn the same glow on with `"glow": true`.
+
+### Fixed
+
+- Bitbucket remotes using ssh.bitbucket.org are recognised, so Open in browser, Copy link and Open pull request work for them.
+
 ## 0.1.27
 
 ### Added

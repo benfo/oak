@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.1.28",
+    "highlights": [
+      { "title": "Step along a commit's line", "text": "In History, Alt+Down moves to the next commit on the selected commit's line (its first parent) and Alt+Up to the commit that continues it, skipping other branches' rows. Commit details link that child beside the parents." },
+      { "title": "SynthWave '84 theme", "text": "A new built-in theme with a soft glow on syntax-coloured code. Custom theme files can turn the same glow on with \"glow\": true." }
+    ],
+    "fixes": [
+      "Bitbucket remotes using ssh.bitbucket.org are recognised, so Open in browser, Copy link and Open pull request work for them."
+    ]
+  },
+  {
     "version": "0.1.27",
     "highlights": [
       { "title": "Expand hidden context in diffs", "text": "Hunk headers have Expand down, Expand up and Expand all buttons (20 lines a click), and E expands around the cursor. Expanded lines work with staging, find and ignore whitespace." }
