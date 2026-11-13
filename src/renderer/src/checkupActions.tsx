@@ -46,8 +46,8 @@ export async function repositoryCheckup(r: RepoCtx) {
     const before = storageBytes(found.storage)
     const held = tickedWorktrees(ticked)
     const worktrees = found.cleanup.candidates.flatMap((c) => (c.worktree && held.includes(c.name) ? [c.worktree] : []))
-    const done = () => checkupDone(branches, progress.freed, worktrees.length)
     const progress = { current: '', freed: null as number | null, stopped: false }
+    const done = () => checkupDone(branches, progress.freed, worktrees.length)
     const step = async (id: string, work: () => Promise<string>) => {
       if (!tasks.some((task) => task.id === id)) return
       progress.current = id

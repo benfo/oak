@@ -1,7 +1,25 @@
 import { mkdirSync, renameSync } from 'node:fs'
 import { basename, join } from 'node:path'
+import type { Page } from '@playwright/test'
 import { test, expect } from './fixtures'
 import { commitAll, git, removeDir, tempDir, write } from './repos'
+
+const PICKER = '.palette.dropdown'
+
+/** Opens a toolbar picker and types into its search field. */
+async function search(page: Page, trigger: string, text: string) {
+  await page.locator(trigger).click()
+  const input = page.locator(PICKER).getByRole('textbox')
+  await expect(input).toBeFocused()
+  await input.fill(text)
+}
+
+/** Chooses the first match of a toolbar picker. The list filters a moment after typing, so it waits for the match. */
+async function pick(page: Page, trigger: string, text: string) {
+  await search(page, trigger, text)
+  await expect(page.locator(PICKER).getByRole('option').first()).toContainText(text)
+  await page.keyboard.press('Enter')
+}
 
 test('Enter checks out a sidebar branch and preserves working changes', async ({ open, small }) => {
   git(small, 'branch', 'feature/checkout')
@@ -59,28 +77,19 @@ test('opening a worktree whose folder is gone, or a recent folder that is no lon
   const worktree = tempDir('worktree')
   git(small, 'worktree', 'add', '-q', '-b', 'parked', join(worktree, 'parked'))
   const page = await open(small)
-  const pick = async (trigger: string, text: string) => {
-    await page.locator(trigger).click()
-    const input = page.locator('.palette.dropdown').getByRole('textbox')
-    await expect(input).toBeFocused()
-    await input.fill(text)
-    // The list filters a moment after typing; Enter before that would pick the old first row.
-    await expect(page.locator('.palette.dropdown').getByRole('option').first()).toContainText(text)
-    await page.keyboard.press('Enter')
-  }
   // Visit the worktree and come back, so it is among the recent repositories.
-  await pick('.tb-branch', 'parked')
+  await pick(page, '.tb-branch', 'parked')
   await expect(page).toHaveTitle('parked - Oak')
-  await pick('.tb-repo', basename(small))
+  await pick(page, '.tb-repo', basename(small))
   await expect(page).not.toHaveTitle('parked - Oak')
   // Deleted by hand, git still lists the worktree: opening it from its branch says the folder is gone.
   removeDir(join(worktree, 'parked'))
-  await pick('.tb-branch', 'parked')
+  await pick(page, '.tb-branch', 'parked')
   await expect(page.locator('.toast').filter({ hasText: 'Folder not found' })).toBeVisible()
 
   // A leftover folder that is no longer a repository is still among the recent ones: choosing it must not do nothing.
   mkdirSync(join(worktree, 'parked'))
-  await pick('.tb-repo', 'parked')
+  await pick(page, '.tb-repo', 'parked')
   const dialog = page.getByRole('dialog', { name: 'Not a Git repository' })
   await expect(dialog).toBeVisible()
   await dialog.getByRole('button', { name: 'Cancel' }).click()
@@ -106,20 +115,9 @@ test('a recent worktree that left a plain folder inside its repository is explai
   const nested = join(small, '.worktrees', 'parked')
   git(small, 'worktree', 'add', '-q', '-b', 'parked', nested)
   const page = await open(small)
-  const picker = page.locator('.palette.dropdown')
-  const search = async (trigger: string, text: string) => {
-    await page.locator(trigger).click()
-    await expect(picker.getByRole('textbox')).toBeFocused()
-    await picker.getByRole('textbox').fill(text)
-  }
-  const pick = async (trigger: string, text: string) => {
-    await search(trigger, text)
-    await expect(picker.getByRole('option').first()).toContainText(text)
-    await page.keyboard.press('Enter')
-  }
-  await pick('.tb-branch', 'parked')
+  await pick(page, '.tb-branch', 'parked')
   await expect(page).toHaveTitle('parked - Oak')
-  await pick('.tb-repo', basename(small))
+  await pick(page, '.tb-repo', basename(small))
   await expect(page).toHaveTitle(`${basename(small)} - Oak`)
 
   // Removed, but files stayed behind: git now sees the folder as part of the repository around it.
@@ -131,9 +129,9 @@ test('a recent worktree that left a plain folder inside its repository is explai
   }).toPass()
   git(small, 'worktree', 'remove', '--force', nested)
   mkdirSync(nested, { recursive: true })
-  await pick('.tb-repo', 'parked')
+  await pick(page, '.tb-repo', 'parked')
   await expect(page.locator('.toast')).toContainText('is no longer a repository of its own')
   await expect(page).toHaveTitle(`${basename(small)} - Oak`)
-  await search('.tb-repo', 'parked')
-  await expect(picker.getByText('No matches', { exact: true })).toBeVisible()
+  await search(page, '.tb-repo', 'parked')
+  await expect(page.locator(PICKER).getByText('No matches', { exact: true })).toBeVisible()
 })
