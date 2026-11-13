@@ -48,7 +48,9 @@
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
 }
+/* Room for two lines whatever the text, so tiles keep their height when findings replace the placeholders. */
 .summary-tile-detail {
+  min-height: 2lh;
   font-size: var(--text-sm);
   color: var(--muted-foreground);
 }
