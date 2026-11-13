@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.1.29",
+    "highlights": [
+      { "title": "Colour-blind friendly diff colours", "text": "Preferences > Diffs > Diff colours (or Switch diff colours in the command palette) swaps red and green for blue and orange, which stay distinct with red-green colour blindness. It works on top of any theme, also colours status letters and line counts, and underlines changed words." },
+      { "title": "Windows high contrast", "text": "With a Windows contrast theme, selections, focus, changed words, find matches, the current hunk, picked lines and split lines stay visible." }
+    ],
+    "fixes": [
+      "In History, Alt+Up after an Alt+Down walk goes back up the branch you came from, and otherwise prefers the checked-out branch.",
+      "Selecting Working changes in History is as quick as in Changes."
+    ]
+  },
+  {
     "version": "0.1.28",
     "highlights": [
       { "title": "Step along a commit's line", "text": "In History, Alt+Down moves to the next commit on the selected commit's line (its first parent) and Alt+Up to the commit that continues it, skipping other branches' rows. Commit details link that child beside the parents." },

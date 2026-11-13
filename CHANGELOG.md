@@ -2,6 +2,18 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.29
+
+### Added
+
+- Colour-blind friendly diff colours. Preferences > Diffs > Diff colours (or Switch diff colours in the command palette) swaps red and green for blue and orange, which stay distinct with red-green colour blindness. It works on top of any theme, also colours status letters and line counts, and underlines changed words.
+- Windows high contrast. With a Windows contrast theme, selections, focus, changed words, find matches, the current hunk, picked lines and split lines stay visible.
+
+### Fixed
+
+- In History, Alt+Up after an Alt+Down walk goes back up the branch you came from, and otherwise prefers the checked-out branch.
+- Selecting Working changes in History is as quick as in Changes.
+
 ## 0.1.28
 
 ### Added
