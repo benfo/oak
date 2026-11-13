@@ -3,15 +3,22 @@ import type { RepoCtx } from './useRepo'
 import { reportOpError } from './actions'
 import { notify } from './notices'
 import { chooseFromList } from './components/ChecklistDialog'
+import type { IconName } from './components/Icon'
+import { SummaryTiles } from './components/SummaryTiles'
 import {
+  checkupCaution,
   checkupDone,
-  checkupFacts,
   checkupRows,
+  checkupTiles,
+  checkupVerdict,
   COMPACT_ID,
   storageBytes,
   tickedBranches,
+  type CheckupTile,
   type RepoCheckup
 } from '../../shared/repoCheckup'
+
+const TILE_ICONS: Record<CheckupTile['id'], IconName> = { branches: 'branch', storage: 'storage', state: 'health' }
 
 /** Check the repository's health in one go, review what can be cleaned, then run the ticked steps. */
 export async function repositoryCheckup(r: RepoCtx) {
@@ -21,11 +28,14 @@ export async function repositoryCheckup(r: RepoCtx) {
   } catch (e) {
     return notify.error(errorMessage(e))
   }
+  const rows = checkupRows(checkup)
+  const tiles = checkupTiles(checkup, r.status?.state ?? 'clean').map((tile) => ({ ...tile, icon: TILE_ICONS[tile.id] }))
   const ticked = await chooseFromList({
     title: 'Repository check-up',
-    message: 'Tick what to clean up. Commits that are only on a deleted branch are lost with it.',
-    facts: checkupFacts(checkup, r.status?.state ?? 'clean'),
-    items: checkupRows(checkup),
+    message: checkupVerdict(rows),
+    summary: <SummaryTiles tiles={tiles} />,
+    caution: checkupCaution(checkup),
+    items: rows,
     ok: (count) => (count === 1 ? 'Clean up 1 item' : `Clean up ${count} items`),
     danger: (ids) => tickedBranches(ids).length > 0
   })

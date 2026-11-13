@@ -1,10 +1,10 @@
-import { useState, useSyncExternalStore } from 'react'
+import { useState, useSyncExternalStore, type ReactNode } from 'react'
 import { GridList, GridListHeader, GridListItem, GridListSection, type Selection } from 'react-aria-components'
 import { createStore } from '../lib/createStore'
 import { handleShortcutBindings } from '../lib/shortcuts'
 import { shortcutPlatform } from '../lib/useShortcuts'
 import { Modal } from '../ui'
-import { DialogDetailsView, type DialogDetails } from './DialogDetails'
+import { DialogDetailsView } from './DialogDetails'
 
 export interface ChecklistItem {
   id: string
@@ -22,7 +22,9 @@ export interface ChecklistOptions {
   title: string
   message: string
   /** Read-only findings shown above the list. */
-  facts?: DialogDetails['items']
+  summary?: ReactNode
+  /** What ticking a row can cost, shown under the list. */
+  caution?: string
   items: ChecklistItem[]
   /** The confirm button's text for the number of ticked rows. */
   ok: (count: number) => string
@@ -73,9 +75,9 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
   const submit = () => close(ticked)
 
   return (
-    <Modal title={req.title} onClose={() => close(null)} width={560}>
+    <Modal title={req.title} onClose={() => close(null)} width={640}>
       <p className="modal-msg">{req.message}</p>
-      <DialogDetailsView items={req.facts} />
+      {req.summary}
       <div
         className="pane-frame checklist-frame"
         onKeyDownCapture={(e) =>
@@ -113,6 +115,7 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
           )}
         </GridList>
       </div>
+      <DialogDetailsView warning={req.caution} />
       <div className="modal-actions">
         <span className="checklist-hint">Space ticks, Ctrl+A ticks all, Ctrl+Enter confirms</span>
         <button className="btn" onClick={() => close(null)}>

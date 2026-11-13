@@ -56,34 +56,64 @@ export function formatSize(bytes: number): string {
 const count = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`
 
 const STATE_TEXT: Record<Exclude<RepoState, 'clean'>, string> = {
-  merging: 'A merge is in progress',
-  rebasing: 'A rebase is in progress',
-  'cherry-picking': 'A cherry-pick is in progress',
-  reverting: 'A revert is in progress'
+  merging: 'Merge in progress',
+  rebasing: 'Rebase in progress',
+  'cherry-picking': 'Cherry-pick in progress',
+  reverting: 'Revert in progress'
 }
 
-/** The read-only findings at the top of the check-up: one line per area, also when there is nothing to do. */
-export function checkupFacts(checkup: RepoCheckup, state: RepoState): { lead: string; text: string }[] {
-  const { cleanup, storage } = checkup
-  const merged = cleanup.candidates.filter((c) => c.reason === 'merged').length
-  const gone = cleanup.candidates.length - merged
-  const branches = !cleanup.target
-    ? 'No default branch to measure against'
-    : [merged && `${merged} merged into ${cleanup.target}`, gone && `${gone} with a deleted upstream`].filter(Boolean).join(', ') ||
-      'Nothing to clean'
-  const notes = [
-    state !== 'clean' && `${STATE_TEXT[state]}: finish or abort it in Changes`,
-    checkup.staleLock && 'A leftover index.lock may be blocking Git'
-  ].filter((text): text is string => !!text)
+/** One area of the check-up's summary: its headline finding and whether it wants attention. */
+export interface CheckupTile {
+  id: 'branches' | 'storage' | 'state'
+  label: string
+  value: string
+  detail: string
+  attention: boolean
+}
+
+function branchTile({ target, candidates }: BranchCleanup): CheckupTile {
+  const merged = candidates.filter((c) => c.reason === 'merged').length
+  const gone = candidates.length - merged
+  const found = [merged && `${merged} merged`, gone && `${gone} upstream gone`].filter(Boolean).join(', ')
+  return {
+    id: 'branches',
+    label: 'Branches',
+    value: candidates.length ? `${candidates.length} to clean up` : 'Tidy',
+    detail: !target ? 'No default branch to measure against' : found || `Nothing merged into ${target} or gone`,
+    attention: candidates.length > 0
+  }
+}
+
+function stateTile(state: RepoState, staleLock: boolean): CheckupTile {
+  const tile = { id: 'state' as const, label: 'State' }
+  if (state !== 'clean') return { ...tile, value: STATE_TEXT[state], detail: 'Finish or abort it in Changes', attention: true }
+  if (staleLock) return { ...tile, value: 'Stale lock', detail: 'A leftover index.lock may be blocking Git', attention: true }
+  return { ...tile, value: 'Clean', detail: 'No operation left unfinished', attention: false }
+}
+
+/** The summary at the top of the check-up: one tile per area, also when there is nothing to do. */
+export function checkupTiles(checkup: RepoCheckup, state: RepoState): CheckupTile[] {
+  const { storage } = checkup
   return [
-    { lead: 'Branches', text: branches },
+    branchTile(checkup.cleanup),
     {
-      lead: 'Storage',
-      text: `${formatSize(storageBytes(storage))}, ${count(storage.looseCount, 'loose object')}, ${count(storage.packs, 'pack')}`
+      id: 'storage',
+      label: 'Storage',
+      value: formatSize(storageBytes(storage)),
+      detail: `${count(storage.looseCount, 'loose object')}, ${count(storage.packs, 'pack')}`,
+      attention: worthCompacting(storage)
     },
-    ...notes.map((text) => ({ lead: 'State', text }))
+    stateTile(state, checkup.staleLock)
   ]
 }
+
+/** The one line under the title: whether anything is worth doing. */
+export const checkupVerdict = (rows: CheckupRow[]) =>
+  rows.some((row) => row.checked) ? 'Tick what to clean up, then confirm.' : 'Everything looks tidy. You can still compact if you like.'
+
+/** Shown under the list when a listed branch has commits found nowhere else. */
+export const checkupCaution = (checkup: RepoCheckup) =>
+  checkup.cleanup.candidates.some((c) => c.reason === 'gone') ? 'Commits that are only on a deleted branch are lost with it.' : undefined
 
 /** What the check-up can do, branches first. Compacting is always offered and ticked only when it is worth it. */
 export function checkupRows(checkup: RepoCheckup): CheckupRow[] {

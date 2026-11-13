@@ -32,7 +32,7 @@ test('the check-up lists merged and gone branches and deletes only the ticked on
   await runCheckUp(page)
   const dialog = page.getByRole('dialog', { name: 'Repository check-up' })
   const rows = dialog.locator('.checklist-row')
-  await expect(dialog.locator('.modal-list-row').first()).toContainText('1 merged into main, 1 with a deleted upstream')
+  await expect(dialog.locator('.summary-tile').first()).toContainText('2 to clean up')
   await expect(rows).toHaveCount(3)
   await expect(rows.nth(0)).toContainText('merged into main')
   await expect(rows.nth(1)).toContainText('upstream gone, 1 commit not in main')
@@ -62,7 +62,7 @@ test('the check-up opens from the toolbar menu and compacts a tidy repository on
   await page.getByRole('button', { name: 'More actions' }).click()
   await page.getByRole('menuitem', { name: 'Repository check-up…' }).click()
   const dialog = page.getByRole('dialog', { name: 'Repository check-up' })
-  await expect(dialog.locator('.modal-list-row').first()).toContainText('Nothing to clean')
+  await expect(dialog.locator('.summary-tile.attention')).toHaveCount(0)
   const confirm = dialog.getByRole('button', { name: /^Clean up/ })
   await expect(confirm).toBeDisabled()
 

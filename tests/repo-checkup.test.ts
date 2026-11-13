@@ -7,8 +7,10 @@ import { join } from 'node:path'
 import { compactRepo, runCheckup } from '../src/main/repoCheckup.ts'
 import {
   checkupDone,
-  checkupFacts,
+  checkupCaution,
   checkupRows,
+  checkupTiles,
+  checkupVerdict,
   formatSize,
   parseCountObjects,
   tickedBranches,
@@ -64,20 +66,31 @@ test('compacting is suggested only for many loose objects or packs', () => {
   assert.equal(worthCompacting({ ...storage, looseCount: 0, packs: 40 }), true)
 })
 
-test('facts cover every area, also with nothing to do', () => {
-  assert.deepEqual(checkupFacts(checkup, 'clean'), [
-    { lead: 'Branches', text: '1 merged into origin/main, 1 with a deleted upstream' },
-    { lead: 'Storage', text: '312 MB, 4,100 loose objects, 3 packs' }
-  ])
+test('tiles cover every area, also with nothing to do', () => {
   assert.deepEqual(
-    checkupFacts(tidy, 'rebasing').map((f) => f.text),
+    checkupTiles(checkup, 'clean').map((t) => [t.label, t.value, t.detail, t.attention]),
     [
-      'Nothing to clean',
-      '312 MB, 12 loose objects, 1 pack',
-      'A rebase is in progress: finish or abort it in Changes',
-      'A leftover index.lock may be blocking Git'
+      ['Branches', '2 to clean up', '1 merged, 1 upstream gone', true],
+      ['Storage', '312 MB', '4,100 loose objects, 3 packs', true],
+      ['State', 'Clean', 'No operation left unfinished', false]
     ]
   )
+  assert.deepEqual(
+    checkupTiles(tidy, 'clean').map((t) => [t.value, t.detail, t.attention]),
+    [
+      ['Tidy', 'Nothing merged into main or gone', false],
+      ['312 MB', '12 loose objects, 1 pack', false],
+      ['Stale lock', 'A leftover index.lock may be blocking Git', true]
+    ]
+  )
+  assert.equal(checkupTiles(tidy, 'rebasing')[2].value, 'Rebase in progress')
+})
+
+test('the verdict and caution follow what is listed', () => {
+  assert.equal(checkupVerdict(checkupRows(checkup)), 'Tick what to clean up, then confirm.')
+  assert.match(checkupVerdict(checkupRows(tidy)), /^Everything looks tidy/)
+  assert.match(checkupCaution(checkup) ?? '', /lost with it/)
+  assert.equal(checkupCaution(tidy), undefined)
 })
 
 test('rows offer each branch and compacting, ticked when worth doing', () => {
