@@ -12,6 +12,8 @@ export interface BranchCleanup {
   /** The branch others are measured against (for example `origin/main`); null when the repository has no default branch. */
   target: string | null
   candidates: CleanupCandidate[]
+  /** Branches with a deleted upstream that git cannot delete, because this or another worktree has them checked out. */
+  kept: string[]
 }
 
 /** The default branch a cleanup measures against: the remote's, else a conventionally named local one. */
@@ -40,6 +42,11 @@ export function cleanupCandidates(
     .filter((b) => b.type === 'local' && !b.current && b.name !== localTarget && !checkedOut.has(b.name))
     .filter((b) => merged.has(b.name) || b.gone)
     .map((b) => ({ name: b.name, reason: merged.has(b.name) ? 'merged' : 'gone', unmerged: 0 }))
+}
+
+/** Branches a deleted upstream left behind that stay because they are checked out, here or in another worktree. */
+export function cleanupKept(branches: Branch[], checkedOut: ReadonlySet<string>): string[] {
+  return branches.filter((b) => b.type === 'local' && b.gone && (b.current || checkedOut.has(b.name))).map((b) => b.name)
 }
 
 /** What a review row says about why the branch is listed. */

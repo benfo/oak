@@ -10,6 +10,7 @@ import {
   CHECKUP_PENDING,
   checkupCaution,
   checkupDone,
+  checkupKept,
   checkupRows,
   checkupStopped,
   checkupTasks,
@@ -84,7 +85,13 @@ export async function repositoryCheckup(r: RepoCtx) {
       items: [],
       loading: reading.then((checkup) => {
         const rows = checkupRows(checkup)
-        return { message: checkupVerdict(rows), summary: tilesFor(checkup), caution: checkupCaution(checkup), items: rows }
+        return {
+          message: checkupVerdict(rows),
+          summary: tilesFor(checkup),
+          note: checkupKept(checkup.cleanup),
+          caution: checkupCaution(checkup),
+          items: rows
+        }
       }),
       ok: (count) => (count === 1 ? 'Clean up 1 item' : `Clean up ${count} items`),
       danger: (ids) => tickedBranches(ids).length > 0,

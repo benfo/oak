@@ -25,6 +25,8 @@ export interface ChecklistContent {
   message: string
   /** Read-only findings shown above the list. */
   summary?: ReactNode
+  /** Something worth knowing about what the list leaves out, shown under it. */
+  note?: string
   /** What ticking a row can cost, shown under the list. */
   caution?: string
   items: ChecklistItem[]
@@ -174,6 +176,7 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
             <ChecklistRows req={req} ticked={ticked} selected={selected} onChange={setSelected} />
           )}
         </div>
+        {!work && req.note && <p className="checklist-aside">{req.note}</p>}
         {!work && <DialogDetailsView warning={req.caution} />}
       </div>
       {outcome ? (

@@ -93,6 +93,12 @@
 .checklist-note.warn {
   color: var(--warning);
 }
+.checklist-aside {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
 .checklist-hint {
   margin-right: auto;
   font-size: var(--text-sm);

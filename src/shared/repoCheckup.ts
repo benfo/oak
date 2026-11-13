@@ -72,7 +72,7 @@ export interface CheckupTile {
   attention: boolean
 }
 
-function branchTile({ target, candidates }: BranchCleanup): CheckupTile {
+function branchTile({ target, candidates, kept }: BranchCleanup): CheckupTile {
   const merged = candidates.filter((c) => c.reason === 'merged').length
   const gone = candidates.length - merged
   const found = [merged && `${merged} merged`, gone && `${gone} upstream gone`].filter(Boolean).join(', ')
@@ -80,7 +80,9 @@ function branchTile({ target, candidates }: BranchCleanup): CheckupTile {
     id: 'branches',
     label: 'Branches',
     value: candidates.length ? `${candidates.length} to clean up` : 'Tidy',
-    detail: !target ? 'No default branch to measure against' : found || `Nothing merged into ${target} or gone`,
+    detail: !target
+      ? 'No default branch to measure against'
+      : found || (kept.length ? `${kept.length} gone but checked out` : `Nothing merged into ${target} or gone`),
     attention: candidates.length > 0
   }
 }
@@ -120,6 +122,15 @@ export const CHECKUP_PENDING = 'Checking the repository…'
 /** The one line under the title: whether anything is worth doing. */
 export const checkupVerdict = (rows: CheckupRow[]) =>
   rows.some((row) => row.checked) ? 'Tick what to clean up, then confirm.' : 'Everything looks tidy. You can still compact if you like.'
+
+/** Why branches with a deleted upstream are missing from the list: git will not delete a checked-out branch. */
+export function checkupKept({ kept }: BranchCleanup): string | undefined {
+  if (!kept.length) return undefined
+  const [first, second, ...rest] = kept
+  if (!second) return `${first} has a gone upstream but is checked out in a worktree, so it stays.`
+  const names = rest.length ? `${first}, ${second} and ${rest.length} more` : `${first} and ${second}`
+  return `${names} have a gone upstream but are checked out in worktrees, so they stay.`
+}
 
 /** Shown under the list when a listed branch has commits found nowhere else. */
 export const checkupCaution = (checkup: RepoCheckup) =>

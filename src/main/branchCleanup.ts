@@ -1,6 +1,6 @@
 import { git } from './git.ts'
 import { listBranches, remoteHead } from './refs.ts'
-import { cleanupCandidates, cleanupTarget, type BranchCleanup } from '../shared/branchCleanup.ts'
+import { cleanupCandidates, cleanupKept, cleanupTarget, type BranchCleanup } from '../shared/branchCleanup.ts'
 
 const HEADS = 'refs/heads/'
 
@@ -8,7 +8,7 @@ const HEADS = 'refs/heads/'
 export async function findBranchCleanup(repo: string): Promise<BranchCleanup> {
   const [branches, head] = await Promise.all([listBranches(repo), remoteHead(repo)])
   const target = cleanupTarget(branches, head)
-  if (!target) return { target, candidates: [] }
+  if (!target) return { target, candidates: [], kept: [] }
 
   const [mergedOut, worktreeOut] = await Promise.all([
     git(repo, ['for-each-ref', '--format=%(refname)', `--merged=${target}`, HEADS]),
@@ -31,7 +31,7 @@ export async function findBranchCleanup(repo: string): Promise<BranchCleanup> {
         c.unmerged = Number(await git(repo, ['rev-list', '--count', `${target}..${HEADS}${c.name}`]))
       })
   )
-  return { target, candidates }
+  return { target, candidates, kept: cleanupKept(branches, checkedOut) }
 }
 
 /** Force delete: the caller has shown which of these carry commits found nowhere else. */

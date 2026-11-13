@@ -68,7 +68,20 @@ test('the default branch, the checked-out branch and branches in other worktrees
   run(dir, 'branch', 'elsewhere')
   run(dir, 'worktree', 'add', '-q', join(root, 'other'), 'elsewhere')
   run(dir, 'switch', '-q', '-c', 'here')
-  assert.deepEqual((await findBranchCleanup(dir)).candidates, [])
+  assert.deepEqual(await findBranchCleanup(dir), { target: 'origin/main', candidates: [], kept: [] })
+})
+
+test('a gone branch checked out in another worktree is kept and named', async () => {
+  const { dir, root } = cloned()
+  run(dir, 'switch', '-q', '-c', 'parked')
+  run(dir, 'push', '-q', '-u', 'origin', 'parked')
+  run(dir, 'switch', '-q', 'main')
+  run(dir, 'push', '-q', 'origin', '--delete', 'parked')
+  run(dir, 'fetch', '-q', '--prune')
+  run(dir, 'worktree', 'add', '-q', join(root, 'other'), 'parked')
+  const found = await findBranchCleanup(dir)
+  assert.deepEqual(found.candidates, [])
+  assert.deepEqual(found.kept, ['parked'])
 })
 
 test('without a remote the conventional local branch is the target', async () => {
@@ -76,7 +89,7 @@ test('without a remote the conventional local branch is the target', async () =>
   run(dir, 'init', '-q', '-b', 'main')
   commit(dir, 'base')
   run(dir, 'branch', 'old')
-  assert.deepEqual(await findBranchCleanup(dir), { target: 'main', candidates: [{ name: 'old', reason: 'merged', unmerged: 0 }] })
+  assert.deepEqual(await findBranchCleanup(dir), { target: 'main', candidates: [{ name: 'old', reason: 'merged', unmerged: 0 }], kept: [] })
 })
 
 test('no default branch means nothing is offered', async () => {
@@ -84,7 +97,7 @@ test('no default branch means nothing is offered', async () => {
   run(dir, 'init', '-q', '-b', 'trunk')
   commit(dir, 'base')
   run(dir, 'branch', 'old')
-  assert.deepEqual(await findBranchCleanup(dir), { target: null, candidates: [] })
+  assert.deepEqual(await findBranchCleanup(dir), { target: null, candidates: [], kept: [] })
 })
 
 test('deleting removes unmerged branches too and leaves the rest', async () => {
