@@ -12,6 +12,7 @@ import { showMenu } from '../api'
 import * as act from '../actions'
 import { showTagPicker, tagsNewestFirst } from '../pickers'
 import { showBranchMenu, type CompareBranch } from '../lib/branchMenu'
+import { branchBadges } from '../lib/branchBadges'
 import { showTagMenu } from '../lib/tagMenu'
 import { handleDismissNavigation, handleNavigation } from '../lib/navigation'
 import { usePane } from '../lib/usePane'
@@ -210,13 +211,14 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
       kind: 'item',
       label: b.name,
       icon: 'branch',
-      title: b.name === st?.branch ? b.subject : `${b.subject}: Enter or double-click to check out`,
+      title:
+        b.name === st?.branch
+          ? b.subject
+          : b.worktree
+            ? `Checked out in ${b.worktree}: Enter or double-click to open that worktree`
+            : `${b.subject}: Enter or double-click to check out`,
       current: b.name === st?.branch,
-      badges: [
-        ...(b.gone ? [{ text: 'gone', warn: true }] : []),
-        ...(b.ahead ? [{ text: `↑${b.ahead}` }] : []),
-        ...(b.behind ? [{ text: `↓${b.behind}` }] : [])
-      ],
+      badges: branchBadges(b),
       activate: () => live.current.onFocusCommit(b.hash),
       secondary: () => b.name !== live.current.r.status?.branch && act.checkout(live.current.r, b.name, 'local'),
       enterUsesSecondary: true,

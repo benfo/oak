@@ -11,7 +11,7 @@ const fmt = (...fields: string[]) => `--format=${fields.join('%1f')}`
 export async function listBranches(repo: string): Promise<Branch[]> {
   const run = (format: string, pattern: string) => git(repo, ['for-each-ref', '--sort=refname', format, pattern])
   const [heads, remotes, tags] = await Promise.all([
-    run(fmt('%(refname)', '%(objectname)', '%(HEAD)', '%(upstream)'), 'refs/heads'),
+    run(fmt('%(refname)', '%(objectname)', '%(HEAD)', '%(upstream)', '%(worktreepath)'), 'refs/heads'),
     run(fmt('%(refname)', '%(objectname)'), 'refs/remotes'),
     run(fmt('%(refname)', '%(objectname)', '%(*objectname)'), 'refs/tags')
   ])

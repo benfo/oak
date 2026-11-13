@@ -27,6 +27,19 @@ export async function openFolder(dir: string): Promise<string | null> {
   }
 }
 
+let showRepo: (repo: string) => void = () => {}
+
+/** The app says how the open repository changes, so a flow far from it (a branch's worktree) can ask for another. */
+export function onShowRepo(show: (repo: string) => void) {
+  showRepo = show
+}
+
+/** Shows another worktree of this repository in place of the open one. */
+export async function openWorktree(dir: string) {
+  const opened = await openFolder(dir)
+  if (opened) showRepo(opened)
+}
+
 export async function pickAndOpen(): Promise<string | null> {
   const dir = await api.pickFolder('Open repository')
   return dir ? openFolder(dir) : null

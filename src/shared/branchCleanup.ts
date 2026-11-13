@@ -36,25 +36,20 @@ export function cleanupTarget(branches: Branch[], remoteHead: string | null): st
  * Local branches that are safe to offer for deletion: merged into the target, or left behind by a deleted upstream.
  * Never the target, its local copy, or a branch checked out here or in another worktree. Counts are filled in later.
  */
-export function cleanupCandidates(
-  branches: Branch[],
-  target: string,
-  merged: ReadonlySet<string>,
-  checkedOut: ReadonlySet<string>
-): CleanupCandidate[] {
+export function cleanupCandidates(branches: Branch[], target: string, merged: ReadonlySet<string>): CleanupCandidate[] {
   const targetIsRemote = branches.some((b) => b.type === 'remote' && b.name === target)
   const localTarget = targetIsRemote ? target.slice(target.indexOf('/') + 1) : target
   return branches
-    .filter((b) => b.type === 'local' && !b.current && b.name !== localTarget && !checkedOut.has(b.name))
+    .filter((b) => b.type === 'local' && !b.current && b.name !== localTarget && !b.worktree)
     .filter((b) => merged.has(b.name) || b.gone)
     .map((b) => ({ name: b.name, reason: merged.has(b.name) ? 'merged' : 'gone', unmerged: 0 }))
 }
 
 /** Branches a deleted upstream left behind that stay because they are checked out, here or in another worktree. */
-export function cleanupKept(branches: Branch[], worktrees: ReadonlyMap<string, string>): KeptBranch[] {
+export function cleanupKept(branches: Branch[]): KeptBranch[] {
   return branches
-    .filter((b) => b.type === 'local' && b.gone && (b.current || worktrees.has(b.name)))
-    .map((b) => ({ name: b.name, worktree: b.current ? null : (worktrees.get(b.name) ?? null) }))
+    .filter((b) => b.type === 'local' && b.gone && (b.current || b.worktree))
+    .map((b) => ({ name: b.name, worktree: b.worktree ?? null }))
 }
 
 /** What a kept branch's row says about why it stays. */

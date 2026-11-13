@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, repoName } from './api'
-import { openFolder } from './repoActions'
+import { onShowRepo, openFolder } from './repoActions'
 import { CloneHost, Welcome } from './components/Welcome'
 import { GitMissing } from './components/GitMissing'
 import { RepoView } from './components/RepoView'
@@ -87,6 +87,8 @@ export default function App() {
       }),
     []
   )
+
+  useEffect(() => onShowRepo(setRepo), [])
 
   // Remember the open repo; forget it only when one is closed (not when we simply started without one).
   const hadRepo = useRef(false)

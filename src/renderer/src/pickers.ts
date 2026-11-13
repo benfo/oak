@@ -6,6 +6,7 @@ import type { Branch } from '../../shared/types'
 import { openPalette } from './components/Palette'
 import { openCloneDialog } from './components/Welcome'
 import { notify } from './notices'
+import { branchBadges } from './lib/branchBadges'
 
 /*
  * The branch and repository pickers. They drop down from their toolbar button, whether opened by a
@@ -55,12 +56,8 @@ export function showBranchPicker(r: RepoCtx, anchor: Element | null = toolbarBut
         label: b.name,
         group: 'Local branches',
         current: b.current,
-        detail: b.subject,
-        badges: [
-          ...(b.gone ? [{ text: 'gone', warn: true }] : []),
-          ...(b.ahead ? [{ text: `↑${b.ahead}` }] : []),
-          ...(b.behind ? [{ text: `↓${b.behind}` }] : [])
-        ],
+        detail: b.worktree ? `opens the worktree at ${b.worktree}` : b.subject,
+        badges: branchBadges(b),
         run: () => !b.current && act.checkout(r, b.name, 'local')
       })),
       ...remotes.map((b) => ({

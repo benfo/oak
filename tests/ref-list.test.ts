@@ -69,6 +69,16 @@ test('the fast listing is complete and correct, and the details fill in afterwar
   assert.equal(withDetails(merged, details)[0], merged[0], 'unchanged details keep the same object')
 })
 
+test('a branch checked out in another worktree says where, and the one checked out here does not', async (t) => {
+  const other = mkdtempSync(join(tmpdir(), 'oak-ref-list-worktree-'))
+  t.after(() => rmSync(other, { recursive: true, force: true }))
+  git('worktree', 'add', '-q', join(other, 'tracked'), 'tracked')
+  const byName = Object.fromEntries((await listBranches(repo)).map((b) => [b.name, b]))
+  assert.match(byName.tracked.worktree ?? '', /tracked$/)
+  assert.equal(byName.main.worktree, undefined)
+  assert.equal(byName.orphaned.worktree, undefined)
+})
+
 test('the commit list waits for branches only when hiding or a comparison scope needs them', () => {
   const none = { showHidden: false, hiddenPatterns: [], hideRemoteOnly: false }
   assert.equal(logNeedsBranches(none, 'all'), false)

@@ -10,21 +10,14 @@ export async function findBranchCleanup(repo: string): Promise<BranchCleanup> {
   const target = cleanupTarget(branches, head)
   if (!target) return { target, candidates: [], kept: [] }
 
-  const [mergedOut, worktreeOut] = await Promise.all([
-    git(repo, ['for-each-ref', '--format=%(refname)', `--merged=${target}`, HEADS]),
-    git(repo, ['for-each-ref', '--format=%(refname)%1f%(worktreepath)', HEADS])
-  ])
-  const names = (out: string) => out.split('\n').filter(Boolean)
-  const merged = new Set(names(mergedOut).map((ref) => ref.slice(HEADS.length)))
-  /** Branch name to the worktree that has it checked out, this one included. */
-  const worktrees = new Map(
-    names(worktreeOut)
-      .map((line) => line.split('\x1f'))
-      .filter(([, worktree]) => worktree)
-      .map(([ref, worktree]) => [ref.slice(HEADS.length), worktree] as const)
+  const mergedOut = await git(repo, ['for-each-ref', '--format=%(refname)', `--merged=${target}`, HEADS])
+  const merged = new Set(
+    mergedOut
+      .split('\n')
+      .filter(Boolean)
+      .map((ref) => ref.slice(HEADS.length))
   )
-
-  const candidates = cleanupCandidates(branches, target, merged, new Set(worktrees.keys()))
+  const candidates = cleanupCandidates(branches, target, merged)
   await Promise.all(
     candidates
       .filter((c) => c.reason === 'gone')
@@ -32,7 +25,7 @@ export async function findBranchCleanup(repo: string): Promise<BranchCleanup> {
         c.unmerged = Number(await git(repo, ['rev-list', '--count', `${target}..${HEADS}${c.name}`]))
       })
   )
-  return { target, candidates, kept: cleanupKept(branches, worktrees) }
+  return { target, candidates, kept: cleanupKept(branches) }
 }
 
 /** Force delete: the caller has shown which of these carry commits found nowhere else. */
