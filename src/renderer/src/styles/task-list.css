@@ -15,12 +15,13 @@
   height: var(--row-md);
   padding: 0 var(--row-pad);
 }
-/* One fixed slot for the dot, spinner or icon, so the label never moves as the state changes. */
+/* One fixed slot for the dot, spinner or icon, so the label never moves as the state changes. It is as wide as
+   a checkbox with its margins, so labels line up with a tick list these rows replace. */
 .task-mark {
   flex: none;
   display: grid;
   place-items: center;
-  width: var(--space-4);
+  width: var(--space-5);
   height: var(--space-4);
   color: var(--muted-foreground);
 }

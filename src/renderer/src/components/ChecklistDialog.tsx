@@ -108,6 +108,9 @@ function ChecklistRow({ item }: { item: ChecklistItem }) {
   )
 }
 
+/** Loading reads as the first task, in the same rows the work uses later. */
+const CHECKING: TaskRow[] = [{ id: 'checking', label: 'Checking…', state: 'running' }]
+
 const initiallyTicked = (items: ChecklistItem[]): Selection => new Set(items.filter((i) => i.checked).map((i) => i.id))
 
 function ChecklistDialog({ req }: { req: ChecklistReq }) {
@@ -145,7 +148,7 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
 
   return (
     <Modal title={req.title} onClose={() => !working && close(outcome ? ticked : null)} width={640}>
-      <p className="modal-msg">{outcome?.message ?? (working && req.runningMessage) ?? req.message}</p>
+      <p className="modal-msg">{outcome?.message ?? (working ? req.runningMessage : undefined) ?? req.message}</p>
       {outcome?.summary ?? req.summary}
       {/* Content that arrives late fills a body of fixed height, so the dialog never resizes under the pointer. */}
       <div className={`checklist-body ${req.loading ? 'steady' : ''}`}>
@@ -166,10 +169,7 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
           {work ? (
             <TaskList rows={work.rows} label={req.runningMessage ?? req.title} />
           ) : req.pending ? (
-            <div className="checklist checklist-pending" role="status">
-              <span className="spinner" aria-hidden="true" />
-              Checking…
-            </div>
+            <TaskList rows={CHECKING} label="Checking" />
           ) : (
             <ChecklistRows req={req} ticked={ticked} selected={selected} onChange={setSelected} />
           )}

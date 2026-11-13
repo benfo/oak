@@ -53,14 +53,6 @@
 .checklist-group-toggle:hover {
   text-decoration: underline;
 }
-.checklist-pending {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex: 1;
-  padding: 0 var(--row-pad);
-  color: var(--muted-foreground);
-}
 .checklist-row {
   display: flex;
   align-items: center;

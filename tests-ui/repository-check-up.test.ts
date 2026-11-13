@@ -21,26 +21,33 @@ async function expectSteadyBody(page: Page) {
   expect((await body.boundingBox())!.height).toBeCloseTo(rowHeight * 9, 0)
 }
 
-type Sampled = { heights: Set<number>; sawPending: boolean }
+type Sampled = { heights: Set<number>; labelLefts: Set<number>; sawLoading: boolean }
 
-/** Watches the dialog every frame from before it opens: its layout height (unaffected by the opening animation) and whether it showed as loading. */
-const watchDialogHeight = (page: Page) =>
+/**
+ * Watches the dialog every frame from before it opens, once its opening animation has settled: its height, where
+ * the first row's label starts, and whether it showed as loading.
+ */
+const watchDialogLayout = (page: Page) =>
   page.evaluate(() => {
-    const seen: Sampled = { heights: new Set(), sawPending: false }
+    const seen: Sampled = { heights: new Set(), labelLefts: new Set(), sawLoading: false }
     Object.assign(window, { checkupSampled: seen })
     const sample = () => {
       const modal = document.querySelector<HTMLElement>('.modal')
-      if (modal) seen.heights.add(modal.offsetHeight)
-      if (document.querySelector('.checklist-pending')) seen.sawPending = true
+      if (modal && Math.abs(modal.getBoundingClientRect().width - modal.offsetWidth) < 0.5) {
+        seen.heights.add(Math.round(modal.getBoundingClientRect().height))
+        const label = modal.querySelector('.checklist-label, .task-label')
+        if (label) seen.labelLefts.add(Math.round(label.getBoundingClientRect().left))
+        if (label?.textContent === 'Checking…') seen.sawLoading = true
+      }
       requestAnimationFrame(sample)
     }
     requestAnimationFrame(sample)
   })
 
-const dialogHeights = (page: Page) =>
+const dialogLayout = (page: Page) =>
   page.evaluate(() => {
     const seen = (window as unknown as { checkupSampled: Sampled }).checkupSampled
-    return { heights: [...seen.heights], sawPending: seen.sawPending }
+    return { heights: [...seen.heights], labelLefts: [...seen.labelLefts], sawLoading: seen.sawLoading }
   })
 
 const localBranches = (repo: string) => git(repo, 'branch', '--format=%(refname:short)').trim().split('\n')
@@ -59,7 +66,7 @@ test('the check-up lists merged and gone branches and deletes only the ticked on
   git(small, 'fetch', '-q', '--prune')
 
   const page = await open(small)
-  await watchDialogHeight(page)
+  await watchDialogLayout(page)
   await runCheckUp(page)
   const dialog = page.getByRole('dialog', { name: 'Repository check-up' })
   const rows = dialog.locator('.checklist-row')
@@ -72,10 +79,9 @@ test('the check-up lists merged and gone branches and deletes only the ticked on
   await expect(rows.nth(0)).toBeFocused()
   await expect(dialog.getByRole('button', { name: 'Clean up 2 items' })).toBeEnabled()
   await expectSteadyBody(page)
-  // It opened before git answered and did not change size when the findings arrived.
-  const sampled = await dialogHeights(page)
-  expect(sampled.sawPending).toBe(true)
-  expect(sampled.heights).toHaveLength(1)
+  await expect(dialog.locator('.modal-msg')).toHaveText('Tick what to clean up, then confirm.')
+  // It opened before git answered.
+  expect((await dialogLayout(page)).sawLoading).toBe(true)
 
   // A group unticks in one go; Ctrl+A ticks every row, then none.
   const confirm = dialog.getByRole('button', { name: /^Clean up/ })
@@ -110,6 +116,10 @@ test('the check-up lists merged and gone branches and deletes only the ticked on
   await page.keyboard.press('Enter')
   await expect(dialog).toHaveCount(0)
   await expect(page.locator('.status-message')).toContainText('Deleted squashed')
+  // Loading, choosing, working and the result all kept the dialog's size and the rows' labels in one place.
+  const layout = await dialogLayout(page)
+  expect(layout.heights).toHaveLength(1)
+  expect(layout.labelLefts).toHaveLength(1)
   removeDir(remote)
 })
 
