@@ -20,6 +20,19 @@
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
+/* A steady body keeps one height while loading and after: the list takes what the caution leaves. */
+.checklist-body.steady {
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--row-md) * 9);
+}
+.checklist-body.steady .checklist-frame {
+  flex: 1;
+  min-height: 0;
+}
+.checklist-body.steady .checklist {
+  max-height: none;
+}
 .checklist-group-count {
   margin-left: auto;
   font-weight: var(--weight-normal);
@@ -40,12 +53,11 @@
 .checklist-group-toggle:hover {
   text-decoration: underline;
 }
-/* Holds the height of the shortest list (a heading and a row) so a tidy repository's dialog does not grow. */
 .checklist-pending {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  height: calc(var(--row-md) * 2);
+  flex: 1;
   padding: 0 var(--row-pad);
   color: var(--muted-foreground);
 }

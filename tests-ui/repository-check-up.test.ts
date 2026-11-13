@@ -13,6 +13,13 @@ async function runCheckUp(page: Page) {
   await page.keyboard.press('Enter')
 }
 
+// The body is sized up front, so results arriving after the dialog opened never resize it.
+async function expectSteadyBody(page: Page) {
+  const body = page.locator('.checklist-body')
+  const rowHeight = await body.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--row-md')))
+  expect((await body.boundingBox())!.height).toBeCloseTo(rowHeight * 9, 0)
+}
+
 const localBranches = (repo: string) => git(repo, 'branch', '--format=%(refname:short)').trim().split('\n')
 const looseObjects = (repo: string) => Number(/^count: (\d+)/m.exec(git(repo, 'count-objects', '-v'))?.[1])
 
@@ -40,6 +47,7 @@ test('the check-up lists merged and gone branches and deletes only the ticked on
   await expect(rows.nth(2)).toHaveAttribute('aria-selected', 'false')
   await expect(rows.nth(0)).toBeFocused()
   await expect(dialog.getByRole('button', { name: 'Clean up 2 items' })).toBeEnabled()
+  await expectSteadyBody(page)
 
   // A group unticks in one go; Ctrl+A ticks every row, then none.
   const confirm = dialog.getByRole('button', { name: /^Clean up/ })
@@ -78,6 +86,7 @@ test('the check-up opens from the toolbar menu and compacts a tidy repository on
 
   const compact = dialog.locator('.checklist-row')
   await expect(compact).toHaveCount(1)
+  await expectSteadyBody(page)
   // Opened with the mouse, the list has focus and the first arrow lands on its first row.
   await expect(dialog.getByRole('grid')).toBeFocused()
   await page.keyboard.press('ArrowDown')

@@ -107,30 +107,33 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
     <Modal title={req.title} onClose={() => close(null)} width={640}>
       <p className="modal-msg">{req.message}</p>
       {req.summary}
-      <div
-        className="pane-frame checklist-frame"
-        onKeyDownCapture={(e) =>
-          handleShortcutBindings(
-            e,
-            [
-              { id: 'submit', keys: 'Mod+Enter', enabled: ticked.length > 0, run: submit },
-              { id: 'all', keys: 'Mod+A', enabled: !req.pending, run: tickAllOrNone }
-            ],
-            undefined,
-            shortcutPlatform()
-          )
-        }
-      >
-        {req.pending ? (
-          <div className="checklist checklist-pending" role="status">
-            <span className="spinner" aria-hidden="true" />
-            Checking…
-          </div>
-        ) : (
-          <ChecklistRows req={req} ticked={ticked} selected={selected} onChange={setSelected} />
-        )}
+      {/* Content that arrives late fills a body of fixed height, so the dialog never resizes under the pointer. */}
+      <div className={`checklist-body ${req.loading ? 'steady' : ''}`}>
+        <div
+          className="pane-frame checklist-frame"
+          onKeyDownCapture={(e) =>
+            handleShortcutBindings(
+              e,
+              [
+                { id: 'submit', keys: 'Mod+Enter', enabled: ticked.length > 0, run: submit },
+                { id: 'all', keys: 'Mod+A', enabled: !req.pending, run: tickAllOrNone }
+              ],
+              undefined,
+              shortcutPlatform()
+            )
+          }
+        >
+          {req.pending ? (
+            <div className="checklist checklist-pending" role="status">
+              <span className="spinner" aria-hidden="true" />
+              Checking…
+            </div>
+          ) : (
+            <ChecklistRows req={req} ticked={ticked} selected={selected} onChange={setSelected} />
+          )}
+        </div>
+        <DialogDetailsView warning={req.caution} />
       </div>
-      <DialogDetailsView warning={req.caution} />
       <div className="modal-actions">
         <span className="checklist-hint">Space ticks, Ctrl+A ticks all or none, Ctrl+Enter confirms</span>
         <button className="btn" onClick={() => close(null)}>
