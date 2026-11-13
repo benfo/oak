@@ -7,8 +7,9 @@ import { join } from 'node:path'
 import { compactRepo, runCheckup } from '../src/main/repoCheckup.ts'
 import {
   checkupDone,
-  checkupDoneLines,
-  checkupStep,
+  checkupStopped,
+  checkupTasks,
+  compactNote,
   checkupCaution,
   checkupRows,
   checkupTiles,
@@ -116,14 +117,17 @@ test('the result says what was done', () => {
   assert.equal(checkupDone(['done'], null), 'Deleted done')
   assert.equal(checkupDone(['a', 'b'], 12 * 1024 * 1024), 'Deleted 2 branches, compacted, freed 12.0 MB')
   assert.equal(checkupDone([], 0), 'Compacted, nothing to free')
-  assert.deepEqual(checkupDoneLines(['a', 'b'], 2048), [
-    { label: 'a', note: 'branch deleted' },
-    { label: 'b', note: 'branch deleted' },
-    { label: 'Repository compacted', note: 'freed 2 KB' }
+  assert.equal(compactNote(2048), 'freed 2 KB')
+  assert.equal(checkupStopped('Delete a'), 'Stopped at "Delete a". Nothing after it ran.')
+})
+
+test('the ticked rows become one task per step', () => {
+  assert.deepEqual(checkupTasks(['branch:a', 'branch:b', 'compact']), [
+    { id: 'branches', label: 'Delete 2 branches' },
+    { id: 'compact', label: 'Compact repository' }
   ])
-  assert.deepEqual(checkupDoneLines(['a'], null), [{ label: 'a', note: 'branch deleted' }])
-  assert.equal(checkupStep.deleting(['a']), 'Deleting a…')
-  assert.equal(checkupStep.deleting(['a', 'b']), 'Deleting 2 branches…')
+  assert.deepEqual(checkupTasks(['branch:a']), [{ id: 'branches', label: 'Delete a' }])
+  assert.deepEqual(checkupTasks(['compact']), [{ id: 'compact', label: 'Compact repository' }])
 })
 
 test('a check-up reads branches, storage and a stale lock without changing the repository', async () => {

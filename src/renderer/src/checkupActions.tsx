@@ -5,22 +5,27 @@ import { notify } from './notices'
 import { chooseFromList } from './components/ChecklistDialog'
 import type { IconName } from './components/Icon'
 import { SummaryTiles } from './components/SummaryTiles'
+import type { TaskUpdate } from '../../shared/taskList'
 import {
   CHECKUP_PENDING,
   checkupCaution,
   checkupDone,
-  checkupDoneLines,
   checkupRows,
-  checkupStep,
+  checkupStopped,
+  checkupTasks,
   checkupTiles,
   checkupVerdict,
+  BRANCHES_TASK,
   COMPACT_ID,
+  compactNote,
   pendingTiles,
   storageBytes,
   tickedBranches,
   type CheckupTile,
   type RepoCheckup
 } from '../../shared/repoCheckup'
+
+const firstLine = (text: string) => text.split(/[\r\n]+/).find((line) => line.trim())
 
 const TILE_ICONS: Record<CheckupTile['id'], IconName> = { branches: 'branch', storage: 'storage', state: 'health' }
 
@@ -31,32 +36,43 @@ export async function repositoryCheckup(r: RepoCtx) {
   const reading = api.repoCheckup(r.path)
   const tilesFor = (checkup: RepoCheckup) => <SummaryTiles tiles={withIcons(checkupTiles(checkup, r.status?.state ?? 'clean'))} />
 
-  /** Runs the ticked steps while the dialog stays open, then reads the repository again for the closing summary. */
-  const cleanUp = async (ticked: string[], say: (step: string) => void) => {
+  /** Runs the ticked steps while the dialog stays open, then reads the repository again for the tiles. */
+  const cleanUp = async (ticked: string[], report: (taskId: string, update: TaskUpdate) => void) => {
+    const tasks = checkupTasks(ticked)
     const branches = tickedBranches(ticked)
     const before = storageBytes((await reading).storage)
+    const progress = { current: '', freed: null as number | null, stopped: false }
+    const step = async (id: string, work: () => Promise<string>) => {
+      if (!tasks.some((task) => task.id === id)) return
+      progress.current = id
+      report(id, 'running')
+      report(id, { done: await work() })
+    }
     try {
-      const freed = await r.withBusy(
+      await r.withBusy(
         'Cleaning up',
         async () => {
-          if (branches.length) {
-            say(checkupStep.deleting(branches))
+          await step(BRANCHES_TASK, async () => {
             await api.deleteBranches(r.path, branches)
-          }
-          if (!ticked.includes(COMPACT_ID)) return null
-          say(checkupStep.compacting)
-          return before - storageBytes(await api.compactRepo(r.path))
+            return 'done'
+          })
+          await step(COMPACT_ID, async () => {
+            progress.freed = before - storageBytes(await api.compactRepo(r.path))
+            return compactNote(progress.freed)
+          })
         },
-        { done: (result) => checkupDone(branches, result) }
+        { done: () => checkupDone(branches, progress.freed) }
       )
-      return {
-        message: `${checkupDone(branches, freed)}.`,
-        summary: tilesFor(await api.repoCheckup(r.path)),
-        done: checkupDoneLines(branches, freed)
-      }
     } catch (e) {
+      progress.stopped = true
       reportOpError(r, e)
-      throw e
+      report(progress.current, { failed: firstLine(errorMessage(e)) ?? 'failed' })
+    }
+    const after = await api.repoCheckup(r.path).catch(() => null)
+    const stoppedAt = tasks.find((task) => task.id === progress.current)?.label ?? ''
+    return {
+      message: progress.stopped ? checkupStopped(stoppedAt) : `${checkupDone(branches, progress.freed)}.`,
+      summary: after ? tilesFor(after) : undefined
     }
   }
 
@@ -72,6 +88,8 @@ export async function repositoryCheckup(r: RepoCtx) {
       }),
       ok: (count) => (count === 1 ? 'Clean up 1 item' : `Clean up ${count} items`),
       danger: (ids) => tickedBranches(ids).length > 0,
+      tasks: checkupTasks,
+      runningMessage: 'Cleaning up…',
       run: cleanUp
     })
   } catch (e) {

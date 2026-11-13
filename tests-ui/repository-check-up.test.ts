@@ -1,3 +1,4 @@
+import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
@@ -96,11 +97,11 @@ test('the check-up lists merged and gone branches and deletes only the ticked on
   await page.keyboard.press('Space')
   await expect(dialog.getByRole('button', { name: 'Clean up 1 item' })).toBeEnabled()
   await page.keyboard.press('Control+Enter')
-  // The dialog stays to say what it did, at the same size, with the tiles read again.
-  const done = dialog.locator('.checklist-outcome .checklist-row')
-  await expect(done).toHaveCount(1)
-  await expect(done).toContainText('squashed')
-  await expect(done).toContainText('branch deleted')
+  // The dialog stays, at the same size: the task ticked off is the record, and the tiles are read again.
+  const tasks = dialog.locator('.task-row')
+  await expect(tasks).toHaveCount(1)
+  await expect(tasks).toHaveAttribute('data-state', 'done')
+  await expect(tasks).toContainText('Delete squashed')
   await expect(dialog.locator('.modal-msg')).toHaveText('Deleted squashed.')
   await expect(dialog.locator('.summary-tile').first()).toContainText('1 to clean up')
   await expectSteadyBody(page)
@@ -132,9 +133,39 @@ test('the check-up opens from the toolbar menu and compacts a tidy repository on
   await expect(confirm).toHaveText('Clean up 1 item')
   expect(looseObjects(small)).toBeGreaterThan(0)
   await page.keyboard.press('Control+Enter')
-  await expect(dialog.locator('.checklist-outcome .checklist-row')).toContainText('Repository compacted')
+  await expect(dialog.locator('.task-row')).toHaveAttribute('data-state', 'done')
+  await expect(dialog.locator('.task-row')).toContainText('Compact repository')
   expect(looseObjects(small)).toBe(0)
+  // Escape waits for the work to finish; Close taking focus says it has.
+  await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused()
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)
   await expect(page.locator('.status-message')).toContainText('Compacted')
+})
+
+test('a check-up task that fails is marked, the rest are skipped and the dialog stays open', async ({ open, small }) => {
+  git(small, 'branch', 'done')
+  const page = await open(small)
+  await runCheckUp(page)
+  const dialog = page.getByRole('dialog', { name: 'Repository check-up' })
+  await expect(dialog.locator('.checklist-row')).toHaveCount(2)
+  await expect(dialog.locator('.checklist-row').first()).toBeFocused()
+  await page.keyboard.press('Control+A')
+  await expect(dialog.getByRole('button', { name: 'Clean up 2 items' })).toBeEnabled()
+
+  // Another git holding the branch's lock makes the delete fail.
+  const lock = join(small, '.git', 'refs', 'heads', 'done.lock')
+  writeFileSync(lock, '')
+  await page.keyboard.press('Control+Enter')
+  const tasks = dialog.locator('.task-row')
+  await expect(tasks).toHaveCount(2)
+  await expect(tasks.nth(0)).toHaveAttribute('data-state', 'failed')
+  await expect(tasks.nth(1)).toHaveAttribute('data-state', 'skipped')
+  await expect(dialog.locator('.modal-msg')).toHaveText('Stopped at "Delete done". Nothing after it ran.')
+  await expectSteadyBody(page)
+  rmSync(lock)
+  expect(localBranches(small)).toEqual(['done', 'main'])
+  expect(looseObjects(small)).toBeGreaterThan(0)
+  await dialog.getByRole('button', { name: 'Close' }).click()
+  await expect(dialog).toHaveCount(0)
 })

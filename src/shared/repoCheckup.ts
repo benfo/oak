@@ -1,5 +1,6 @@
 import { cleanupNote, type BranchCleanup } from './branchCleanup.ts'
 import type { RepoState } from './types'
+import type { Task } from './taskList.ts'
 
 /** What `git count-objects -v` reports, in bytes. */
 export interface RepoStorage {
@@ -155,25 +156,30 @@ export function checkupRows(checkup: RepoCheckup): CheckupRow[] {
 /** The branch names among ticked row ids. */
 export const tickedBranches = (ids: string[]) => ids.filter((id) => id.startsWith(BRANCH_ID)).map((id) => id.slice(BRANCH_ID.length))
 
-/** The step the check-up is on, shown while it runs. */
-export const checkupStep = {
-  deleting: (names: string[]) => (names.length === 1 ? `Deleting ${names[0]}…` : `Deleting ${names.length} branches…`),
-  compacting: 'Compacting the repository…'
-}
+export const BRANCHES_TASK = 'branches'
 
-/** One line per thing the check-up did, for its closing summary. */
-export function checkupDoneLines(deleted: string[], freed: number | null): { label: string; note: string }[] {
+/** The steps the ticked rows amount to, in the order they run: all branches go in one step. */
+export function checkupTasks(ids: string[]): Task[] {
+  const branches = tickedBranches(ids)
   return [
-    ...deleted.map((name) => ({ label: name, note: 'branch deleted' })),
-    ...(freed === null ? [] : [{ label: 'Repository compacted', note: freed > 0 ? `freed ${formatSize(freed)}` : 'nothing to free' }])
+    ...(branches.length
+      ? [{ id: BRANCHES_TASK, label: branches.length === 1 ? `Delete ${branches[0]}` : `Delete ${branches.length} branches` }]
+      : []),
+    ...(ids.includes(COMPACT_ID) ? [{ id: COMPACT_ID, label: 'Compact repository' }] : [])
   ]
 }
+
+/** What compacting achieved, beside its task. */
+export const compactNote = (freed: number) => (freed > 0 ? `freed ${formatSize(freed)}` : 'nothing to free')
+
+/** The line under the title when a step failed. */
+export const checkupStopped = (label: string) => `Stopped at "${label}". Nothing after it ran.`
 
 /** The status line after a check-up ran; `freed` is null when it did not compact. */
 export function checkupDone(deleted: string[], freed: number | null): string {
   const parts = [
     deleted.length === 1 ? `deleted ${deleted[0]}` : deleted.length > 1 && `deleted ${deleted.length} branches`,
-    freed !== null && (freed > 0 ? `compacted, freed ${formatSize(freed)}` : 'compacted, nothing to free')
+    freed !== null && `compacted, ${compactNote(freed)}`
   ].filter((part): part is string => !!part)
   const text = parts.join(', ')
   return text[0].toUpperCase() + text.slice(1)

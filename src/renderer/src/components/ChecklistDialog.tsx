@@ -5,7 +5,8 @@ import { handleShortcutBindings } from '../lib/shortcuts'
 import { shortcutPlatform } from '../lib/useShortcuts'
 import { Modal } from '../ui'
 import { DialogDetailsView } from './DialogDetails'
-import { Icon } from './Icon'
+import { TaskList } from './TaskList'
+import { reportTask, settleTasks, startTasks, type Task, type TaskRow, type TaskUpdate } from '../../../shared/taskList'
 
 export interface ChecklistItem {
   id: string
@@ -29,11 +30,10 @@ export interface ChecklistContent {
   items: ChecklistItem[]
 }
 
-/** What confirming did, shown in the dialog in place of the list. */
+/** What the dialog says once the work has stopped; the task rows themselves stay as the record of what ran. */
 export interface ChecklistOutcome {
   message: string
   summary?: ReactNode
-  done: { label: string; note?: string }[]
 }
 
 export interface ChecklistOptions extends ChecklistContent {
@@ -44,15 +44,22 @@ export interface ChecklistOptions extends ChecklistContent {
   danger?: (ids: string[]) => boolean
   /** Slow content: the dialog opens at once with the content above and swaps this in when it arrives. */
   loading?: Promise<ChecklistContent>
+  /** The tasks confirming the ticked rows will run, in order. With `run`, they take the list's place when confirmed. */
+  tasks?: (ids: string[]) => Task[]
+  /** The line under the title while tasks run. */
+  runningMessage?: string
   /**
-   * Does the ticked rows' work while the dialog stays open: `say` names the step under way, and the outcome
-   * replaces the list until the user closes the dialog. When it throws, the dialog closes; report the failure yourself.
+   * Does the ticked rows' work while the dialog stays open, reporting each task as it starts, finishes or fails.
+   * Report a failure instead of throwing: tasks left unfinished when this resolves show as skipped.
    */
-  run?: (ids: string[], say: (step: string) => void) => Promise<ChecklistOutcome>
+  run?: (ids: string[], report: (taskId: string, update: TaskUpdate) => void) => Promise<ChecklistOutcome>
 }
 
-/** After confirming with `run`: the step under way, then what was done. */
-type Work = { step: string } | { outcome: ChecklistOutcome }
+/** After confirming with `run`: the tasks as they stand, and the outcome once the work has stopped. */
+interface Work {
+  rows: TaskRow[]
+  outcome?: ChecklistOutcome
+}
 
 type ChecklistReq = ChecklistOptions & { pending: boolean; resolve: (ids: string[] | null) => void }
 
@@ -117,20 +124,20 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
     req.resolve(ids)
   }
   const [work, setWork] = useState<Work | null>(null)
-  const working = work && 'step' in work
-  const outcome = work && 'outcome' in work ? work.outcome : null
-  // The list that held focus is gone by then, so the summary's only button takes it.
+  const outcome = work?.outcome
+  const working = !!work && !outcome
+  // The list that held focus is gone by then, so the only button left takes it.
   const closeButton = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     if (outcome) closeButton.current?.focus()
   }, [outcome])
   const submit = () => {
     if (!req.run) return close(ticked)
-    setWork({ step: 'Working…' })
+    setWork({ rows: startTasks(req.tasks?.(ticked) ?? []) })
     req
-      .run(ticked, (step) => setWork({ step }))
+      .run(ticked, (id, update) => setWork((now) => now && { rows: reportTask(now.rows, id, update) }))
       .then(
-        (result) => setWork({ outcome: result }),
+        (result) => setWork((now) => now && { rows: settleTasks(now.rows), outcome: result }),
         () => close(null)
       )
   }
@@ -138,7 +145,7 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
 
   return (
     <Modal title={req.title} onClose={() => !working && close(outcome ? ticked : null)} width={640}>
-      <p className="modal-msg">{outcome?.message ?? req.message}</p>
+      <p className="modal-msg">{outcome?.message ?? (working && req.runningMessage) ?? req.message}</p>
       {outcome?.summary ?? req.summary}
       {/* Content that arrives late fills a body of fixed height, so the dialog never resizes under the pointer. */}
       <div className={`checklist-body ${req.loading ? 'steady' : ''}`}>
@@ -156,20 +163,12 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
             )
           }
         >
-          {outcome ? (
-            <ul className="checklist checklist-outcome" aria-label="What was done">
-              {outcome.done.map((line) => (
-                <li key={line.label} className="checklist-row">
-                  <Icon name="check" size={14} />
-                  <span className="checklist-label">{line.label}</span>
-                  {line.note && <span className="checklist-note">{line.note}</span>}
-                </li>
-              ))}
-            </ul>
-          ) : working || req.pending ? (
+          {work ? (
+            <TaskList rows={work.rows} label={req.runningMessage ?? req.title} />
+          ) : req.pending ? (
             <div className="checklist checklist-pending" role="status">
               <span className="spinner" aria-hidden="true" />
-              {working ? work.step : 'Checking…'}
+              Checking…
             </div>
           ) : (
             <ChecklistRows req={req} ticked={ticked} selected={selected} onChange={setSelected} />
@@ -186,10 +185,10 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
       ) : (
         <div className="modal-actions">
           {!working && <span className="checklist-hint">Space ticks, Ctrl+A ticks all or none, Ctrl+Enter confirms</span>}
-          <button className="btn" disabled={!!working} onClick={() => close(null)}>
+          <button className="btn" disabled={working} onClick={() => close(null)}>
             Cancel
           </button>
-          <button className={`btn ${req.danger?.(ticked) ? 'danger' : 'primary'}`} disabled={!ticked.length || !!working} onClick={submit}>
+          <button className={`btn ${req.danger?.(ticked) ? 'danger' : 'primary'}`} disabled={!ticked.length || working} onClick={submit}>
             {req.ok(ticked.length)}
           </button>
         </div>
