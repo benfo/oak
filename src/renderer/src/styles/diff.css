@@ -129,6 +129,13 @@
   background: var(--surface-sunken);
   user-select: none;
 }
+/* Windows high contrast paints the sunken fill over as plain background, so filler rows are hatched instead. */
+@media (forced-colors: active) {
+  .side-blank {
+    forced-color-adjust: none;
+    background: repeating-linear-gradient(-45deg, transparent 0 var(--space-1), GrayText var(--space-1) calc(var(--space-1) + 1px));
+  }
+}
 
 .diff-pane {
   display: flex;
@@ -290,6 +297,28 @@
 }
 .dl.del .word-change {
   background: var(--diff-del-word);
+}
+/* Colour-blind friendly diff colours also underline changed words, so they show without telling tints apart. */
+[data-diff-colours='blueOrange'] .dl.add .word-change {
+  text-decoration: underline var(--diff-add-foreground);
+}
+[data-diff-colours='blueOrange'] .dl.del .word-change {
+  text-decoration: underline var(--diff-del-foreground);
+}
+[data-diff-colours='blueOrange'] .dl .word-change.blank {
+  text-decoration: none;
+}
+/* Windows high contrast drops every tint: lines keep their + and - signs, and changed words get a ring,
+   solid when added and dashed when removed. */
+@media (forced-colors: active) {
+  .dl.add .word-change:not(.blank),
+  .dl.del .word-change:not(.blank) {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+  .dl.del .word-change:not(.blank) {
+    outline-style: dashed;
+  }
 }
 .dl.note {
   color: var(--subtle-foreground);

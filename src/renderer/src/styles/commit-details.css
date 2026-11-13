@@ -70,12 +70,6 @@
   background: var(--selection-strong);
   box-shadow: inset 3px 0 0 var(--primary);
 }
-@media (forced-colors: active) {
-  .commit-list:focus .commit-row.cursor {
-    outline: 2px solid Highlight;
-    outline-offset: -2px;
-  }
-}
 .commit-meta {
   padding: var(--space-3) var(--space-4) var(--space-3);
   border-bottom: 1px solid var(--border);

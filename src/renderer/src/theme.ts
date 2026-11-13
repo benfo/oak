@@ -1,5 +1,7 @@
 import { api } from './api'
 import { BUILT_IN_THEMES } from './builtInThemes'
+import { getSettings, subscribeSettings } from './settings'
+import { diffColourTokens } from './diff/diffColours'
 import type { ThemeStarter } from '../../shared/themeFile'
 
 /**
@@ -60,9 +62,11 @@ function apply() {
   const root = document.documentElement
   root.dataset.theme = theme.base
   root.toggleAttribute('data-glow', theme.glow === true)
+  root.dataset.diffColours = getSettings().diffColours
   for (const name of applied) root.style.removeProperty(name)
   applied = []
-  for (const [key, value] of Object.entries(theme.colors ?? {})) {
+  const colors = { ...theme.colors, ...diffColourTokens(getSettings().diffColours, theme.base) }
+  for (const [key, value] of Object.entries(colors)) {
     const name = `--${key.replace(/^--/, '')}`
     root.style.setProperty(name, value)
     applied.push(name)
@@ -141,7 +145,14 @@ export function starterTheme(): ThemeStarter {
   const probe = document.createElement('span')
   document.body.appendChild(probe)
   const colors: Record<string, string> = {}
+  // The diff colours preference is laid over the theme, so the copy keeps the theme's own (or the defaults).
+  const laidOver = diffColourTokens(getSettings().diffColours, theme.base)
   for (const key of STARTER_KEYS) {
+    if (key in laidOver) {
+      const own = theme.colors?.[key]
+      if (own) colors[key] = normalize(own)
+      continue
+    }
     probe.style.color = `var(--${key})`
     colors[key] = normalize(getComputedStyle(probe).color)
   }
@@ -170,5 +181,11 @@ export function initTheme() {
   }
   apply()
   systemDark.addEventListener('change', () => themeSetting() === 'system' && apply())
+  let diffColours = getSettings().diffColours
+  subscribeSettings(() => {
+    if (getSettings().diffColours === diffColours) return
+    diffColours = getSettings().diffColours
+    apply()
+  })
   loadCustomThemes()
 }

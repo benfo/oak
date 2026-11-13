@@ -5,6 +5,7 @@ import { watch, writeFileSync, type FSWatcher } from 'fs'
 import { join } from 'path'
 import { folderArg, handlers } from './handlers'
 import { outputSink } from './git'
+import { toggleForcedColours } from './devForcedColours'
 import { classifyRepoChange } from '../shared/watchPaths'
 
 const STREAMING = new Set([
@@ -55,7 +56,9 @@ function createWindow() {
   win.webContents.on('will-navigate', (e) => e.preventDefault())
   win.webContents.on('before-input-event', (_e, input) => {
     // Developer tools in dev builds only (testers shouldn't stumble into them).
-    if (!app.isPackaged && input.type === 'keyDown' && input.key === 'F12') win.webContents.toggleDevTools()
+    if (app.isPackaged || input.type !== 'keyDown' || input.key !== 'F12') return
+    if (input.shift) toggleForcedColours(win).catch((e) => console.error('Simulating high contrast failed', e))
+    else win.webContents.toggleDevTools()
   })
 
   // Dev helper: OAK_SCREENSHOT=<file.png> captures the window once it has rendered, then quits.

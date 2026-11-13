@@ -82,6 +82,19 @@
 .app-body > .split > .split-handle {
   background: transparent;
 }
+/* Windows high contrast paints backgrounds over as the page colour, which would hide these 1px lines. */
+@media (forced-colors: active) {
+  .split-row > .split-handle,
+  .split-column > .split-handle {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+  .split-handle:hover,
+  .split-handle:active,
+  .split-handle[data-separator='active'] {
+    background: Highlight;
+  }
+}
 
 .pane-empty {
   display: grid;

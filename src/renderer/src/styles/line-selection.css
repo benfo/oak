@@ -36,6 +36,15 @@
   background: var(--primary);
   color: var(--primary-foreground);
 }
+/* Windows high contrast would paint the accent gutter over as plain background, so picked lines use the system highlight. */
+@media (forced-colors: active) {
+  .dl.picked .gutter .ln,
+  .dl.picked .gutter .sign {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+}
 /* The line cursor (only while the diff has keyboard focus) is an overlay above the sticky gutter,
    which would otherwise cover its left edge; the gutter also carries a bar for when lines scroll sideways. */
 .dl {

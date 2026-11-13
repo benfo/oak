@@ -39,9 +39,9 @@
   background: var(--border-strong);
 }
 @media (forced-colors: active) {
-  .menu-item[data-focused] {
-    outline: 2px solid Highlight;
-    outline-offset: -2px;
+  .menu-separator {
+    forced-color-adjust: none;
+    background: CanvasText;
   }
 }
 /* Context menu rows: check column, label, submenu arrow. The point is an invisible anchor at the pointer. */

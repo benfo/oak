@@ -34,13 +34,21 @@ export function CodeLine({ text, tokens, whitespace, hits, currentHit }: Props) 
     if (from < span.t.length) pieces.push({ t: span.t.slice(from), c: span.c, changed: span.changed, hit: -1 })
     offset += span.t.length
   }
+  // Changed spaces (re-indented code) keep their tint but are marked, so an underline can skip them.
+  const parts = pieces.flatMap((p) =>
+    p.changed ? p.t.split(/(\s+)/).flatMap((t) => (t ? [{ ...p, t, blank: /^\s+$/.test(t) }] : [])) : [{ ...p, blank: false }]
+  )
   return (
     <>
-      {pieces.map((p, i) => (
+      {parts.map((p, i) => (
         <span
           key={i}
           className={
-            [p.c ? 'syntax' : '', p.changed ? 'word-change' : '', p.hit < 0 ? '' : p.hit === currentHit ? 'find-hit current' : 'find-hit']
+            [
+              p.c ? 'syntax' : '',
+              p.changed ? (p.blank ? 'word-change blank' : 'word-change') : '',
+              p.hit < 0 ? '' : p.hit === currentHit ? 'find-hit current' : 'find-hit'
+            ]
               .filter(Boolean)
               .join(' ') || undefined
           }

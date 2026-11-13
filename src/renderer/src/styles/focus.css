@@ -77,11 +77,33 @@ input[type='checkbox']:focus-visible,
   box-shadow: inset 3px 0 0 var(--primary);
 }
 
+/* Tints and accent bars (box-shadow) disappear in Windows high contrast, so selection gets a real ring there:
+   thin for what is selected or active, thick for the row the keyboard is on. Thick rules come last to win ties. */
 @media (forced-colors: active) {
-  /* Tints and accent bars (box-shadow) disappear in high-contrast mode, so rows get a real ring there. */
+  .file-row.selected,
+  .file-grid .file-row[data-selected],
+  .commit-scroll .commit-row.selected,
+  .hidden-pattern-row[data-selected],
+  .recent li.active,
+  .tree-row.nav.nav-active .tree-row-content,
+  .rail-btn[aria-current],
+  .prefs-tab[data-selected],
+  .segment[aria-pressed='true'],
+  .tree-toggle[aria-pressed='true'],
+  .diff-full-button[aria-pressed='true'] {
+    outline: 1px solid Highlight;
+    outline-offset: -1px;
+  }
   .file-grid .file-row[data-focus-visible],
+  .file-grid:focus-within .file-row[data-selected],
+  .hidden-branches-list:focus-within .hidden-pattern-row[data-selected],
+  .hidden-pattern-row[data-focus-visible],
   .tree .tree-row[data-focus-visible] .tree-row-content,
   .tree-row-content[data-search-match],
+  .commit-list:focus .commit-row.cursor,
+  .menu-item[data-focused],
+  .palette-item[data-focused] .palette-row,
+  .theme-card[data-selected],
   [data-pane]:focus .active,
   [data-pane]:focus .selected {
     outline: 2px solid Highlight;

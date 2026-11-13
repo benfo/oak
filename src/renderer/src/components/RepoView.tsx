@@ -42,6 +42,7 @@ import { toggleChangesTree } from './TreeToggle'
 import { getCommitFilesMode, setCommitFilesMode, toggleCommitFilesMode, useCommitFilesMode } from '../history/commitFilesMode'
 import { toggleDiffLayout } from '../diff/diffLayout'
 import { toggleWhitespace } from '../diff/toggleWhitespace'
+import { toggleDiffColours } from '../diff/toggleDiffColours'
 import { changeDiffLayout } from '../diff/changeDiffLayout'
 import { showLessContext, showMoreContext, toggleFullContext } from '../diff/useDiffContext'
 import { notify } from '../notices'
@@ -769,6 +770,13 @@ function buildCommands({
     },
     { id: 'toggle-workspace-focus', title: 'Expand code area / restore previous layout', category: 'View', keys: 'F11', run: toggleFocus },
     { id: 'toggle-whitespace', title: 'Show / hide spaces and tabs in code', category: 'View', run: toggleWhitespace },
+    {
+      id: 'toggle-diff-colours',
+      title: 'Switch diff colours: standard / colour-blind friendly',
+      detail: 'Blue and orange for added and removed lines (colour blindness, accessibility)',
+      category: 'View',
+      run: toggleDiffColours
+    },
     {
       id: 'restore-workspace-layout',
       title: 'Restore previous layout',

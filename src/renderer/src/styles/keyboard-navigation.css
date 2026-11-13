@@ -64,6 +64,25 @@
 .diff-wrap.plain .dl.active-hunk .gutter {
   box-shadow: none;
 }
+/* Windows high contrast drops the tint and the gutter bar (a shadow), so the current hunk gets a ring on its header
+   and a real bar beside its changed lines. Only the bar opts out of forced colours, so the gutter keeps the system's. */
+@media (forced-colors: active) {
+  .diff .hunk-header.active-hunk {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .dl.active-hunk:is(.add, .del) .gutter::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 2px;
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+  .diff-wrap.plain .dl.active-hunk .gutter::before {
+    content: none;
+  }
+}
 .recent li.active {
   background: var(--selection);
 }

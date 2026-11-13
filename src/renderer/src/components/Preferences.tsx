@@ -11,6 +11,7 @@ import { notify } from '../notices'
 import { checkForUpdates, describeUpdate, installUpdate, useUpdateStatus } from '../updates'
 import { DIFF_LAYOUTS, type DiffLayout } from '../diff/diffLayout'
 import { changeDiffLayout } from '../diff/changeDiffLayout'
+import { DIFF_COLOUR_OPTIONS, type DiffColours } from '../diff/diffColours'
 import { openWhatsNew } from './WhatsNew'
 import { openRepoOrGlobalConfig } from '../lib/useGitConfig'
 import { GitPage } from './GitPage'
@@ -174,6 +175,22 @@ function Preferences({ repo, onClose }: { repo: string | null; onClose: () => vo
               {DIFF_LAYOUTS.map((layout) => (
                 <option key={layout.id} value={layout.id}>
                   {layout.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label="Diff colours"
+            hint="Added and removed lines, on top of any theme. Blue and orange stay distinct with red-green colour blindness"
+          >
+            <select
+              className="select"
+              value={s.diffColours}
+              onChange={(e) => updateSettings({ diffColours: e.target.value as DiffColours })}
+            >
+              {DIFF_COLOUR_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
                 </option>
               ))}
             </select>

@@ -52,6 +52,15 @@
   background: var(--warning-strong);
   box-shadow: 0 0 0 2px var(--warning);
 }
+/* Windows high contrast drops tints and shadows, so matches get a real ring there. */
+@media (forced-colors: active) {
+  .find-hit {
+    outline: 1px dashed CanvasText;
+  }
+  .find-hit.current {
+    outline: 2px solid Highlight;
+  }
+}
 
 .find-bar-hint {
   flex-basis: 100%;

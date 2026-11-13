@@ -3,6 +3,7 @@ import type { PullMode } from '../../shared/types'
 import { api } from './api'
 import { zoomThatFits } from './lib/layoutMinimums'
 import type { DiffLayout } from './diff/diffLayout'
+import type { DiffColours } from './diff/diffColours'
 import type { FileIconPackId } from './fileIcons/packs'
 
 /** User preferences (Preferences dialog, Ctrl+,). Stored in localStorage; read anywhere with getSettings(). */
@@ -25,6 +26,8 @@ export interface Settings {
   showWhitespace: boolean
   /** Shared layout for working-tree and history diffs. */
   diffLayout: DiffLayout
+  /** Colours for added and removed lines, on top of any theme (`diff/diffColours.ts`). */
+  diffColours: DiffColours
   /** Changed files (History and working tree) as a folder tree instead of a flat list. */
   changesTree: boolean
   /** Trace the checked-out branch's first-parent line and soften other graph lines. */
@@ -71,6 +74,7 @@ export const DEFAULTS: Settings = {
   syntaxHighlighting: true,
   showWhitespace: false,
   diffLayout: 'auto',
+  diffColours: 'standard',
   changesTree: false,
   emphasizeCurrentBranch: true,
   contextLines: 3,
@@ -121,11 +125,14 @@ export function updateSettings(patch: Partial<Settings>) {
   subs.forEach((s) => s())
 }
 
+/** Calls `fn` after every settings change; returns the unsubscribe. */
+export function subscribeSettings(fn: () => void) {
+  subs.add(fn)
+  return () => void subs.delete(fn)
+}
+
 export function useSettings() {
-  return useSyncExternalStore((s) => {
-    subs.add(s)
-    return () => void subs.delete(s)
-  }, getSettings)
+  return useSyncExternalStore(subscribeSettings, getSettings)
 }
 
 export function stepZoom(direction: 1 | -1 | 0) {
