@@ -21,7 +21,8 @@ const STREAMING = new Set([
   'stashPop',
   'stashApply',
   'continueOperation',
-  'checkout'
+  'checkout',
+  'compactRepo'
 ])
 
 function createWindow() {

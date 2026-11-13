@@ -1,0 +1,56 @@
+/* ---------- checklist dialog (tick rows, then confirm) ---------- */
+
+.checklist-frame {
+  flex: none;
+  margin-bottom: var(--space-3);
+}
+.checklist {
+  max-height: calc(var(--row-md) * 10);
+  overflow-y: auto;
+  outline: none;
+}
+.checklist-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--row-md);
+  padding: 0 var(--row-pad);
+  outline: none;
+  cursor: default;
+}
+.checklist-row[data-hovered] {
+  background: var(--hover);
+}
+.checklist-row[data-focus-visible] {
+  background: var(--selection-strong);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+/* The row is the control; the box only shows its state. */
+.checklist-row input {
+  flex: none;
+  pointer-events: none;
+}
+.checklist-label {
+  flex: none;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.checklist-note {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--muted-foreground);
+}
+.checklist-note.warn {
+  color: var(--warning);
+}
+.checklist-hint {
+  margin-right: auto;
+  font-size: var(--text-sm);
+  color: var(--subtle-foreground);
+}

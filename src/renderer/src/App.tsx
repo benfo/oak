@@ -5,6 +5,7 @@ import { CloneHost, Welcome } from './components/Welcome'
 import { GitMissing } from './components/GitMissing'
 import { RepoView } from './components/RepoView'
 import { DialogHost, Toasts } from './ui'
+import { ChecklistDialogHost } from './components/ChecklistDialog'
 import { notify } from './notices'
 import { PaletteHost } from './components/Palette'
 import { ContextMenuHost } from './components/ContextMenu'
@@ -112,6 +113,7 @@ export default function App() {
       <ContextMenuHost />
       <CloneHost />
       <DialogHost />
+      <ChecklistDialogHost />
       <PreferencesHost repo={repo} />
     </>
   )

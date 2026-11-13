@@ -10,8 +10,9 @@ import { pullRequestUrlFromOutput, type RemotePageTarget } from '../shared/remot
 import { defaultRemote, pullRequestPage, remotePage, unpushedCommits } from './remote'
 import { isReachable } from './reachable'
 import { branchDetails, listBranches, remoteHead } from './refs'
-import { deleteBranches, findBranchCleanup } from './branchCleanup'
-import type { BranchCleanup } from '../shared/branchCleanup'
+import { deleteBranches } from './branchCleanup'
+import { compactRepo, runCheckup } from './repoCheckup'
+import type { RepoCheckup, RepoStorage } from '../shared/repoCheckup'
 import { readMessages, restoreBeforeRewrite, runRewrite } from './rewrite'
 import type { RewritePlan, RewriteResult } from '../shared/rewrite'
 import { homedir } from 'os'
@@ -636,8 +637,10 @@ epo`), if any. */
     await git(repo, ['branch', force ? '-D' : '-d', name])
   },
 
-  /** Merged and gone local branches to review before deleting them with `deleteBranches`. */
-  branchCleanup: (repo: string): Promise<BranchCleanup> => findBranchCleanup(repo),
+  /** Health findings to review: branches to delete with `deleteBranches`, storage to shrink with `compactRepo`. */
+  repoCheckup: (repo: string): Promise<RepoCheckup> => runCheckup(repo),
+
+  compactRepo: (repo: string): Promise<RepoStorage> => compactRepo(repo),
 
   deleteBranches: (repo: string, names: string[]) => deleteBranches(repo, names),
 

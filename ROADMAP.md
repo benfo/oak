@@ -7,6 +7,7 @@ Each fact has one place. When work moves, edit **Now**. When something ships, ad
 ## Now (2026-11-13)
 
 - **Released:** 0.1.29 (2026-11-13). The website downloads follow the latest published release (`website/src/data/release.json`, updated once the packages are public).
+- **Unreleased (`feature/clean-up-branches`):** "Clean up branches…" (palette, Branches section menu) reviews local branches merged into the default branch or with a deleted upstream and deletes the ticked ones. First step of repository health tooling (Backlog).
 - **Flaky UI tests:** `tests-ui/escape.test.ts` "comparison banner Escape dismisses…" and "F6 reaches an empty comparison result…" fail about 1 run in 3 (focus not where expected); `tests-ui/nav-history.test.ts` "view switches" sometimes reads the status line before "Nothing earlier" shows.
 - **Not run:** the full Electron UI suite since #35 (focused tests pass).
 
@@ -102,6 +103,7 @@ Ideas only, none agreed; each needs a concrete workflow and a discussion first.
 - Bisect as a guided flow: mark good and bad from History, show progress and the found commit, always offer Reset.
 - Worktrees: create (new or existing branch), view (path, branch, dirty, locked or prunable), switch, clean up (remove, prune, flag merged branches). Also for agent workflows, including two side by side; define the workflow before the UI.
 - Compare the working tree against any selected commit.
+- Repository health, after branch cleanup: compact (`git gc`, never `--aggressive` or `--prune=now`, size before and after from `git count-objects -vH`) with read-only facts (size, loose objects, a leftover rebase or merge, a stale `index.lock`); then stale stashes (older than about 30 days or from a deleted branch, unticked by default) in the same checklist dialog. Later, opt-in only: `git maintenance start`, `git fsck`, `git lfs prune`. Not wanted: reflog expiry, bulk remote branch deletion, automatic cleanup. Open: whether gone branches with unmerged commits start ticked (they do now) and whether to detect squash merges.
 - Commit options follow-ups: author and date overrides, `--reset-author` for amend, trailers such as Co-authored-by, a "Verified" signature badge in History, a hint when an undone WIP commit was already pushed. Not wanted: `--no-post-rewrite`.
 - Conflict follow-ups: stash-pop conflict banner, ours/theirs labels (swapped in a rebase), modify/delete conflicts, Pull and Rebase conflicts in the same flow. Skip for rebase, cherry-pick and revert (prototyped and removed; revisit with a confirm naming the dropped commit) and safeguards only if users report lost work.
 - Output log: a stream of what Oak ran (every git command and result, background fetches, errors), like VS Code's Output, replacing the single last-output dialog. Design first: what an entry is, how many to keep, persistence, filters.
