@@ -11,6 +11,8 @@ import {
 } from '../shared/branchCleanup.ts'
 
 const HEADS = 'refs/heads/'
+/** Windows refuses paths over 260 characters unless git is told to allow them, and dependency folders often have them. */
+const LONG_PATHS = ['-c', 'core.longpaths=true']
 
 /** Why each of these branches' worktrees cannot be removed. Uncommitted work is asked of the worktree itself. */
 async function blockedWorktrees(repo: string, held: string[]): Promise<Map<string, WorktreeBlock>> {
@@ -24,7 +26,7 @@ async function blockedWorktrees(repo: string, held: string[]): Promise<Map<strin
       else if (worktree.locked) blocked.set(name, 'locked')
       else if (!worktree.prunable) {
         // A worktree that cannot be read is left alone, like one with changes.
-        const changes = await git(worktree.path, ['status', '--porcelain']).catch(() => 'unreadable')
+        const changes = await git(worktree.path, [...LONG_PATHS, 'status', '--porcelain']).catch(() => 'unreadable')
         if (changes.trim()) blocked.set(name, 'changes')
       }
     })
@@ -59,7 +61,7 @@ export async function findBranchCleanup(repo: string): Promise<BranchCleanup> {
 
 /** Without force: git itself refuses a worktree that gained uncommitted work or a lock since it was listed. */
 export async function removeWorktrees(repo: string, paths: string[]) {
-  for (const path of paths) await git(repo, ['worktree', 'remove', '--', path])
+  for (const path of paths) await git(repo, [...LONG_PATHS, 'worktree', 'remove', '--', path])
 }
 
 /** Force delete: the caller has shown which of these carry commits found nowhere else. */

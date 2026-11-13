@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { deleteBranches, findBranchCleanup, removeWorktrees } from '../src/main/branchCleanup.ts'
@@ -123,6 +123,27 @@ test('seen from a linked worktree, a finished branch in the main worktree is kep
     found.kept.map((kept) => [kept.name, kept.why]),
     [['old', 'main']]
   )
+})
+
+test('a worktree with paths longer than Windows allows by default is still read and removed', async () => {
+  const { dir, root } = cloned()
+  writeFileSync(join(dir, '.gitignore'), 'deep/')
+  run(dir, 'add', '.gitignore')
+  run(dir, 'commit', '-q', '-m', 'ignore')
+  run(dir, 'push', '-q', 'origin', 'main')
+  run(dir, 'branch', 'long')
+  const worktree = join(root, 'long')
+  run(dir, 'worktree', 'add', '-q', worktree, 'long')
+  const deep = join(worktree, 'deep', ...Array.from({ length: 8 }, () => 'd'.repeat(40)))
+  mkdirSync(deep, { recursive: true })
+  writeFileSync(join(deep, 'file.txt'), 'x')
+  const found = await findBranchCleanup(dir)
+  assert.deepEqual(
+    found.candidates.map((c) => c.name),
+    ['long']
+  )
+  await removeWorktrees(dir, [worktree])
+  assert.equal(existsSync(worktree), false)
 })
 
 test('the worktree list is read with its locks and missing folders', () => {
