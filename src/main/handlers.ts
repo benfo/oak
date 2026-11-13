@@ -2,7 +2,7 @@ import { app, BrowserWindow, clipboard, dialog, shell, type OpenDialogOptions } 
 import { spawn } from 'child_process'
 import { existsSync, promises as fs } from 'fs'
 import path from 'path'
-import { getGitBinary, git, outputSink, setGitBinary } from './git'
+import { getGitBinary, git, gitOnPaths, outputSink, setGitBinary } from './git'
 import { readBlob } from './blob'
 import { fileVersions as readFileVersions } from './fileVersions'
 import type { FileVersions, PreviewSource } from '../shared/filePreview'
@@ -530,12 +530,12 @@ epo`), if any. */
 
   // ---- working tree ----
   async stage(repo: string, paths: string[]) {
-    await git(repo, ['add', '-A', '--', ...paths])
+    await gitOnPaths(repo, ['add', '-A'], paths)
   },
 
   async unstage(repo: string, paths: string[]) {
-    if (await hasHead(repo)) await git(repo, ['reset', '-q', 'HEAD', '--', ...paths])
-    else await git(repo, ['rm', '--cached', '-r', '-q', '--', ...paths])
+    if (await hasHead(repo)) await gitOnPaths(repo, ['reset', '-q', 'HEAD'], paths)
+    else await gitOnPaths(repo, ['rm', '--cached', '-r', '-q'], paths)
   },
 
   async stageAll(repo: string) {
@@ -548,10 +548,10 @@ epo`), if any. */
   },
 
   async discard(repo: string, tracked: string[], untracked: string[]) {
-    if (tracked.length) await git(repo, ['restore', '--worktree', '--', ...tracked])
+    if (tracked.length) await gitOnPaths(repo, ['restore', '--worktree'], tracked)
     for (const f of untracked) await shell.trashItem(path.join(repo, f))
     // Drop any --intent-to-add entries left for them (no-op for truly untracked files).
-    if (untracked.length) await git(repo, ['rm', '--cached', '-q', '--ignore-unmatch', '--', ...untracked])
+    if (untracked.length) await gitOnPaths(repo, ['rm', '--cached', '-q', '--ignore-unmatch'], untracked)
   },
 
   async resolveConflict(repo: string, file: string, side: 'ours' | 'theirs' | 'mark') {

@@ -38,6 +38,13 @@ function cleanError(text: string) {
     .trim()
 }
 
+/**
+ * Runs a git command on many paths, handed over on stdin: thousands of them do not fit on a Windows command line.
+ * `args` end where the paths would start.
+ */
+export const gitOnPaths = (cwd: string, args: string[], paths: string[]) =>
+  git(cwd, [...args, '--pathspec-from-file=-', '--pathspec-file-nul'], { input: paths.join('\0') })
+
 /** The git executable: "git" from PATH unless Preferences names one. */
 let gitBinary = 'git'
 export const setGitBinary = (p: string) => void (gitBinary = p.trim() || 'git')
