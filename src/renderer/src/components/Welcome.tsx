@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { api, errorMessage } from '../api'
-import { openFolder, pickAndOpen } from '../repoActions'
+import { openFolder, openRecent, pickAndOpen } from '../repoActions'
 import { relativeTime } from '../lib/format'
 import { handleListNav, handleNavigation, revealActive } from '../lib/navigation'
 import { useNavigation } from '../lib/useNavigation'
@@ -143,7 +143,7 @@ export function Welcome({ onOpen }: { onOpen: (repo: string) => void }) {
               handleNavigation(e, {
                 activate: r
                   ? async () => {
-                      open(await openFolder(r.path))
+                      open(await openRecent(r.path))
                     }
                   : undefined,
                 discard: r
@@ -159,7 +159,7 @@ export function Welcome({ onOpen }: { onOpen: (repo: string) => void }) {
                 key={r.path}
                 className={i === active ? 'active' : ''}
                 onMouseDown={() => setActive(i)}
-                onClick={async () => open(await openFolder(r.path))}
+                onClick={async () => open(await openRecent(r.path))}
               >
                 <Icon name="folder" />
                 <div className="recent-text">

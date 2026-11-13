@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, renameSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { test, expect } from './fixtures'
 import { commitAll, git, removeDir, tempDir, write } from './repos'
@@ -100,4 +100,40 @@ test('a worktree added or removed outside Oak marks and unmarks its branch witho
   git(small, 'worktree', 'remove', join(worktree, 'parked'))
   await expect(row).not.toContainText('worktree')
   removeDir(worktree)
+})
+
+test('a recent worktree that left a plain folder inside its repository is explained and forgotten', async ({ open, small }) => {
+  const nested = join(small, '.worktrees', 'parked')
+  git(small, 'worktree', 'add', '-q', '-b', 'parked', nested)
+  const page = await open(small)
+  const picker = page.locator('.palette.dropdown')
+  const search = async (trigger: string, text: string) => {
+    await page.locator(trigger).click()
+    await expect(picker.getByRole('textbox')).toBeFocused()
+    await picker.getByRole('textbox').fill(text)
+  }
+  const pick = async (trigger: string, text: string) => {
+    await search(trigger, text)
+    await expect(picker.getByRole('option').first()).toContainText(text)
+    await page.keyboard.press('Enter')
+  }
+  await pick('.tb-branch', 'parked')
+  await expect(page).toHaveTitle('parked - Oak')
+  await pick('.tb-repo', basename(small))
+  await expect(page).toHaveTitle(`${basename(small)} - Oak`)
+
+  // Removed, but files stayed behind: git now sees the folder as part of the repository around it.
+  // Git commands of the view just left may still be running in the folder, which blocks deleting it on Windows:
+  // wait until it can be renamed.
+  await expect(() => {
+    renameSync(nested, `${nested}-free`)
+    renameSync(`${nested}-free`, nested)
+  }).toPass()
+  git(small, 'worktree', 'remove', '--force', nested)
+  mkdirSync(nested, { recursive: true })
+  await pick('.tb-repo', 'parked')
+  await expect(page.locator('.toast')).toContainText('is no longer a repository of its own')
+  await expect(page).toHaveTitle(`${basename(small)} - Oak`)
+  await search('.tb-repo', 'parked')
+  await expect(picker.getByText('No matches', { exact: true })).toBeVisible()
 })
