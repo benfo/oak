@@ -17,5 +17,18 @@ export function classifyRepoChange(file: string): RepoChange {
   return /(^|\/)node_modules\//.test(file) ? 'ignore' : 'files'
 }
 
+/**
+ * Sorts a changed path inside a git directory that lives outside the open folder (a linked worktree keeps its
+ * refs in the main repository's `.git`). `file` is relative to the shared git directory; `ownDir` is where this
+ * folder's own bookkeeping sits inside it (`worktrees/<name>`, or empty when the whole directory is its own).
+ * Refs are shared, so they always count; another folder's index and state say nothing about this one's files.
+ */
+export function classifyGitDirChange(file: string, ownDir: string): RepoChange {
+  const change = classifyRepoChange(file ? `.git/${file}` : '.git')
+  if (change !== 'files') return change
+  const own = ownDir ? file.startsWith(`${ownDir}/`) : !file.startsWith('worktrees/')
+  return own ? 'files' : 'ignore'
+}
+
 /** How long a window focus may rely on the file watcher before it re-reads refs and history anyway, in case the watcher missed a change. */
 export const FOCUS_REFRESH_AFTER_MS = 30_000
