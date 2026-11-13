@@ -1,4 +1,5 @@
-import { join } from 'node:path'
+import { mkdirSync } from 'node:fs'
+import { basename, join } from 'node:path'
 import { test, expect } from './fixtures'
 import { commitAll, git, removeDir, tempDir, write } from './repos'
 
@@ -51,5 +52,38 @@ test('a branch checked out in another worktree is marked, and Enter opens that w
   await expect(row('main')).toContainText('worktree')
   expect(git(small, 'branch', '--show-current').trim()).toBe('main')
   git(small, 'worktree', 'remove', '--force', join(worktree, 'parked'))
+  removeDir(worktree)
+})
+
+test('opening a worktree whose folder is gone, or a recent folder that is no longer a repository, says so', async ({ open, small }) => {
+  const worktree = tempDir('worktree')
+  git(small, 'worktree', 'add', '-q', '-b', 'parked', join(worktree, 'parked'))
+  const page = await open(small)
+  const pick = async (trigger: string, text: string) => {
+    await page.locator(trigger).click()
+    const input = page.locator('.palette.dropdown').getByRole('textbox')
+    await expect(input).toBeFocused()
+    await input.fill(text)
+    // The list filters a moment after typing; Enter before that would pick the old first row.
+    await expect(page.locator('.palette.dropdown').getByRole('option').first()).toContainText(text)
+    await page.keyboard.press('Enter')
+  }
+  // Visit the worktree and come back, so it is among the recent repositories.
+  await pick('.tb-branch', 'parked')
+  await expect(page).toHaveTitle('parked - Oak')
+  await pick('.tb-repo', basename(small))
+  await expect(page).not.toHaveTitle('parked - Oak')
+  // Deleted by hand, git still lists the worktree: opening it from its branch says the folder is gone.
+  removeDir(join(worktree, 'parked'))
+  await pick('.tb-branch', 'parked')
+  await expect(page.locator('.toast').filter({ hasText: 'Folder not found' })).toBeVisible()
+
+  // A leftover folder that is no longer a repository is still among the recent ones: choosing it must not do nothing.
+  mkdirSync(join(worktree, 'parked'))
+  await pick('.tb-repo', 'parked')
+  const dialog = page.getByRole('dialog', { name: 'Not a Git repository' })
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+  await expect(page).not.toHaveTitle('parked - Oak')
   removeDir(worktree)
 })

@@ -1,6 +1,6 @@
 import { api, repoName } from './api'
 import * as act from './actions'
-import { pickAndOpen } from './repoActions'
+import { openFolder, pickAndOpen } from './repoActions'
 import type { RepoCtx } from './useRepo'
 import type { Branch } from '../../shared/types'
 import { openPalette } from './components/Palette'
@@ -108,7 +108,11 @@ export async function showRepoPicker(
       detail: x.path,
       group: 'Recent repositories',
       current: x.path === current,
-      run: async () => x.path !== current && onSwitch(await api.openRepo(x.path))
+      run: async () => {
+        // A recent repository can be gone by now (a removed worktree, a deleted folder): say so instead of doing nothing.
+        const opened = x.path === current ? null : await openFolder(x.path)
+        if (opened) onSwitch(opened)
+      }
     })),
     actions: [
       {
