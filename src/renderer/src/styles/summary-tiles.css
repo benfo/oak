@@ -54,17 +54,16 @@
   font-size: var(--text-sm);
   color: var(--muted-foreground);
 }
-.summary-tile.attention {
-  border-color: var(--warning-strong);
-}
 .summary-tile.attention .summary-tile-icon {
   background: var(--warning-soft);
   color: var(--warning);
 }
 
-/* Tints vanish in Windows high contrast: the border alone has to say which tile wants attention. */
+/* The icon's tint says which tile wants attention; a border would read as a selected card. Tints vanish in
+   Windows high contrast, so there an inner outline says it instead, without changing the tile's size. */
 @media (forced-colors: active) {
   .summary-tile.attention {
-    border: 2px solid Highlight;
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
   }
 }
