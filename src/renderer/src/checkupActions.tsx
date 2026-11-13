@@ -10,7 +10,6 @@ import {
   CHECKUP_PENDING,
   checkupCaution,
   checkupDone,
-  checkupKept,
   checkupRows,
   checkupStopped,
   checkupTasks,
@@ -88,7 +87,6 @@ export async function repositoryCheckup(r: RepoCtx) {
         return {
           message: checkupVerdict(rows),
           summary: tilesFor(checkup),
-          note: checkupKept(checkup.cleanup),
           caution: checkupCaution(checkup),
           items: rows
         }

@@ -7,7 +7,6 @@ import { join } from 'node:path'
 import { compactRepo, runCheckup } from '../src/main/repoCheckup.ts'
 import {
   checkupDone,
-  checkupKept,
   checkupStopped,
   checkupTasks,
   compactNote,
@@ -91,16 +90,22 @@ test('tiles cover every area, also with nothing to do', () => {
   assert.equal(checkupTiles(tidy, 'rebasing')[2].value, 'Rebase in progress')
 })
 
-test('gone branches that are checked out are named as kept', () => {
-  const kept = (names: string[]) => ({ ...tidy.cleanup, kept: names })
-  assert.equal(checkupKept(kept([])), undefined)
-  assert.equal(checkupKept(kept(['a'])), 'a has a gone upstream but is checked out in a worktree, so it stays.')
-  assert.equal(checkupKept(kept(['a', 'b'])), 'a and b have a gone upstream but are checked out in worktrees, so they stay.')
-  assert.equal(
-    checkupKept(kept(['a', 'b', 'c', 'd'])),
-    'a, b and 2 more have a gone upstream but are checked out in worktrees, so they stay.'
+test('gone branches that are checked out are listed last and cannot be ticked', () => {
+  const kept = [
+    { name: 'a', worktree: 'C:/work/a' },
+    { name: 'b', worktree: null }
+  ]
+  const held = { ...tidy, cleanup: { ...tidy.cleanup, kept } }
+  assert.deepEqual(
+    checkupRows(held).map((row) => [row.id, row.note, !!row.disabled, row.checked]),
+    [
+      ['compact', 'already compact', false, false],
+      ['kept:a', 'checked out in C:/work/a', true, false],
+      ['kept:b', 'checked out here', true, false]
+    ]
   )
-  assert.equal(checkupTiles({ ...tidy, cleanup: kept(['a', 'b']) }, 'clean')[0].detail, '2 gone but checked out')
+  assert.deepEqual(tickedBranches(checkupRows(held).map((row) => row.id)), [])
+  assert.equal(checkupTiles(held, 'clean')[0].detail, '2 gone but checked out')
 })
 
 test('the verdict and caution follow what is listed', () => {

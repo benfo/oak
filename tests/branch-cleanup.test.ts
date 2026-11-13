@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { deleteBranches, findBranchCleanup } from '../src/main/branchCleanup.ts'
-import { cleanupNote } from '../src/shared/branchCleanup.ts'
+import { cleanupNote, keptNote } from '../src/shared/branchCleanup.ts'
 
 const run = (cwd: string, ...args: string[]) =>
   execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd, encoding: 'utf8' }).trim()
@@ -81,7 +81,13 @@ test('a gone branch checked out in another worktree is kept and named', async ()
   run(dir, 'worktree', 'add', '-q', join(root, 'other'), 'parked')
   const found = await findBranchCleanup(dir)
   assert.deepEqual(found.candidates, [])
-  assert.deepEqual(found.kept, ['parked'])
+  assert.deepEqual(
+    found.kept.map((kept) => kept.name),
+    ['parked']
+  )
+  assert.match(found.kept[0].worktree!, /other$/)
+  assert.equal(keptNote(found.kept[0]), `checked out in ${found.kept[0].worktree}`)
+  assert.equal(keptNote({ name: 'here', worktree: null }), 'checked out here')
 })
 
 test('without a remote the conventional local branch is the target', async () => {

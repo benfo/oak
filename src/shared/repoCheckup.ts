@@ -1,4 +1,4 @@
-import { cleanupNote, type BranchCleanup } from './branchCleanup.ts'
+import { cleanupNote, keptNote, type BranchCleanup } from './branchCleanup.ts'
 import type { RepoState } from './types'
 import type { Task } from './taskList.ts'
 
@@ -25,10 +25,13 @@ export interface CheckupRow {
   note: string
   warn: boolean
   checked: boolean
+  /** Shown for information only: it cannot be ticked. */
+  disabled?: boolean
 }
 
 export const COMPACT_ID = 'compact'
 const BRANCH_ID = 'branch:'
+const KEPT_ID = 'kept:'
 
 /** Loose objects or packs beyond which compacting is worth suggesting; below it git is already tidy. */
 const MANY_LOOSE = 1000
@@ -123,20 +126,14 @@ export const CHECKUP_PENDING = 'Checking the repository…'
 export const checkupVerdict = (rows: CheckupRow[]) =>
   rows.some((row) => row.checked) ? 'Tick what to clean up, then confirm.' : 'Everything looks tidy. You can still compact if you like.'
 
-/** Why branches with a deleted upstream are missing from the list: git will not delete a checked-out branch. */
-export function checkupKept({ kept }: BranchCleanup): string | undefined {
-  if (!kept.length) return undefined
-  const [first, second, ...rest] = kept
-  if (!second) return `${first} has a gone upstream but is checked out in a worktree, so it stays.`
-  const names = rest.length ? `${first}, ${second} and ${rest.length} more` : `${first} and ${second}`
-  return `${names} have a gone upstream but are checked out in worktrees, so they stay.`
-}
-
 /** Shown under the list when a listed branch has commits found nowhere else. */
 export const checkupCaution = (checkup: RepoCheckup) =>
   checkup.cleanup.candidates.some((c) => c.reason === 'gone') ? 'Commits that are only on a deleted branch are lost with it.' : undefined
 
-/** What the check-up can do, branches first. Compacting is always offered and ticked only when it is worth it. */
+/**
+ * What the check-up can do, branches first. Compacting is always offered and ticked only when it is worth it.
+ * Gone branches git cannot delete come last, listed so they are not mistaken for overlooked.
+ */
 export function checkupRows(checkup: RepoCheckup): CheckupRow[] {
   const { cleanup, storage } = checkup
   const target = cleanup.target
@@ -160,7 +157,16 @@ export function checkupRows(checkup: RepoCheckup): CheckupRow[] {
       note: compact ? 'packs loose objects, keeps everything recoverable' : 'already compact',
       warn: false,
       checked: compact
-    }
+    },
+    ...cleanup.kept.map((kept) => ({
+      id: KEPT_ID + kept.name,
+      group: 'Kept: upstream gone, but checked out',
+      label: kept.name,
+      note: keptNote(kept),
+      warn: false,
+      checked: false,
+      disabled: true
+    }))
   ]
 }
 

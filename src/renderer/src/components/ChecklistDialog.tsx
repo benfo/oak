@@ -18,6 +18,8 @@ export interface ChecklistItem {
   /** Draws the note as a warning. */
   warn?: boolean
   checked?: boolean
+  /** Listed for information: it cannot be ticked and the arrow keys pass over it. */
+  disabled?: boolean
 }
 
 /** What the dialog shows; everything here can arrive after the dialog opened. */
@@ -25,8 +27,6 @@ export interface ChecklistContent {
   message: string
   /** Read-only findings shown above the list. */
   summary?: ReactNode
-  /** Something worth knowing about what the list leaves out, shown under it. */
-  note?: string
   /** What ticking a row can cost, shown under the list. */
   caution?: string
   items: ChecklistItem[]
@@ -98,10 +98,11 @@ function grouped(items: ChecklistItem[]) {
 
 function ChecklistRow({ item }: { item: ChecklistItem }) {
   return (
-    <GridListItem id={item.id} textValue={item.label} className="checklist-row">
+    <GridListItem id={item.id} textValue={item.label} className="checklist-row" isDisabled={item.disabled}>
       {({ isSelected }) => (
         <>
-          <input type="checkbox" checked={isSelected} readOnly tabIndex={-1} aria-hidden />
+          {/* A row that cannot be ticked keeps the box's slot, so labels stay in one column. */}
+          <input type="checkbox" checked={isSelected} readOnly tabIndex={-1} aria-hidden className={item.disabled ? 'absent' : ''} />
           <span className="checklist-label">{item.label}</span>
           {item.note && <span className={`checklist-note ${item.warn ? 'warn' : ''}`}>{item.note}</span>}
         </>
@@ -123,7 +124,8 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
     setItems(req.items)
     setSelected(initiallyTicked(req.items))
   }
-  const ticked = req.items.filter((i) => selected === 'all' || selected.has(i.id)).map((i) => i.id)
+  const tickable = req.items.filter((i) => !i.disabled)
+  const ticked = tickable.filter((i) => selected === 'all' || selected.has(i.id)).map((i) => i.id)
   const close = (ids: string[] | null) => {
     checklistStore.set(null)
     req.resolve(ids)
@@ -146,7 +148,7 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
         () => close(null)
       )
   }
-  const tickAllOrNone = () => setSelected(new Set(ticked.length === req.items.length ? [] : req.items.map((i) => i.id)))
+  const tickAllOrNone = () => setSelected(new Set(ticked.length === tickable.length ? [] : tickable.map((i) => i.id)))
 
   return (
     <Modal title={req.title} onClose={() => !working && close(outcome ? ticked : null)} width={640}>
@@ -176,7 +178,6 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
             <ChecklistRows req={req} ticked={ticked} selected={selected} onChange={setSelected} />
           )}
         </div>
-        {!work && req.note && <p className="checklist-aside">{req.note}</p>}
         {!work && <DialogDetailsView warning={req.caution} />}
       </div>
       {outcome ? (
@@ -244,7 +245,7 @@ function ChecklistRows({ req, ticked, selected, onChange }: ChecklistRowsProps) 
       className="checklist"
       data-pane="checklist"
       aria-label={req.title}
-      autoFocus
+      autoFocus="first"
       selectionMode="multiple"
       selectionBehavior="toggle"
       disallowTypeAhead
@@ -255,7 +256,7 @@ function ChecklistRows({ req, ticked, selected, onChange }: ChecklistRowsProps) 
       {grouped(req.items).map(([title, items]) =>
         title ? (
           <GridListSection key={title}>
-            <GroupHeader title={title} ids={items.map((i) => i.id)} ticked={ticked} onChange={onChange} />
+            <GroupHeader title={title} ids={items.filter((i) => !i.disabled).map((i) => i.id)} ticked={ticked} onChange={onChange} />
             {items.map((item) => (
               <ChecklistRow key={item.id} item={item} />
             ))}

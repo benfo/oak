@@ -16,14 +16,15 @@ export async function findBranchCleanup(repo: string): Promise<BranchCleanup> {
   ])
   const names = (out: string) => out.split('\n').filter(Boolean)
   const merged = new Set(names(mergedOut).map((ref) => ref.slice(HEADS.length)))
-  const checkedOut = new Set(
+  /** Branch name to the worktree that has it checked out, this one included. */
+  const worktrees = new Map(
     names(worktreeOut)
       .map((line) => line.split('\x1f'))
       .filter(([, worktree]) => worktree)
-      .map(([ref]) => ref.slice(HEADS.length))
+      .map(([ref, worktree]) => [ref.slice(HEADS.length), worktree] as const)
   )
 
-  const candidates = cleanupCandidates(branches, target, merged, checkedOut)
+  const candidates = cleanupCandidates(branches, target, merged, new Set(worktrees.keys()))
   await Promise.all(
     candidates
       .filter((c) => c.reason === 'gone')
@@ -31,7 +32,7 @@ export async function findBranchCleanup(repo: string): Promise<BranchCleanup> {
         c.unmerged = Number(await git(repo, ['rev-list', '--count', `${target}..${HEADS}${c.name}`]))
       })
   )
-  return { target, candidates, kept: cleanupKept(branches, checkedOut) }
+  return { target, candidates, kept: cleanupKept(branches, worktrees) }
 }
 
 /** Force delete: the caller has shown which of these carry commits found nowhere else. */
