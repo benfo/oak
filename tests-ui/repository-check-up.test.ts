@@ -66,6 +66,9 @@ test('the check-up lists merged and gone branches and deletes only the ticked on
   git(small, 'fetch', '-q', '--prune')
 
   const page = await open(small)
+  // The sidebar marks the branch whose upstream was deleted.
+  const goneBranch = page.locator('[data-pane="sidebar"] [role="row"][data-key="refs/heads/squashed"]')
+  await expect(goneBranch).toContainText('gone')
   await watchDialogLayout(page)
   await runCheckUp(page)
   const dialog = page.getByRole('dialog', { name: 'Repository check-up' })
@@ -113,6 +116,7 @@ test('the check-up lists merged and gone branches and deletes only the ticked on
   await expectSteadyBody(page)
   expect(localBranches(small)).toEqual(['done', 'main'])
   await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused()
+  await expect(goneBranch).toHaveCount(0)
   await page.keyboard.press('Enter')
   await expect(dialog).toHaveCount(0)
   await expect(page.locator('.status-message')).toContainText('Deleted squashed')
