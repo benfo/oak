@@ -9,7 +9,9 @@ import type { FileVersions, PreviewSource } from '../shared/filePreview'
 import { pullRequestUrlFromOutput, type RemotePageTarget } from '../shared/remote'
 import { defaultRemote, pullRequestPage, remotePage, unpushedCommits } from './remote'
 import { isReachable } from './reachable'
-import { branchDetails, listBranches } from './refs'
+import { branchDetails, listBranches, remoteHead } from './refs'
+import { deleteBranches, findBranchCleanup } from './branchCleanup'
+import type { BranchCleanup } from '../shared/branchCleanup'
 import { readMessages, restoreBeforeRewrite, runRewrite } from './rewrite'
 import type { RewritePlan, RewriteResult } from '../shared/rewrite'
 import { homedir } from 'os'
@@ -343,9 +345,7 @@ epo`), if any. */
   },
 
   /** Name (as in `branches`) of the branch a comparison defaults to; `source` null means the checked-out branch. */
-  async remoteHead(repo: string): Promise<string | null> {
-    return (await git(repo, ['symbolic-ref', '--short', '-q', 'refs/remotes/origin/HEAD'], { okCodes: [1] })).trim() || null
-  },
+  remoteHead: (repo: string): Promise<string | null> => remoteHead(repo),
 
   /** The single common ancestor, or null when there is none or several (only a tip-to-tip difference is meaningful then). */
   async mergeBase(repo: string, before: string, after: string): Promise<string | null> {
@@ -635,6 +635,11 @@ epo`), if any. */
   async deleteBranch(repo: string, name: string, force: boolean) {
     await git(repo, ['branch', force ? '-D' : '-d', name])
   },
+
+  /** Merged and gone local branches to review before deleting them with `deleteBranches`. */
+  branchCleanup: (repo: string): Promise<BranchCleanup> => findBranchCleanup(repo),
+
+  deleteBranches: (repo: string, names: string[]) => deleteBranches(repo, names),
 
   async deleteRemoteBranch(repo: string, remoteBranch: string) {
     const [remote, ...rest] = remoteBranch.split('/')

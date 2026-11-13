@@ -29,3 +29,8 @@ export async function branchDetails(repo: string): Promise<Record<string, Branch
   ])
   return parseDetailLines(out)
 }
+
+/** The remote's default branch as `branches` names it (for example `origin/main`), or null when origin/HEAD is unset. */
+export async function remoteHead(repo: string): Promise<string | null> {
+  return (await git(repo, ['symbolic-ref', '--short', '-q', 'refs/remotes/origin/HEAD'], { okCodes: [1] })).trim() || null
+}
