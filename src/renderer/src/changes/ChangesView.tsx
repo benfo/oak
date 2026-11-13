@@ -104,7 +104,16 @@ export function ChangesView({
     }
   }, [st])
 
-  const find = (section: Section, path: string | null) => (path === null ? undefined : lists[section].find((e) => e.path === path))
+  // Looked up per selected file, so a scan of the list each time would be quadratic with thousands of changes.
+  const byPath = useMemo(
+    () => ({
+      conflicted: new Map(lists.conflicted.map((e) => [e.path, e])),
+      unstaged: new Map(lists.unstaged.map((e) => [e.path, e])),
+      staged: new Map(lists.staged.map((e) => [e.path, e]))
+    }),
+    [lists]
+  )
+  const find = (section: Section, path: string | null) => (path === null ? undefined : byPath[section].get(path))
   const lead = find(sel.section, sel.lead) ?? null
   const selected = lists[sel.section].filter((e) => sel.keys.has(e.path))
 
