@@ -60,6 +60,7 @@ export function CommitDetails({
   filesHidden,
   filesToggle,
   contentRevision,
+  workingFiles,
   onOpenChanges,
   onFileHistory,
   onBlame,
@@ -82,6 +83,8 @@ export function CommitDetails({
   filesHidden: boolean
   filesToggle?: ReactNode
   contentRevision: number
+  /** The uncommitted files from the status (`workingFiles`), listed for the working changes row. */
+  workingFiles: readonly ChangedFile[]
   onOpenChanges: () => void
   onFileHistory: (path: string) => void
   onBlame: (path: string, rev: string | null) => void
@@ -118,6 +121,7 @@ export function CommitDetails({
   const path = selectedFile?.key === selectionKey ? selectedFile.path : (filePath ?? null)
   const fileCommit = filePath && hash && !compareBase && !branchComparison ? commits.find((c) => c.hash === hash) : undefined
   // Working changes reload whenever the repository content may have changed, even if file statuses did not.
+  const workingKey = useMemo(() => JSON.stringify(workingFiles), [workingFiles])
   const key = JSON.stringify([
     repo,
     hash,
@@ -126,6 +130,7 @@ export function CommitDetails({
     path,
     contextLines,
     working ? contentRevision : 0,
+    working ? workingKey : '',
     !!fileCommit,
     fileCommit?.status,
     fileCommit?.oldPath
@@ -157,7 +162,16 @@ export function CommitDetails({
       return
     }
     let cancelled = false
-    loadPreview(repo, hash, path, contextLines, compareBase, branchComparison, working ? contentRevision : undefined, fileCommit)
+    loadPreview(
+      repo,
+      hash,
+      path,
+      contextLines,
+      compareBase,
+      branchComparison,
+      working ? { files: workingFiles, revision: contentRevision } : undefined,
+      fileCommit
+    )
       .then((preview) => !cancelled && setView({ key, preview }))
       .catch((e) => !cancelled && setError({ key, message: errorMessage(e) }))
     return () => {

@@ -22,6 +22,7 @@ import type { TipCommit } from '../shared/status'
 import type { ThemeStarter } from '../shared/themeFile'
 import { setsLineEndings } from '../shared/gitTools'
 import { splitFileLogChunk } from '../shared/fileLog'
+import { parseNumstat, type LineCounts } from '../shared/numstat'
 import { blameArgs, mapLineToOlder, parseBlame, type BlameResult } from '../shared/blame'
 import { configFilePath, findExecutables, openConfigFile } from './gitConfigFiles'
 import { openInEditor, type EditorChoice } from './editor'
@@ -381,21 +382,8 @@ epo`), if any. */
         files.push({ path: nt[i++], status, additions: null, deletions: null })
       }
     }
-    const byPath = new Map(files.map((f) => [f.path, f]))
-    const mt = splitZ(num)
-    for (let i = 0; i < mt.length;) {
-      const [a, d, p] = mt[i++].split('\t')
-      let filePath = p
-      if (p === '') {
-        i++ // old path of a rename
-        filePath = mt[i++]
-      }
-      const f = byPath.get(filePath)
-      if (f) {
-        f.additions = a === '-' ? null : Number(a)
-        f.deletions = d === '-' ? null : Number(d)
-      }
-    }
+    const counts = parseNumstat(num)
+    for (const f of files) Object.assign(f, counts.get(f.path))
 
     return {
       hash: h,
@@ -504,39 +492,9 @@ epo`), if any. */
     return res.filePath
   },
 
-  async workingChanges(repo: string): Promise<ChangedFile[]> {
-    const base = ['diff', '--no-ext-diff', '-M', '-z']
-    const [ns, num, untracked] = await Promise.all([
-      git(repo, [...base, '--name-status', 'HEAD']),
-      git(repo, [...base, '--numstat', 'HEAD']),
-      git(repo, ['ls-files', '--others', '--exclude-standard', '-z'])
-    ])
-    const files: ChangedFile[] = []
-    const nt = splitZ(ns)
-    for (let i = 0; i < nt.length;) {
-      const status = nt[i++]
-      if (/^[RC]/.test(status)) {
-        const oldPath = nt[i++]
-        files.push({ path: nt[i++], oldPath, status: status[0], additions: null, deletions: null })
-      } else files.push({ path: nt[i++], status, additions: null, deletions: null })
-    }
-    const byPath = new Map(files.map((f) => [f.path, f]))
-    const mt = splitZ(num)
-    for (let i = 0; i < mt.length;) {
-      const [a, d, p] = mt[i++].split('\t')
-      let filePath = p
-      if (p === '') {
-        i++ // old path of a rename
-        filePath = mt[i++]
-      }
-      const f = byPath.get(filePath)
-      if (f) {
-        f.additions = a === '-' ? null : Number(a)
-        f.deletions = d === '-' ? null : Number(d)
-      }
-    }
-    for (const p of splitZ(untracked)) if (!byPath.has(p)) files.push({ path: p, status: '?', additions: null, deletions: null })
-    return files.sort((a, b) => a.path.localeCompare(b.path))
+  /** Line counts of tracked files between HEAD and the working tree; the file list itself comes from `status`. */
+  async workingLineCounts(repo: string): Promise<LineCounts> {
+    return parseNumstat(await git(repo, ['diff', '--no-ext-diff', '-M', '-z', '--numstat', 'HEAD']))
   },
 
   async workingFileDiff(repo: string, file: string, status: string, oldPath?: string, context = 3) {

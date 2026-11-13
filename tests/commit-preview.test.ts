@@ -209,37 +209,57 @@ test('the summary says when the target has newer commits that are not shown', ()
   assert.match(comparisonSummary('main', 'snapshots', null), /No single common ancestor/)
 })
 
+const changed = (path: string, status = 'M') => ({ path, status, additions: null, deletions: null })
+
 test('working changes are never cached, so edits show on the next load', async () => {
   let calls = 0
   const load = createCommitPreviewLoader({
     commitDetails: async (_, hash) => info(hash),
     commitFileDiff: async () => '',
-    workingChanges: async () => [{ path: 'a.ts', status: '?', additions: null, deletions: null }],
+    workingLineCounts: async () => new Map(),
     workingFileDiff: async (_repo, path, status) => `${status}:${path}:${++calls}`
   })
-  assert.equal((await load('repo', 'working-changes', null, 3)).diff, '?:a.ts:1')
-  assert.equal((await load('repo', 'working-changes', null, 3)).diff, '?:a.ts:2')
+  const working = { files: [changed('a.ts', '?')], revision: 1 }
+  assert.equal((await load('repo', 'working-changes', null, 3, undefined, undefined, working)).diff, '?:a.ts:1')
+  assert.equal((await load('repo', 'working-changes', null, 3, undefined, undefined, working)).diff, '?:a.ts:2')
 })
 
-test('working file list is reused within a refresh revision so picking a file only loads its diff', async () => {
-  let listings = 0
+test('working files come from the status; line counts load once per refresh beside the diff', async () => {
+  let counted = 0
+  let release = () => {}
   const load = createCommitPreviewLoader({
     commitDetails: async (_, hash) => info(hash),
     commitFileDiff: async () => '',
-    workingChanges: async () => {
-      listings++
-      return [
-        { path: 'a.ts', status: 'M', additions: 1, deletions: 0 },
-        { path: 'b.ts', status: 'M', additions: 1, deletions: 0 }
-      ]
+    workingLineCounts: async () => {
+      counted++
+      return new Map([['a.ts', { additions: 2, deletions: 1 }]])
     },
-    workingFileDiff: async (_repo, path) => path
+    workingFileDiff: (_repo, path) => new Promise((resolve) => (release = () => resolve(path)))
   })
-  assert.equal((await load('repo', 'working-changes', 'a.ts', 3, undefined, undefined, 1)).diff, 'a.ts')
-  assert.equal((await load('repo', 'working-changes', 'b.ts', 3, undefined, undefined, 1)).diff, 'b.ts')
-  assert.equal(listings, 1)
-  await load('repo', 'working-changes', 'b.ts', 3, undefined, undefined, 2)
-  assert.equal(listings, 2)
+  const files = [changed('a.ts'), changed('b.ts', '?')]
+  const first = load('repo', 'working-changes', 'a.ts', 3, undefined, undefined, { files, revision: 1 })
+  await Promise.resolve()
+  assert.equal(counted, 1, 'counts are asked for without waiting on the diff')
+  release()
+  const preview = await first
+  assert.equal(preview.diff, 'a.ts')
+  assert.deepEqual(
+    preview.details.files.map((f) => [f.path, f.additions, f.deletions]),
+    [
+      ['a.ts', 2, 1],
+      ['b.ts', null, null]
+    ]
+  )
+  const second = load('repo', 'working-changes', 'b.ts', 3, undefined, undefined, { files, revision: 1 })
+  await Promise.resolve()
+  release()
+  assert.equal((await second).file?.path, 'b.ts')
+  assert.equal(counted, 1, 'picking another file reuses the counts')
+  const third = load('repo', 'working-changes', 'b.ts', 3, undefined, undefined, { files, revision: 2 })
+  await Promise.resolve()
+  release()
+  await third
+  assert.equal(counted, 2, 'a refresh counts again')
 })
 
 test('a commit preview reads the file against its first parent, or against the comparison base', () => {

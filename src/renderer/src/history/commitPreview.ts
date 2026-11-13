@@ -1,13 +1,20 @@
 import type { ChangedFile, Commit, CommitDetails } from '../../../shared/types'
 import { WORKING_HASH } from '../../../shared/working.ts'
 import type { PreviewTarget } from '../../../shared/filePreview.ts'
+import type { LineCounts } from '../../../shared/numstat.ts'
 
 interface Source {
   mergeBase?(repo: string, before: string, after: string): Promise<string | null>
   commitDetails(repo: string, hash: string, compareBase?: string): Promise<CommitDetails>
   commitFileDiff(repo: string, hash: string, parent: string | null, path: string, oldPath?: string, context?: number): Promise<string>
-  workingChanges?(repo: string): Promise<ChangedFile[]>
+  workingLineCounts?(repo: string): Promise<LineCounts>
   workingFileDiff?(repo: string, path: string, status: string, oldPath?: string, context?: number): Promise<string>
+}
+
+/** The working changes to preview (`workingFiles` of the status) and the refresh they belong to. */
+export interface WorkingListing {
+  files: readonly ChangedFile[]
+  revision: number
 }
 
 export interface BranchComparison {
@@ -48,7 +55,7 @@ export function createCommitPreviewLoader(source: Source) {
   const details = new Map<string, Promise<CommitDetails>>()
   const diffs = new Map<string, Promise<string>>()
   const bases = new Map<string, Promise<string>>()
-  let workingFiles: { key: string; promise: Promise<ChangedFile[]> } | null = null
+  let lineCounts: { key: string; promise: Promise<LineCounts> } | null = null
   return async (
     repo: string,
     hash: string,
@@ -56,29 +63,30 @@ export function createCommitPreviewLoader(source: Source) {
     context: number,
     compareBase?: string,
     branchComparison?: BranchComparison,
-    revision?: number,
+    working?: WorkingListing,
     fileCommit?: Commit
   ): Promise<CommitPreview> => {
     let comparisonMode: CommitPreview['comparisonMode']
     if (hash === WORKING_HASH) {
-      // The working tree changes under the user's hands, so the diff is never cached. The file list is
-      // shared only within one refresh `revision`, so picking another file runs just its diff.
-      if (!source.workingChanges || !source.workingFileDiff) throw new Error('Working changes are unavailable.')
-      let listing = revision === undefined ? null : workingFiles
-      const key = JSON.stringify([repo, revision])
-      if (!listing || listing.key !== key) {
-        const promise = source.workingChanges(repo)
-        listing = { key, promise }
-        if (revision !== undefined) {
-          workingFiles = listing
-          promise.catch(() => {
-            if (workingFiles === listing) workingFiles = null
-          })
-        }
+      // The files come from the status already loaded. The working tree changes under the user's hands, so the diff
+      // is never cached; line counts are shared within one refresh `revision`, so picking another file runs just its
+      // diff. Counts and diff load side by side.
+      if (!working || !source.workingLineCounts || !source.workingFileDiff) throw new Error('Working changes are unavailable.')
+      const key = JSON.stringify([repo, working.revision])
+      if (lineCounts?.key !== key) {
+        const counted = { key, promise: source.workingLineCounts(repo) }
+        lineCounts = counted
+        counted.promise.catch(() => {
+          if (lineCounts === counted) lineCounts = null
+        })
       }
-      const files = await listing.promise
-      const file = files.find((f) => f.path === path) ?? files[0] ?? null
-      const diff = file ? await source.workingFileDiff(repo, file.path, file.status, file.oldPath, context) : null
+      const listed = working.files.find((f) => f.path === path) ?? working.files[0] ?? null
+      const [counts, diff] = await Promise.all([
+        lineCounts.promise,
+        listed ? source.workingFileDiff(repo, listed.path, listed.status, listed.oldPath, context) : null
+      ])
+      const files = working.files.map((f) => ({ ...f, ...counts.get(f.path) }))
+      const file = listed && (files.find((f) => f.path === listed.path) ?? null)
       const details: CommitDetails = {
         hash,
         parents: [],

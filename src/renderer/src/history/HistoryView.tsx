@@ -27,7 +27,7 @@ import { PaneFrame, PaneSearch } from '../components/Pane'
 import { Tip } from '../components/Tip'
 import type { WorkspaceLayout } from '../components/LayoutMenu'
 import type { CommitTarget } from '../blame/BlameView'
-import { WORKING_HASH, hasWorkingChanges, workingFileCount } from '../../../shared/working.ts'
+import { WORKING_HASH, hasWorkingChanges, workingFileCount, workingFiles } from '../../../shared/working.ts'
 import { DETAILS_MIN } from '../lib/layoutMinimums'
 import { useCommitRange } from './useCommitRange'
 import { RangeSummary } from './RangeSummary'
@@ -133,6 +133,7 @@ export function HistoryView({
   }, [r.commits, r.commitsFile, emphasizeCurrentBranch, r.status?.branch, r.status?.head])
   const hasEmphasis = graph.rows.some((row) => row.current)
   const showWorking = hasWorkingChanges(r.status) && !r.historyFile
+  const changedFiles = useMemo(() => workingFiles(r.status), [r.status])
   const [selected, setSelected] = useState<string | null>(null)
   /** Where Blame asked to land: a commit's file and line, used once for that commit. */
   const [jump, setJump] = useState<({ hash: string; n: number } & CommitTarget) | null>(null)
@@ -658,6 +659,7 @@ export function HistoryView({
           filesHidden={filesHidden}
           filesToggle={filesToggle}
           contentRevision={r.contentRevision}
+          workingFiles={changedFiles}
           onOpenChanges={onOpenChanges}
           onFileHistory={startFileHistory}
           onBlame={onBlame}
