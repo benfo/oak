@@ -139,8 +139,10 @@ test('inside a linked worktree, a branch or worktree made elsewhere shows withou
   git(small, 'worktree', 'add', '-q', join(worktree, 'second'), 'second')
   await expect(row).toContainText('worktree')
   git(small, 'worktree', 'remove', '--force', join(worktree, 'second'))
-  git(small, 'worktree', 'remove', '--force', join(worktree, 'parked'))
+  // The app runs git inside the open worktree while it refreshes, which holds the folder: let that finish first.
+  await expect(row).not.toContainText('worktree')
   removeDir(worktree)
+  git(small, 'worktree', 'prune')
 })
 
 test('a recent worktree that left a plain folder inside its repository is explained and forgotten', async ({ open, small }) => {
