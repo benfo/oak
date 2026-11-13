@@ -1,10 +1,11 @@
-import { useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { GridList, GridListHeader, GridListItem, GridListSection, type Selection } from 'react-aria-components'
 import { createStore } from '../lib/createStore'
 import { handleShortcutBindings } from '../lib/shortcuts'
 import { shortcutPlatform } from '../lib/useShortcuts'
 import { Modal } from '../ui'
 import { DialogDetailsView } from './DialogDetails'
+import { Icon } from './Icon'
 
 export interface ChecklistItem {
   id: string
@@ -28,6 +29,13 @@ export interface ChecklistContent {
   items: ChecklistItem[]
 }
 
+/** What confirming did, shown in the dialog in place of the list. */
+export interface ChecklistOutcome {
+  message: string
+  summary?: ReactNode
+  done: { label: string; note?: string }[]
+}
+
 export interface ChecklistOptions extends ChecklistContent {
   title: string
   /** The confirm button's text for the number of ticked rows. */
@@ -36,7 +44,15 @@ export interface ChecklistOptions extends ChecklistContent {
   danger?: (ids: string[]) => boolean
   /** Slow content: the dialog opens at once with the content above and swaps this in when it arrives. */
   loading?: Promise<ChecklistContent>
+  /**
+   * Does the ticked rows' work while the dialog stays open: `say` names the step under way, and the outcome
+   * replaces the list until the user closes the dialog. When it throws, the dialog closes; report the failure yourself.
+   */
+  run?: (ids: string[], say: (step: string) => void) => Promise<ChecklistOutcome>
 }
+
+/** After confirming with `run`: the step under way, then what was done. */
+type Work = { step: string } | { outcome: ChecklistOutcome }
 
 type ChecklistReq = ChecklistOptions & { pending: boolean; resolve: (ids: string[] | null) => void }
 
@@ -100,13 +116,30 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
     checklistStore.set(null)
     req.resolve(ids)
   }
-  const submit = () => close(ticked)
+  const [work, setWork] = useState<Work | null>(null)
+  const working = work && 'step' in work
+  const outcome = work && 'outcome' in work ? work.outcome : null
+  // The list that held focus is gone by then, so the summary's only button takes it.
+  const closeButton = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (outcome) closeButton.current?.focus()
+  }, [outcome])
+  const submit = () => {
+    if (!req.run) return close(ticked)
+    setWork({ step: 'Working…' })
+    req
+      .run(ticked, (step) => setWork({ step }))
+      .then(
+        (result) => setWork({ outcome: result }),
+        () => close(null)
+      )
+  }
   const tickAllOrNone = () => setSelected(new Set(ticked.length === req.items.length ? [] : req.items.map((i) => i.id)))
 
   return (
-    <Modal title={req.title} onClose={() => close(null)} width={640}>
-      <p className="modal-msg">{req.message}</p>
-      {req.summary}
+    <Modal title={req.title} onClose={() => !working && close(outcome ? ticked : null)} width={640}>
+      <p className="modal-msg">{outcome?.message ?? req.message}</p>
+      {outcome?.summary ?? req.summary}
       {/* Content that arrives late fills a body of fixed height, so the dialog never resizes under the pointer. */}
       <div className={`checklist-body ${req.loading ? 'steady' : ''}`}>
         <div
@@ -123,26 +156,44 @@ function ChecklistDialog({ req }: { req: ChecklistReq }) {
             )
           }
         >
-          {req.pending ? (
+          {outcome ? (
+            <ul className="checklist checklist-outcome" aria-label="What was done">
+              {outcome.done.map((line) => (
+                <li key={line.label} className="checklist-row">
+                  <Icon name="check" size={14} />
+                  <span className="checklist-label">{line.label}</span>
+                  {line.note && <span className="checklist-note">{line.note}</span>}
+                </li>
+              ))}
+            </ul>
+          ) : working || req.pending ? (
             <div className="checklist checklist-pending" role="status">
               <span className="spinner" aria-hidden="true" />
-              Checking…
+              {working ? work.step : 'Checking…'}
             </div>
           ) : (
             <ChecklistRows req={req} ticked={ticked} selected={selected} onChange={setSelected} />
           )}
         </div>
-        <DialogDetailsView warning={req.caution} />
+        {!work && <DialogDetailsView warning={req.caution} />}
       </div>
-      <div className="modal-actions">
-        <span className="checklist-hint">Space ticks, Ctrl+A ticks all or none, Ctrl+Enter confirms</span>
-        <button className="btn" onClick={() => close(null)}>
-          Cancel
-        </button>
-        <button className={`btn ${req.danger?.(ticked) ? 'danger' : 'primary'}`} disabled={!ticked.length} onClick={submit}>
-          {req.ok(ticked.length)}
-        </button>
-      </div>
+      {outcome ? (
+        <div className="modal-actions">
+          <button ref={closeButton} className="btn primary" onClick={() => close(ticked)}>
+            Close
+          </button>
+        </div>
+      ) : (
+        <div className="modal-actions">
+          {!working && <span className="checklist-hint">Space ticks, Ctrl+A ticks all or none, Ctrl+Enter confirms</span>}
+          <button className="btn" disabled={!!working} onClick={() => close(null)}>
+            Cancel
+          </button>
+          <button className={`btn ${req.danger?.(ticked) ? 'danger' : 'primary'}`} disabled={!ticked.length || !!working} onClick={submit}>
+            {req.ok(ticked.length)}
+          </button>
+        </div>
+      )}
     </Modal>
   )
 }

@@ -61,6 +61,18 @@
   padding: 0 var(--row-pad);
   color: var(--muted-foreground);
 }
+/* What was done: the same rows, read-only. */
+.checklist-outcome {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+}
+.checklist-outcome .checklist-row > svg {
+  flex: none;
+  color: var(--success);
+}
 .checklist-row {
   display: flex;
   align-items: center;

@@ -155,6 +155,20 @@ export function checkupRows(checkup: RepoCheckup): CheckupRow[] {
 /** The branch names among ticked row ids. */
 export const tickedBranches = (ids: string[]) => ids.filter((id) => id.startsWith(BRANCH_ID)).map((id) => id.slice(BRANCH_ID.length))
 
+/** The step the check-up is on, shown while it runs. */
+export const checkupStep = {
+  deleting: (names: string[]) => (names.length === 1 ? `Deleting ${names[0]}…` : `Deleting ${names.length} branches…`),
+  compacting: 'Compacting the repository…'
+}
+
+/** One line per thing the check-up did, for its closing summary. */
+export function checkupDoneLines(deleted: string[], freed: number | null): { label: string; note: string }[] {
+  return [
+    ...deleted.map((name) => ({ label: name, note: 'branch deleted' })),
+    ...(freed === null ? [] : [{ label: 'Repository compacted', note: freed > 0 ? `freed ${formatSize(freed)}` : 'nothing to free' }])
+  ]
+}
+
 /** The status line after a check-up ran; `freed` is null when it did not compact. */
 export function checkupDone(deleted: string[], freed: number | null): string {
   const parts = [

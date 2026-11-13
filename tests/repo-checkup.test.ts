@@ -7,6 +7,8 @@ import { join } from 'node:path'
 import { compactRepo, runCheckup } from '../src/main/repoCheckup.ts'
 import {
   checkupDone,
+  checkupDoneLines,
+  checkupStep,
   checkupCaution,
   checkupRows,
   checkupTiles,
@@ -114,6 +116,14 @@ test('the result says what was done', () => {
   assert.equal(checkupDone(['done'], null), 'Deleted done')
   assert.equal(checkupDone(['a', 'b'], 12 * 1024 * 1024), 'Deleted 2 branches, compacted, freed 12.0 MB')
   assert.equal(checkupDone([], 0), 'Compacted, nothing to free')
+  assert.deepEqual(checkupDoneLines(['a', 'b'], 2048), [
+    { label: 'a', note: 'branch deleted' },
+    { label: 'b', note: 'branch deleted' },
+    { label: 'Repository compacted', note: 'freed 2 KB' }
+  ])
+  assert.deepEqual(checkupDoneLines(['a'], null), [{ label: 'a', note: 'branch deleted' }])
+  assert.equal(checkupStep.deleting(['a']), 'Deleting a…')
+  assert.equal(checkupStep.deleting(['a', 'b']), 'Deleting 2 branches…')
 })
 
 test('a check-up reads branches, storage and a stale lock without changing the repository', async () => {
