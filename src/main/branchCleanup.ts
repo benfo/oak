@@ -1,3 +1,4 @@
+import { rm } from 'node:fs/promises'
 import { git } from './git.ts'
 import { listBranches, remoteHead } from './refs.ts'
 import {
@@ -59,9 +60,27 @@ export async function findBranchCleanup(repo: string): Promise<BranchCleanup> {
   return { target, candidates, kept: cleanupKept(branches, target, merged, blocked) }
 }
 
-/** Without force: git itself refuses a worktree that gained uncommitted work or a lock since it was listed. */
+const plainPath = (path: string) =>
+  path
+    .replace(/[\\/]+/g, '/')
+    .replace(/\/$/, '')
+    .toLowerCase()
+
+/**
+ * Without force: git itself refuses a worktree that gained uncommitted work or a lock since it was listed.
+ * Git unregisters a worktree before it deletes the folder, so a folder that is briefly held (a git command still
+ * running in it, an editor) would stay behind as a plain folder: the rest of it is deleted here, with retries.
+ */
 export async function removeWorktrees(repo: string, paths: string[]) {
-  for (const path of paths) await git(repo, [...LONG_PATHS, 'worktree', 'remove', '--', path])
+  for (const path of paths) {
+    try {
+      await git(repo, [...LONG_PATHS, 'worktree', 'remove', '--', path])
+    } catch (e) {
+      const listed = parseWorktrees(await git(repo, ['worktree', 'list', '--porcelain']))
+      if (!/failed to delete/.test(String(e)) || listed.some((w) => plainPath(w.path) === plainPath(path))) throw e
+      await rm(path, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 })
+    }
+  }
 }
 
 /** Force delete: the caller has shown which of these carry commits found nowhere else. */

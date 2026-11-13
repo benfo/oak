@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -144,6 +144,19 @@ test('a worktree with paths longer than Windows allows by default is still read 
   )
   await removeWorktrees(dir, [worktree])
   assert.equal(existsSync(worktree), false)
+})
+
+test('a worktree folder briefly held by another process is still removed completely', async () => {
+  const { dir, root } = cloned()
+  run(dir, 'branch', 'held')
+  const worktree = join(root, 'held')
+  run(dir, 'worktree', 'add', '-q', worktree, 'held')
+  // On Windows a process running in a folder blocks deleting it, as a git command of a view just closed does.
+  const holder = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 1500)'], { cwd: worktree, stdio: 'ignore' })
+  await new Promise((resolve) => holder.once('spawn', resolve))
+  await removeWorktrees(dir, [worktree])
+  assert.equal(existsSync(worktree), false)
+  assert.doesNotMatch(run(dir, 'worktree', 'list'), /held/)
 })
 
 test('the worktree list is read with its locks and missing folders', () => {
