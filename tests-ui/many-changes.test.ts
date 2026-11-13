@@ -48,3 +48,21 @@ test('more selected files than fit on a command line are staged, unstaged and di
   await expect(page.locator('.toast')).toHaveCount(0)
   removeDir(dir)
 })
+
+test('a row button follows the selection: it acts on every selected file, or on its own row alone', async ({ open, small }) => {
+  const page = await open(small)
+  const unstaged = page.locator('.file-section:has(#files-unstaged-label) [role=row]')
+  await expect(unstaged).toHaveCount(2)
+  await page.mouse.move(1, 1)
+  await unstaged.first().click()
+  await expect(unstaged.first().getByRole('button', { name: 'Stage', exact: true })).toBeVisible()
+  await page.keyboard.press('Control+A')
+  await expect(unstaged.first().getByRole('button', { name: 'Stage (2 selected files)' })).toBeVisible()
+  // Back to one file: the button must not keep acting on the earlier selection.
+  await unstaged.nth(1).click()
+  await unstaged.nth(1).getByRole('button', { name: 'Stage', exact: true }).click()
+  await expect(unstaged).toHaveCount(1)
+  await unstaged.first().click()
+  await page.keyboard.press('Control+A')
+  await expect(unstaged.first().getByRole('button', { name: 'Stage', exact: true })).toBeVisible()
+})

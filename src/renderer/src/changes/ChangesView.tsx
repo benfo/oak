@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import {
   Button,
@@ -147,7 +147,18 @@ export function ChangesView({
   /** The files a row stands for: a folder's files, or the file itself. */
   const ownersOf = (section: Section, id: string): Entry[] =>
     folderFiles?.[section].get(id) ?? (find(section, id) ? [find(section, id)!] : [])
-  const orderOf = (section: Section) => (changesTree ? changeTreeOrder(lists[section]) : lists[section])
+  const treeOrder = useMemo(
+    () =>
+      changesTree
+        ? {
+            conflicted: changeTreeOrder(lists.conflicted),
+            unstaged: changeTreeOrder(lists.unstaged),
+            staged: changeTreeOrder(lists.staged)
+          }
+        : null,
+    [changesTree, lists]
+  )
+  const orderOf = (section: Section) => treeOrder?.[section] ?? lists[section]
   const toggleFolder = (section: Section, id: string) => setCollapsed((c) => ({ ...c, [section]: toggled(c[section], id) }))
   const revealFile = (section: Section, path: string) =>
     setCollapsed((c) => (expandTo(c[section], path) === c[section] ? c : { ...c, [section]: expandTo(c[section], path) }))
@@ -729,6 +740,13 @@ interface FileGridProps {
 }
 
 /**
+ * A row's buttons depend on the selection (on a selected row they act on all of it). They read it from context, so a
+ * selection change redraws the buttons of the rows on screen and does not rebuild thousands of cached rows.
+ */
+const RowActionsContext = createContext<(owners: Entry[]) => ReactNode>(() => null)
+const RowActions = ({ owners }: { owners: Entry[] }) => useContext(RowActionsContext)(owners)
+
+/**
  * One section of changed files, built on React Aria's GridList: desktop-style multi-select
  * (click, Shift/Ctrl+click, Shift+↑↓, Ctrl+A), explicit search, Enter/double-click actions, and
  * virtualized rows for very large change sets. Tree mode keeps this grid and adds indented
@@ -837,86 +855,90 @@ function FileGrid(p: FileGridProps) {
         {p.headerActions}
       </header>
       <PaneFrame>
-        <Virtualizer layout={pane.layout!} layoutOptions={{ rowHeight: ROW_H }}>
-          <GridList
-            ref={gridRef}
-            aria-labelledby={headerId}
-            className={`file-grid ${p.isLead ? 'lead' : ''} ${p.entries.length ? '' : 'empty'}`}
-            {...pane.targetProps}
-            items={p.tree ? p.tree.rows : p.entries}
-            dependencies={[p.entries, p.selectedKeys, p.tree]}
-            selectionMode="multiple"
-            selectionBehavior="replace"
-            disallowTypeAhead
-            escapeKeyBehavior="none"
-            selectedKeys={p.selectedKeys}
-            onSelectionChange={p.onSelectionChange}
-            onAction={(key) => p.onAction(String(key))}
-            renderEmptyState={() => (p.emptyText ? <div className="list-empty">{p.emptyText}</div> : null)}
-          >
-            {(item: Entry | ChangeRow<Entry>) => {
-              const row = 'files' in item ? item : null
-              const e = row ? row.entry : (item as Entry)
-              const id = row ? row.id : (item as Entry).path
-              const owners = row ? row.files : [e!]
-              const { dir, name } = splitPath(id)
-              const closed = !!row?.folder && p.tree!.collapsed.has(id)
-              const status = e ? (e.status === '?' ? 'A' : e.kind === 'conflicted' ? 'U' : e.status) : ''
-              return (
-                <GridListItem
-                  ref={(el) => {
-                    // A stale request (its row was never rendered) must not steal focus from elsewhere later.
-                    if (el && focusRequest.current === id) {
-                      focusRequest.current = null
-                      const active = document.activeElement
-                      if (!active || active === document.body || gridRef.current?.contains(active)) el.focus()
-                    }
-                  }}
-                  id={id}
-                  textValue={row?.folder ? row.name : name}
-                  className={`file-row ${row?.folder ? 'folder-row' : ''}`}
-                  style={row ? ({ '--indent': `${row.depth * CHANGE_TREE_INDENT}px` } as React.CSSProperties) : undefined}
-                  onContextMenu={(ev) => {
-                    ev.preventDefault()
-                    live.current.onMenu(owners)
-                  }}
-                >
-                  {row?.folder ? (
-                    <FolderLabel
-                      row={row}
-                      collapsed={closed}
-                      chevron={
-                        <Button
-                          className="row-chevron"
-                          excludeFromTabOrder
-                          aria-label={`${closed ? 'Expand' : 'Collapse'} ${row.name}`}
-                          onPress={() => live.current.tree?.onToggle(id)}
-                        >
-                          <Icon name={closed ? 'chevronRight' : 'chevronDown'} size={14} />
-                        </Button>
+        <RowActionsContext.Provider value={p.rowActions}>
+          <Virtualizer layout={pane.layout!} layoutOptions={{ rowHeight: ROW_H }}>
+            <GridList
+              ref={gridRef}
+              aria-labelledby={headerId}
+              className={`file-grid ${p.isLead ? 'lead' : ''} ${p.entries.length ? '' : 'empty'}`}
+              {...pane.targetProps}
+              items={p.tree ? p.tree.rows : p.entries}
+              dependencies={[p.entries, p.tree?.rows, p.tree?.collapsed]}
+              selectionMode="multiple"
+              selectionBehavior="replace"
+              disallowTypeAhead
+              escapeKeyBehavior="none"
+              selectedKeys={p.selectedKeys}
+              onSelectionChange={p.onSelectionChange}
+              onAction={(key) => p.onAction(String(key))}
+              renderEmptyState={() => (p.emptyText ? <div className="list-empty">{p.emptyText}</div> : null)}
+            >
+              {(item: Entry | ChangeRow<Entry>) => {
+                const row = 'files' in item ? item : null
+                const e = row ? row.entry : (item as Entry)
+                const id = row ? row.id : (item as Entry).path
+                const owners = row ? row.files : [e!]
+                const { dir, name } = splitPath(id)
+                const closed = !!row?.folder && p.tree!.collapsed.has(id)
+                const status = e ? (e.status === '?' ? 'A' : e.kind === 'conflicted' ? 'U' : e.status) : ''
+                return (
+                  <GridListItem
+                    ref={(el) => {
+                      // A stale request (its row was never rendered) must not steal focus from elsewhere later.
+                      if (el && focusRequest.current === id) {
+                        focusRequest.current = null
+                        const active = document.activeElement
+                        if (!active || active === document.body || gridRef.current?.contains(active)) el.focus()
                       }
-                    />
-                  ) : (
-                    <>
-                      {row && <ChevronSpacer />}
-                      <Tip label={e!.kind === 'untracked' ? 'Untracked' : (STATUS_LABEL[e!.status] ?? e!.status)} focusable={false}>
-                        <span className={`status status-${status}`}>{e!.kind === 'untracked' ? '?' : status}</span>
-                      </Tip>
-                      <FileIcon path={e!.path} kind="file" />
-                      <Tip label={e!.oldPath ? `${e!.oldPath} → ${e!.path}` : e!.path} focusable={false}>
-                        <span className="file-name">{row ? row.name : name}</span>
-                      </Tip>
-                      <span className="file-dir">
-                        <bdi dir="ltr">{row ? '' : dir}</bdi>
-                      </span>
-                    </>
-                  )}
-                  <span className="row-actions">{p.rowActions(owners)}</span>
-                </GridListItem>
-              )
-            }}
-          </GridList>
-        </Virtualizer>
+                    }}
+                    id={id}
+                    textValue={row?.folder ? row.name : name}
+                    className={`file-row ${row?.folder ? 'folder-row' : ''}`}
+                    style={row ? ({ '--indent': `${row.depth * CHANGE_TREE_INDENT}px` } as React.CSSProperties) : undefined}
+                    onContextMenu={(ev) => {
+                      ev.preventDefault()
+                      live.current.onMenu(owners)
+                    }}
+                  >
+                    {row?.folder ? (
+                      <FolderLabel
+                        row={row}
+                        collapsed={closed}
+                        chevron={
+                          <Button
+                            className="row-chevron"
+                            excludeFromTabOrder
+                            aria-label={`${closed ? 'Expand' : 'Collapse'} ${row.name}`}
+                            onPress={() => live.current.tree?.onToggle(id)}
+                          >
+                            <Icon name={closed ? 'chevronRight' : 'chevronDown'} size={14} />
+                          </Button>
+                        }
+                      />
+                    ) : (
+                      <>
+                        {row && <ChevronSpacer />}
+                        <Tip label={e!.kind === 'untracked' ? 'Untracked' : (STATUS_LABEL[e!.status] ?? e!.status)} focusable={false}>
+                          <span className={`status status-${status}`}>{e!.kind === 'untracked' ? '?' : status}</span>
+                        </Tip>
+                        <FileIcon path={e!.path} kind="file" />
+                        <Tip label={e!.oldPath ? `${e!.oldPath} → ${e!.path}` : e!.path} focusable={false}>
+                          <span className="file-name">{row ? row.name : name}</span>
+                        </Tip>
+                        <span className="file-dir">
+                          <bdi dir="ltr">{row ? '' : dir}</bdi>
+                        </span>
+                      </>
+                    )}
+                    <span className="row-actions">
+                      <RowActions owners={owners} />
+                    </span>
+                  </GridListItem>
+                )
+              }}
+            </GridList>
+          </Virtualizer>
+        </RowActionsContext.Provider>
       </PaneFrame>
     </section>
   )
