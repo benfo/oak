@@ -32,8 +32,7 @@ import { DETAILS_MIN } from '../lib/layoutMinimums'
 import { useCommitRange } from './useCommitRange'
 import { RangeSummary } from './RangeSummary'
 import { showRangeMenu } from './rewriteMenu'
-import { followLine } from './followLineAction'
-import { lineChild } from './followLine'
+import { useFollowLine } from './useFollowLine'
 
 export interface ComparisonRequest {
   source: Branch
@@ -426,11 +425,11 @@ export function HistoryView({
     [r.commits, query]
   )
   const current = r.commits.findIndex((c) => c.hash === activeHash)
-  const child = useMemo(() => {
-    if (current < 0 || r.commitsFile) return undefined
-    const step = lineChild(r.commits, graph.rows, current)
-    return 'hash' in step ? step.hash : undefined
-  }, [r.commits, r.commitsFile, graph, current])
+  const { child, follow } = useFollowLine(r, graph.rows, current, {
+    working: showWorking && !pinned,
+    comparing: !!pinned,
+    select
+  })
   const searchMatches = useSearchMatches(search, matches, current)
   const find = (backwards: boolean) => {
     if (!query) return
@@ -565,9 +564,7 @@ export function HistoryView({
             onDismissMode={dismissMode}
             revealKey={revealKey}
             onSelect={(h) => select(h, false)}
-            onFollowLine={(from, direction) =>
-              followLine({ r, rows: graph.rows, working: showWorking && !pinned, comparing: !!pinned, select }, from, direction)
-            }
+            onFollowLine={follow}
             onNearEnd={r.hasMore ? r.loadMore : undefined}
             onOpen={() => {
               focusPane('.details-files')

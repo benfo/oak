@@ -28,12 +28,13 @@ export const setContextLines = (value: number) => setOverride(value)
 /** Diffs load the whole file (and are cut to the context here) once any hidden lines are asked for. */
 let wholeFile = false
 
+export const useWholeFileLoaded = () => useSyncExternalStore(subscribe, () => wholeFile)
+
+/** The context to ask git for: the whole file once hidden lines were asked for, else the chosen context. */
 export function useFetchContext() {
   const context = useContextLines()
-  return useSyncExternalStore(subscribe, () => wholeFile) ? FULL_CONTEXT : context
+  return useWholeFileLoaded() ? FULL_CONTEXT : context
 }
-
-export const useWholeFileLoaded = () => useSyncExternalStore(subscribe, () => wholeFile)
 
 export function requestWholeFile() {
   if (wholeFile) return

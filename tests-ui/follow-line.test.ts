@@ -61,6 +61,23 @@ test('Alt+Down and Alt+Up step along the selected line, skipping commits from ot
   }
 })
 
+test('Alt+Up retraces a walk down, back onto the branch it started on', async ({ open }) => {
+  const repo = interleaved()
+  try {
+    const page = await open(repo, 'history')
+    await row(page, 'Feature 2').click()
+    await page.keyboard.press('Alt+ArrowDown')
+    await page.keyboard.press('Alt+ArrowDown')
+    await expect(selected(page)).toHaveText('Base')
+    await page.keyboard.press('Alt+ArrowUp')
+    await expect(selected(page)).toHaveText('Feature 1', { message: 'the walk down wins over the checked-out line' })
+    await page.keyboard.press('Alt+ArrowUp')
+    await expect(selected(page)).toHaveText('Feature 2')
+  } finally {
+    removeDir(repo)
+  }
+})
+
 test('the commit details link the parent and the child on the line', async ({ open }) => {
   const repo = interleaved()
   try {

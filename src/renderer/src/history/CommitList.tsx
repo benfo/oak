@@ -96,7 +96,12 @@ export function CommitList({
   const id = useId()
   const pane = usePane('graph')
   const [cursor, setCursor] = useState(selected)
-  useEffect(() => setCursor(selected), [selected, revealKey])
+  // Follow the selection in the same render, so a key pressed right after it moves starts from the new row.
+  const [cursorFor, setCursorFor] = useState({ selected, revealKey })
+  if (cursorFor.selected !== selected || cursorFor.revealKey !== revealKey) {
+    setCursorFor({ selected, revealKey })
+    setCursor(selected)
+  }
   const scrollRef = useRef<HTMLDivElement>(null)
   const headRef = useRef<HTMLDivElement>(null)
   const graphW = laneX(Math.min(graph.width, MAX_LANES) - 1) + 12

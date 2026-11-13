@@ -29,6 +29,18 @@ interface Lane {
   current: boolean
 }
 
+/** The loaded commits on `head`'s first-parent line: the checked-out branch as drawn. */
+export function firstParentLine(commits: readonly Commit[], head?: string | null): Set<string> {
+  const byHash = new Map(commits.map((c) => [c.hash, c]))
+  const line = new Set<string>()
+  let next = head
+  while (next && byHash.has(next) && !line.has(next)) {
+    line.add(next)
+    next = byHash.get(next)!.parents[0]
+  }
+  return line
+}
+
 /**
  * Assigns each commit a lane and computes the edges to draw. Commits must be in
  * topological-ish order (children before parents), which `git log --date-order` gives us.
@@ -36,13 +48,7 @@ interface Lane {
 export function buildGraph(commits: Commit[], head?: string | null): Graph {
   // A lane colour can be reused by unrelated commits. Follow actual first-parent hashes,
   // then carry emphasis along the edges originating at those commits, including passthroughs.
-  const byHash = new Map(commits.map((c) => [c.hash, c]))
-  const currentPath = new Set<string>()
-  let next = head
-  while (next && byHash.has(next) && !currentPath.has(next)) {
-    currentPath.add(next)
-    next = byHash.get(next)!.parents[0]
-  }
+  const currentPath = firstParentLine(commits, head)
   const lanes: (Lane | null)[] = []
   const rows: GraphRow[] = []
   let nextColor = 0

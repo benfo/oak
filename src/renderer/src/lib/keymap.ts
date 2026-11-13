@@ -1,4 +1,5 @@
 import { matchesShortcut, shortcutSignature, type ShortcutBinding, type ShortcutKey, type ShortcutPlatform } from './shortcuts.ts'
+import { EXPAND_STEP } from '../../../shared/diffExpand.ts'
 
 /**
  * Widget keymap: the single declaration of keys a focused pane owns.
@@ -180,7 +181,7 @@ export const WIDGET_KEYMAP: readonly WidgetKey[] = [
     action: 'expandContext',
     roles: ['diff'],
     keys: ['e'],
-    help: { title: 'Diff: show 20 more lines around the current change', keys: 'E', category: 'Diff' }
+    help: { title: `Diff: show ${EXPAND_STEP} more lines around the current change`, keys: 'E', category: 'Diff' }
   },
   {
     action: 'nextBlock',
