@@ -75,7 +75,11 @@ export async function showBranchMenu(
         label: 'Manage',
         submenu: [
           ...(remote ? [] : [{ id: 'rename', label: 'Rename…' }]),
-          { id: 'delete', label: remote ? 'Delete on remote…' : 'Delete…', enabled: !isCurrent && !b.worktree },
+          isCurrent
+            ? { label: 'Delete: this is the current branch', enabled: false }
+            : b.worktree
+              ? { label: 'Delete: checked out in a worktree', enabled: false }
+              : { id: 'delete', label: remote ? 'Delete on remote…' : 'Delete…' },
           ...(hide
             ? [{ id: 'hide', label: 'Hide this branch' }, ...(hide.folder ? [{ id: 'hide-folder', label: `Hide ${hide.folder}` }] : [])]
             : [])

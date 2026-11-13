@@ -28,11 +28,20 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
   const locals = c.refs.filter((x) => x.type === 'local' && !x.current)
   const hasLocal = (name: string) => r.branches.some((b) => b.type === 'local' && b.name === name)
   const remotes = c.refs.filter((x) => x.type === 'remote' && !hasLocal(x.name.slice(x.name.indexOf('/') + 1)))
-  const checkoutCandidates: MenuItem[] = [
-    ...locals.map((x) => ({ id: `co:${x.name}`, label: x.name })),
-    ...remotes.map((x) => ({ id: `cor:${x.name}`, label: `${x.name} as local branch` }))
+  // A branch another worktree holds cannot be checked out here: its item opens that worktree, and says so.
+  const held = (name: string) => r.branches.some((b) => b.type === 'local' && b.name === name && b.worktree)
+  const checkoutCandidates = [
+    ...locals.map((x) =>
+      held(x.name)
+        ? { id: `co:${x.name}`, label: `${x.name} (open worktree)`, alone: `Open worktree of ${x.name}` }
+        : { id: `co:${x.name}`, label: x.name, alone: `Checkout ${x.name}` }
+    ),
+    ...remotes.map((x) => ({ id: `cor:${x.name}`, label: `${x.name} as local branch`, alone: `Checkout ${x.name} as local branch` }))
   ]
-  const checkouts: MenuItem[] = [...capped(checkoutCandidates), ...moreRow(checkoutCandidates.length)]
+  const checkouts: MenuItem[] = [
+    ...capped(checkoutCandidates).map(({ id, label }) => ({ id, label })),
+    ...moreRow(checkoutCandidates.length)
+  ]
   const allTips = c.refs.flatMap((x) =>
     x.type === 'local' || x.type === 'remote' ? r.branches.filter((b) => b.type === x.type && b.name === x.name) : []
   )
@@ -61,7 +70,7 @@ export async function commitMenu(r: RepoCtx, c: Commit, onCompare: CompareBranch
   const items: MenuItem[] = [
     ...(checkouts.length > 1
       ? [{ label: 'Checkout', submenu: [...checkouts, { type: 'separator' as const }, detach] }]
-      : [...checkouts.map((item) => ({ ...item, label: `Checkout ${item.label}` })), detach]),
+      : [...checkoutCandidates.map(({ id, alone }) => ({ id, label: alone })), detach]),
     { id: 'branch', label: 'New branch from here…' },
     { id: 'tag', label: 'New tag from here…' },
     { id: 'pick', label: `Cherry-pick onto ${cur}`, enabled: !isHead },
