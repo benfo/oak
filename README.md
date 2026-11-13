@@ -27,14 +27,7 @@ Get the Windows installer or the Linux x64 packages (Debian and AppImage) from [
 
 ## Contributing
 
-Requires Node.js 24+, npm and Git on your PATH.
-
-```sh
-npm ci
-npm run dev
-```
-
-Run `npm run typecheck`, `npm run lint` and `npm test` before opening a pull request. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow, [AGENTS.md](AGENTS.md) for the conventions that apply to people and coding agents, and [ROADMAP.md](ROADMAP.md) for decisions and planned work. Issues and pull requests are welcome, and the maintainer reviews every change.
+Issues and pull requests are welcome, and the maintainer reviews every change. Setup, checks and the branch workflow are in [CONTRIBUTING.md](CONTRIBUTING.md), conventions for people and coding agents in [AGENTS.md](AGENTS.md), and planned work in [ROADMAP.md](ROADMAP.md).
 
 ## License
 
