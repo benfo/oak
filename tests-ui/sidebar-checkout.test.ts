@@ -87,3 +87,17 @@ test('opening a worktree whose folder is gone, or a recent folder that is no lon
   await expect(page).not.toHaveTitle('parked - Oak')
   removeDir(worktree)
 })
+
+test('a worktree added or removed outside Oak marks and unmarks its branch without a reload', async ({ open, small }) => {
+  const worktree = tempDir('worktree')
+  git(small, 'branch', 'parked')
+  const page = await open(small)
+  const row = page.locator('[data-pane="sidebar"] [role="row"][data-key="refs/heads/parked"]')
+  await expect(row).toBeVisible()
+  await expect(row).not.toContainText('worktree')
+  git(small, 'worktree', 'add', '-q', join(worktree, 'parked'), 'parked')
+  await expect(row).toContainText('worktree')
+  git(small, 'worktree', 'remove', join(worktree, 'parked'))
+  await expect(row).not.toContainText('worktree')
+  removeDir(worktree)
+})

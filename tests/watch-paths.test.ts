@@ -10,13 +10,26 @@ test('only files that can change refs trigger a refs refresh', () => {
     '.git/refs/heads/main',
     '.git/refs/stash',
     '.git/refs/remotes/origin/x',
-    '.git/reftable/tables.list'
+    '.git/reftable/tables.list',
+    '.git/worktrees',
+    '.git/worktrees/feature',
+    '.git/worktrees/feature/HEAD',
+    '.git/worktrees/feature/locked'
   ])
     assert.equal(classifyRepoChange(f), 'refs', f)
 })
 
 test('staging and status bookkeeping only refresh file status', () => {
-  for (const f of ['.git/index', '.git/MERGE_HEAD', '.git/rebase-merge/done', '.git/COMMIT_EDITMSG', 'src/app.ts', 'a/b.txt'])
+  for (const f of [
+    '.git/index',
+    '.git/worktrees/feature/index',
+    '.git/worktrees/feature/ORIG_HEAD',
+    '.git/MERGE_HEAD',
+    '.git/rebase-merge/done',
+    '.git/COMMIT_EDITMSG',
+    'src/app.ts',
+    'a/b.txt'
+  ])
     assert.equal(classifyRepoChange(f), 'files', f)
 })
 
