@@ -9,6 +9,14 @@
   overflow-y: auto;
   outline: none;
 }
+.checklist-group {
+  display: flex;
+  align-items: center;
+  height: var(--row-md);
+  padding: 0 var(--row-pad);
+  font-size: var(--text-sm);
+  color: var(--subtle-foreground);
+}
 .checklist-row {
   display: flex;
   align-items: center;

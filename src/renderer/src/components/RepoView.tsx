@@ -52,7 +52,7 @@ import { CONTENT_MIN, FILES_MIN, SIDEBAR_MIN } from '../lib/layoutMinimums'
 import { usePreviewToggleCommand } from '../preview/activePreview'
 import { TOGGLE_PREVIEW_KEYS } from '../preview/PreviewModeToggle'
 import { rewriteCommands } from '../rewriteCommands'
-import { cleanUpBranches } from '../cleanupActions'
+import { repositoryCheckup } from '../checkupActions'
 import { useNavHistory } from '../lib/useNavHistory'
 import { placeExists, samePlace, type NavPlace } from '../../../shared/navPlace.ts'
 
@@ -535,6 +535,15 @@ function buildCommands({
         const p = await pickAndOpen()
         if (p) onSwitch(p)
       }
+    },
+    {
+      id: 'repository-checkup',
+      repositoryAction: true,
+      requiresIdle: true,
+      title: 'Repository check-up…',
+      help: 'Clean up merged and gone branches, compact storage',
+      category: 'Repository',
+      run: () => void repositoryCheckup(r)
     },
     { id: 'close-repo', repositoryAction: true, title: 'Close repository', category: 'Repository', run: () => onSwitch(null) },
     {
@@ -1054,15 +1063,6 @@ function buildCommands({
             .filter((b) => b.type === 'local' && !b.current)
             .map((b) => ({ id: b.fullName, label: b.name, run: () => act.deleteBranch(r, b.name) }))
         })
-    },
-    {
-      id: 'clean-up-branches',
-      repositoryAction: true,
-      requiresIdle: true,
-      title: 'Clean up branches…',
-      help: 'Delete merged and gone branches',
-      category: 'Branch',
-      run: () => void cleanUpBranches(r)
     },
 
     // Remote

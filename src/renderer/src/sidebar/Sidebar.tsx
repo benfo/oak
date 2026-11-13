@@ -21,7 +21,6 @@ import { useSearchMatches } from '../lib/useSearchMatches'
 import { SearchFeedback } from '../components/SearchFeedback'
 import { hiddenBranchRefs, sidebarBranches } from './sidebarBranches'
 import { openPreferences } from '../components/Preferences'
-import { cleanUpBranches } from '../cleanupActions'
 
 async function stashMenu(r: RepoCtx, s: Stash) {
   const id = await showMenu([
@@ -138,14 +137,11 @@ export function Sidebar({ r, view, setView, onFocusCommit, onCompareBranch, blam
         { id: 'hidden-branches', label: hidden ? `More branch options… (${hidden} hidden)` : 'More branch options…' },
         ...(options.hiddenPatterns.length || options.hideRemoteOnly
           ? [{ id: 'show-hidden', label: 'Show hidden branches', checked: options.showHidden }]
-          : []),
-        { type: 'separator' },
-        { id: 'clean-up', label: 'Clean up branches…' }
+          : [])
       ],
       anchor
     )
     if (!id) return
-    if (id === 'clean-up') return void cleanUpBranches(live.current.r)
     if (id === 'hidden-branches') return openPreferences('repository')
     saveBranchOptions(
       id === 'hide-gone'

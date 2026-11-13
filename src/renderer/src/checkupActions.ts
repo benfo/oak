@@ -1,30 +1,48 @@
 import { api, errorMessage } from './api'
 import type { RepoCtx } from './useRepo'
-import { runOp } from './actions'
+import { reportOpError } from './actions'
 import { notify } from './notices'
 import { chooseFromList } from './components/ChecklistDialog'
-import { cleanupNote, type BranchCleanup } from '../../shared/branchCleanup'
+import {
+  checkupDone,
+  checkupFacts,
+  checkupRows,
+  COMPACT_ID,
+  storageBytes,
+  tickedBranches,
+  type RepoCheckup
+} from '../../shared/repoCheckup'
 
-/** Review the local branches that are merged or whose upstream is gone, then delete the ticked ones. */
-export async function cleanUpBranches(r: RepoCtx) {
-  let found: BranchCleanup
+/** Check the repository's health in one go, review what can be cleaned, then run the ticked steps. */
+export async function repositoryCheckup(r: RepoCtx) {
+  let checkup: RepoCheckup
   try {
-    found = await api.branchCleanup(r.path)
+    checkup = await api.repoCheckup(r.path)
   } catch (e) {
     return notify.error(errorMessage(e))
   }
-  const { target, candidates } = found
-  if (!target) return notify.info('No default branch to measure against, so there is nothing to clean up')
-  if (!candidates.length) return notify.info(`Nothing to clean up: no branch is merged into ${target} or has lost its upstream`)
-
-  const names = await chooseFromList({
-    title: 'Clean up branches',
-    message: `Local branches that are merged into ${target}, or whose upstream was deleted. Commits not in ${target} are lost with their branch.`,
-    items: candidates.map((c) => ({ id: c.name, label: c.name, note: cleanupNote(c, target), warn: c.reason === 'gone', checked: true })),
-    ok: (count) => (count === 1 ? 'Delete 1 branch' : `Delete ${count} branches`),
-    danger: true
+  const ticked = await chooseFromList({
+    title: 'Repository check-up',
+    message: 'Tick what to clean up. Commits that are only on a deleted branch are lost with it.',
+    facts: checkupFacts(checkup, r.status?.state ?? 'clean'),
+    items: checkupRows(checkup),
+    ok: (count) => (count === 1 ? 'Clean up 1 item' : `Clean up ${count} items`),
+    danger: (ids) => tickedBranches(ids).length > 0
   })
-  if (!names?.length) return
-  const done = names.length === 1 ? `Deleted ${names[0]}` : `Deleted ${names.length} branches`
-  await runOp(r, 'Deleting branches', () => api.deleteBranches(r.path, names), done)
+  if (!ticked?.length) return
+
+  const branches = tickedBranches(ticked)
+  const before = storageBytes(checkup.storage)
+  try {
+    await r.withBusy(
+      'Cleaning up',
+      async () => {
+        await api.deleteBranches(r.path, branches)
+        return ticked.includes(COMPACT_ID) ? before - storageBytes(await api.compactRepo(r.path)) : null
+      },
+      { done: (freed) => checkupDone(branches, freed) }
+    )
+  } catch (e) {
+    reportOpError(r, e)
+  }
 }
