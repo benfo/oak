@@ -12,7 +12,8 @@ test('the status bar keeps its height, shows slow progress, then the result, the
 
   const bar = page.locator('.status-bar')
   await expect(bar).toBeVisible()
-  await expect(bar).toContainText('Not fetched yet')
+  // The repository has no remote; the bar says so once the remotes are read.
+  await expect(bar).toContainText('No remotes')
   const height = async () => (await bar.boundingBox())!.height
   const idle = await height()
 
