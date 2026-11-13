@@ -131,138 +131,66 @@ components:
 
 **Creative North Star: "The Transit Map"**
 
-Oak draws a repository the way a city draws its network. Branches are coloured lines, commits are stations, merges are interchanges, and the rest of the app speaks the same signage language: warm paper ground, black ink type, crisp 2px corners and saturated line colours. It is recognisable with no content on screen: warm paper, ink black, cut corners, bold lines.
+Oak draws a repository the way a city draws its network: branches are coloured lines, commits are stations, merges are interchanges. The rest of the app speaks the same signage language: warm paper ground, black ink type, 2px corners and saturated line colours.
 
-The shell is an operate-mode tool and stays quiet. Toolbar on top, branch sidebar left, History and Changes in the main area, diff below. Density is desktop-dense (13px body, 28px controls and rows). Colour is rationed: neutrals carry the chrome, and the eight line colours live mainly in the commit graph, where they carry meaning. The platform font (Segoe UI) was kept deliberately; the world is carried by colour, corner and line, not by a custom face.
+The shell is an operate-mode tool and stays quiet: toolbar on top, branch sidebar left, History and Changes in the main area, diff below. Density is desktop-dense (13px body, 28px controls and rows). Colour is rationed: neutrals carry the chrome, and the eight line colours live mainly in the commit graph, where they carry meaning. The platform font (Segoe UI) is kept deliberately; colour, corner and line carry the identity.
 
-Only the Light and Dark base themes were redesigned. One Dark, Dracula and Solarized Light keep their own palettes and plug into the same token names, so any rule here is about tokens, not hex values.
-
-**Key Characteristics:**
-- Warm paper (Light) or neutral ink ground (Dark), with ink-coloured type
-- 2px corners everywhere, driven by one radius knob
-- Eight saturated line colours, lifted in Dark so they hold against the ground
-- 3px graph lines, hollow ringed stations, filled interchange dots
-- Flat: borders and tone separate surfaces, shadows only on floating layers
-- Tokens only: no raw colours, spacing, radii, font sizes or control heights in components
+Only the Light and Dark themes use these values. The other built-in themes (One Dark, Dracula, SynthWave '84, Solarized Light) keep their own palettes behind the same token names, so every rule here is about tokens, not hex values.
 
 ## Colors
 
-Warm neutrals do the structural work; one deep transit blue acts as the interface accent; the eight lane colours are the signage.
+Warm neutrals do the structural work, one transit blue is the interface accent, and the eight lane colours are the signage. Values are in the front matter.
 
-### Primary
-- **Line Blue** (primary, #0039a6 in Light, #5b8dff in Dark): main actions, links, selection tints, the focus ring and the active-row bar. Also lane 0, so the interface accent and the first line are the same colour.
+- **Line Blue** (primary): main actions, links, selection tints, the focus ring and the active-row bar. It is also lane 0, so the accent and the first line match.
+- **Lanes 1 to 7** (red, green, yellow, purple, cyan, orange, brown): the remaining graph lines, cycled by lane index modulo 8 and lifted in Dark for contrast. Red and orange also form the brand mark gradient.
+- **Neutrals:** chrome (window and sidebar), surface (panels and overlays; Dark overlays mix 6% toward white), sunken (inputs, headers, wells), ink with muted and subtle steps for secondary text and hints, rule and rule-strong for dividers and control borders.
+- **Semantic:** danger, warning, diff and syntax colours are separate tokens with Light and Dark values, not part of the line palette. The destructive colour is `danger`, not lane red.
 
-### Secondary
-- **Signal Red** (lane-1 #ee352e, dark #ff5a52): second graph line and the welcome mark gradient start. The destructive action colour is a separate token (danger).
-- **Line Orange** (lane-6 #ff6319, dark #ff8346): brand mark gradient end and the sixth line.
-
-### Tertiary
-- **Line Green** (lane-2), **Line Yellow** (lane-3), **Line Purple** (lane-4), **Line Cyan** (lane-5), **Line Brown** (lane-7): the remaining graph lanes, cycled in order by lane index modulo 8. Dark values are lifted for contrast on the ink ground.
-
-### Neutral
-- **Paper Chrome** (#edeae3): window chrome and sidebar. Dark: Ink Chrome (#131416).
-- **Paper Surface** (#fbfaf6): main panels (lists, diff) and overlays. Dark: #1a1b1e, with overlays mixed 6% toward white.
-- **Paper Sunken** (#e4e0d6): inputs, headers, wells. Dark: #101113.
-- **Ink** (#141414): primary text. Dark: #f0eee8. Secondary text uses ink-muted (#47443e) and hints use ink-subtle (#57524b); both are tuned for legibility on the paper tones.
-- **Rule** (#d9d5ca) and **Rule Strong** (#bdb8ab): hairline dividers and control borders. Dark: #2c2d30 and #3d3e42.
-- Status and diff colours (danger, warning, diff add and delete tints, syntax colours) are semantic tokens with separate Light and Dark values; they are not part of the line palette.
-
-### Named Rules
-**The Lines Are Signage Rule.** Lane colours mean "this line". Do not borrow them as decoration on chrome; the interface accent is Line Blue only.
-
-**The Token Source Rule.** Every colour is a variable from `tokens.css`. A theme may override any palette token; components never hold a literal.
+**The Lines Are Signage Rule.** Lane colours mean "this line". Never use them as chrome decoration, and never fall back to a neutral grey panel with a lone blue accent: warm paper and line colours are the identity.
 
 ## Typography
 
-**Display Font:** none; Segoe UI Variable Text, then Segoe UI, system-ui (the platform font, kept by user choice)
-**Body Font:** the same stack
-**Label/Mono Font:** Cascadia Code, Cascadia Mono, JetBrains Mono, Consolas
+One stack for everything (Segoe UI Variable Text, Segoe UI, system-ui) and Cascadia Code, Cascadia Mono, JetBrains Mono, Consolas for code. Hierarchy comes from weight and ink tone, not size jumps.
 
-**Character:** Plain, native and dense. Hierarchy comes from weight and ink tone (foreground, muted, subtle), not from size jumps.
-
-### Hierarchy
 - **Display** (700, 26px): welcome screen only.
 - **Title** (600, 15px): dialog and panel headings.
-- **Body** (400, 13px): all interface text.
-- **Label** (500, 12px): control and metadata text; code and diffs also use 12px.
+- **Body** (400, 13px): interface text.
+- **Label** (500, 12px): controls and metadata.
 - **Caption** (400, 11px): badges, pills, line numbers, hints.
-- **Code** (mono, 12px, 20px line height): diffs and hashes.
+- **Code** (12px, 20px line height): diffs and hashes.
 
-### Named Rules
-**The Scale Only Rule.** Font sizes come from the five `--text-*` steps and weights from the four `--weight-*` steps; no component sets a literal size.
+Sizes come from the five `--text-*` steps and weights from the four `--weight-*` steps.
 
 ## Layout
 
-A fixed shell: 44px title bar, toolbar, branch sidebar, main area with History and Changes, diff below, resizable by split handles. Spacing is a 4px scale (2, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40). Controls are 20, 24, 28 or 32px tall (28px default); list rows are 28px, or 32px for roomy lists; virtualised lists reuse the same numbers. Every list row keeps 10px inner padding on both sides and nesting adds one indent per level. Layout, keyboard model and the no-layout-shift rule are fixed: hover, focus and selection never change a box's size or position.
+A 44px title bar, toolbar, branch sidebar, History and Changes, diff below, all resizable. Spacing is a 4px scale. Controls are 20, 24, 28 or 32px tall (28px default); rows are 28px, or 32px for roomy lists. Rows keep 10px inner padding on both sides and nesting adds one indent per level.
 
-### Named Rules
-**The Nothing Moves Rule.** State changes use colour, tone, outline or inset bars only, never size, margin or position changes.
+**The Nothing Moves Rule.** Hover, focus and selection use colour, tone, outline or inset bars only, never size, margin or position.
 
-## Elevation & Depth
+## Elevation and Shapes
 
-Flat by default. Surfaces separate by tone (chrome, surface, sunken) and 1px borders. A single shadow token lifts floating layers (menus, popovers, dialogs, palette, toasts, the zoom bubble): in Light `0 8px 30px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08)`, in Dark a heavier `0 10px 40px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.4)`. Modal scrims are 35% black (25% soft). Selection and active rows use inset bars (2px to 3px in primary), not shadows.
+Flat by default: surfaces separate by tone and 1px borders. One shadow token lifts floating layers only (menus, popovers, dialogs, palette, toasts, the zoom bubble); panels, rows and buttons never carry it. Modal scrims are 35% black (25% soft). Active rows use 2px to 3px inset bars in primary.
 
-### Named Rules
-**The Flat Until Floating Rule.** Only layers that float over the app carry the shadow token; panels, rows and buttons never do.
-
-## Shapes
-
-Cut signage: one radius knob (2px) drives every size. Controls and rows use 2px; menus, popovers and pills use the large step (4px); the extra-large step (8px) is for the biggest containers; small and extra-small collapse to square. Pills and avatars use the full radius. A theme may change the knob to go sharper or rounder; components never set a literal radius. Borders are 1px.
+One radius knob (2px) drives every size: controls and rows 2px, menus, popovers and pills 4px, the largest containers 8px, small steps square, avatars full. A theme may change the knob; components never set a literal radius.
 
 ## Components
 
-### Buttons
-- **Shape:** 2px corners, 28px tall, 12px horizontal padding, 1px border, 6px gap between icon and label.
-- **Default:** surface fill with a strong-rule border; hover is the `--hover` tint.
-- **Primary:** Line Blue fill and border, white text (ink text in Dark); hover brightens 8%.
-- **Danger:** danger fill and border, white text; same hover.
-- **Icon button:** 24px, transparent, muted ink; hover tint plus full ink. Disabled uses the 0.45 disabled opacity.
-- **Focus:** the one app-wide ring: `outline: 2px solid var(--ring)` with a 2px offset, shown on keyboard focus only.
-
-### Inputs / Fields
-- **Style:** sunken-tone fill, 1px strong-rule border, 2px corners, 28px tall, 10px side padding.
-- **Focus:** text fields always show the same 2px ring; panes (lists, tree, diff) show it inset, plus a 2px to 3px primary bar on the active row.
-- **Error:** a field-error line beneath the field in danger colour.
-
-### Navigation
-Branch sidebar on the chrome tone with a filter field, badge counts and chevron rows at 28px. Tabs (preferences) mark selection with a selected state and the shared focus ring. Selected rows use `--selection` when the pane is unfocused and `--selection-strong` when focused.
-
-### Menus
-Overlay-tone popover, 4px radius, 1px strong border, floating shadow, 4px padding, 100ms pop-in. Items use 6px by 12px padding and 2px corners; the focused item takes the strong selection tint.
-
-### Status bar
-A 28px strip (`--row-md`) on the chrome tone with a 1px top border, 12px text and tabular figures, below every repository view and kept in expanded Code. The left side says what is happening (a running operation with its elapsed time, shown after 300 ms) or what just happened (a result or hint, about 4 seconds). The right side holds facts and actions. An action tints with `--hover` on hover and opens a hover card (title, key, the facts behind it); a plain fact does neither; an item that needs attention uses the warning colour. Items are never Tab stops. The zoom bubble floats at the window corner and divides its size and offset by `--zoom`, so it stays put while the whole window rescales.
-
-### Toasts
-Bottom-right, just above the status bar, newest nearest the corner. The fill is `--toast` (the surface mixed 20% toward the text colour, so it differs from any panel behind it in either theme), with a strong border and the floating shadow. Errors and warnings carry a warning icon in the danger or warning colour; there is no side stripe. Errors stay until clicked; others fade after 5 seconds, or 10 when they have buttons.
+- **Buttons:** 28px tall, 12px side padding, 1px border, 6px icon gap. Default is surface with a strong-rule border and `--hover` tint; primary is Line Blue with white text (ink in Dark), danger the same in danger, both brightening 8% on hover. Icon buttons are 24px, transparent, muted ink. Disabled uses 0.45 opacity.
+- **Inputs:** sunken fill, strong-rule border, 28px tall, 10px side padding; errors show a line beneath in danger.
+- **Focus:** one system, a 2px `--focus-ring` outline with a 2px offset on keyboard focus; panes draw it inset plus the active-row bar. Outline-based so it survives Windows high contrast, where `--ring` becomes Highlight. Never a second style or a box-shadow ring.
+- **Navigation:** the sidebar sits on chrome with a filter field, badge counts and 28px chevron rows. Selected rows use `--selection`, or `--selection-strong` when the pane is focused.
+- **Menus:** overlay popover, 4px radius, strong border, floating shadow, 4px padding, 100ms pop-in; items 6px by 12px, the focused one in the strong selection tint.
+- **Status bar:** a `--row-md` strip on chrome with a top border, 12px tabular text, under every repository view. Left: the running operation (after 300 ms, with elapsed time) or the last result (about 4 s). Right: facts and actions; actions tint on hover and open a hover card, items needing attention use warning. The zoom bubble divides its size and offset by `--zoom` so it stays put while the window rescales.
+- **Toasts:** bottom-right above the status bar, newest nearest the corner, `--toast` fill (surface mixed 20% toward text), strong border, floating shadow. Errors and warnings carry an icon, no side stripe. Errors stay until clicked; others fade after 5 s, or 10 s with buttons.
 
 ### The Transit Graph (signature)
-The commit list draws history as a route map in SVG, one 28px row per commit, with lanes 18px apart.
-- **Lines:** 3px strokes (3.5px for the current branch line), each coloured by lane index modulo 8 from `--graph-lane-N`. Non-emphasised lines are mixed 80% toward the surface.
-- **Station:** an ordinary commit is a hollow dot: surface fill, 4.5px radius, 2px ring in its lane colour.
-- **Interchange:** a merge commit is a filled dot in its lane colour, 5px radius.
-- **HEAD:** the current commit gets a 9px radius halo ring, 1.5px, in its lane colour, around its station.
-- **Working changes:** a 4.5px node with a short stub joins the top of the graph when the tree is dirty.
 
-### Named Rules
-**The One Focus Rule.** There is one focus system: a 2px `--focus-ring`, outline-based so it survives Windows high-contrast mode, where `--ring` becomes the system Highlight colour.
+SVG, one 28px row per commit, lanes 18px apart.
 
-**The Station Grammar Rule.** Hollow means a commit, filled means a merge, a halo means HEAD. New graph marks extend this grammar; they do not invent a second one.
+- **Lines:** 3px (3.5px for the current branch), coloured by `--graph-lane-N`; non-emphasised lines mix 80% toward the surface.
+- **Station:** a commit is a hollow dot, surface fill, 4.5px radius, 2px ring in its lane colour.
+- **Interchange:** a merge is a filled dot, 5px radius.
+- **HEAD:** a 9px, 1.5px halo ring around its station.
+- **Working changes:** a 4.5px node with a short stub at the top when the tree is dirty.
 
-## Do's and Don'ts
-
-### Do:
-- **Do** take every colour, space, radius, font size and control height from `tokens.css` variables.
-- **Do** use 2px corners (the radius knob) and 1px borders for controls and rows.
-- **Do** keep the graph at 3px lines and an 18px lane pitch, and cycle eight lane colours.
-- **Do** use the single 2px focus ring, and inset bars for active rows.
-- **Do** keep surfaces flat and the shadow token for floating layers only.
-- **Do** keep hover, focus and selection free of layout shift.
-- **Do** check new colours against the Light and Dark values, and remember the three other built-in themes carry their own palettes.
-
-### Don't:
-- **Don't** use a neutral grey panel with a single blue accent as the look; warm paper and line colours are the identity.
-- **Don't** use lane colours as chrome decoration.
-- **Don't** add a second focus style, or replace outline rings with box-shadow rings.
-- **Don't** add raw hex, pixel or font-size values to component CSS.
-- **Don't** hold the redesign values as fixed for other themes; One Dark, Dracula and Solarized Light keep their own palettes.
+**The Station Grammar Rule.** Hollow is a commit, filled is a merge, a halo is HEAD. New marks extend this grammar rather than invent another.
