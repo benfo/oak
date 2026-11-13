@@ -540,8 +540,8 @@ function buildCommands({
       id: 'repository-checkup',
       repositoryAction: true,
       requiresIdle: true,
-      title: 'Repository check-up…',
-      help: 'Clean up merged and gone branches, compact storage',
+      title: 'Clean up repository…',
+      help: 'Delete merged and gone branches, compact storage',
       category: 'Repository',
       run: () => void repositoryCheckup(r)
     },

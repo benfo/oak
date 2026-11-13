@@ -78,7 +78,7 @@ export async function repositoryCheckup(r: RepoCtx) {
 
   try {
     await chooseFromList({
-      title: 'Repository check-up',
+      title: 'Clean up repository',
       message: CHECKUP_PENDING,
       summary: <SummaryTiles tiles={withIcons(pendingTiles())} />,
       items: [],

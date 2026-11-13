@@ -9,7 +9,7 @@ async function runCheckUp(page: Page) {
   const palette = page.locator('.command-palette')
   const input = palette.getByRole('textbox', { name: 'Type a command…' })
   await expect(input).toBeFocused()
-  await input.fill('Repository check-up')
+  await input.fill('Clean up repository')
   await expect(palette.getByRole('option')).toHaveCount(1)
   await page.keyboard.press('Enter')
 }
@@ -53,7 +53,7 @@ const dialogLayout = (page: Page) =>
 const localBranches = (repo: string) => git(repo, 'branch', '--format=%(refname:short)').trim().split('\n')
 const looseObjects = (repo: string) => Number(/^count: (\d+)/m.exec(git(repo, 'count-objects', '-v'))?.[1])
 
-test('the check-up lists merged and gone branches and deletes only the ticked ones', async ({ open, small }) => {
+test('the clean-up lists merged and gone branches and deletes only the ticked ones', async ({ open, small }) => {
   const remote = tempDir('remote')
   git(remote, 'init', '-q', '--bare')
   git(small, 'remote', 'add', 'origin', join(remote))
@@ -71,7 +71,7 @@ test('the check-up lists merged and gone branches and deletes only the ticked on
   await expect(goneBranch).toContainText('gone')
   await watchDialogLayout(page)
   await runCheckUp(page)
-  const dialog = page.getByRole('dialog', { name: 'Repository check-up' })
+  const dialog = page.getByRole('dialog', { name: 'Clean up repository' })
   const rows = dialog.locator('.checklist-row')
   await expect(dialog.locator('.summary-tile').first()).toContainText('2 to clean up')
   await expect(rows).toHaveCount(3)
@@ -127,11 +127,11 @@ test('the check-up lists merged and gone branches and deletes only the ticked on
   removeDir(remote)
 })
 
-test('the check-up opens from the toolbar menu and compacts a tidy repository only when asked', async ({ open, small }) => {
+test('the clean-up opens from the toolbar menu and compacts a tidy repository only when asked', async ({ open, small }) => {
   const page = await open(small)
   await page.getByRole('button', { name: 'More actions' }).click()
-  await page.getByRole('menuitem', { name: 'Repository check-up…' }).click()
-  const dialog = page.getByRole('dialog', { name: 'Repository check-up' })
+  await page.getByRole('menuitem', { name: 'Clean up repository…' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Clean up repository' })
   await expect(dialog.locator('.summary-tile.attention')).toHaveCount(0)
   const confirm = dialog.getByRole('button', { name: /^Clean up/ })
   await expect(confirm).toBeDisabled()
@@ -155,11 +155,11 @@ test('the check-up opens from the toolbar menu and compacts a tidy repository on
   await expect(page.locator('.status-message')).toContainText('Compacted')
 })
 
-test('a check-up task that fails is marked, the rest are skipped and the dialog stays open', async ({ open, small }) => {
+test('a clean-up task that fails is marked, the rest are skipped and the dialog stays open', async ({ open, small }) => {
   git(small, 'branch', 'done')
   const page = await open(small)
   await runCheckUp(page)
-  const dialog = page.getByRole('dialog', { name: 'Repository check-up' })
+  const dialog = page.getByRole('dialog', { name: 'Clean up repository' })
   await expect(dialog.locator('.checklist-row')).toHaveCount(2)
   await expect(dialog.locator('.checklist-row').first()).toBeFocused()
   await page.keyboard.press('Control+A')
@@ -182,7 +182,7 @@ test('a check-up task that fails is marked, the rest are skipped and the dialog 
   await expect(dialog).toHaveCount(0)
 })
 
-test('a gone branch checked out in another worktree is not offered, and the check-up says why', async ({ open, small }) => {
+test('a gone branch checked out in another worktree is not offered, and the clean-up says why', async ({ open, small }) => {
   const remote = tempDir('remote')
   const worktree = tempDir('worktree')
   git(remote, 'init', '-q', '--bare')
@@ -197,7 +197,7 @@ test('a gone branch checked out in another worktree is not offered, and the chec
 
   const page = await open(small)
   await runCheckUp(page)
-  const dialog = page.getByRole('dialog', { name: 'Repository check-up' })
+  const dialog = page.getByRole('dialog', { name: 'Clean up repository' })
   const rows = dialog.locator('.checklist-row')
   await expect(rows).toHaveCount(2)
   await expect(dialog.locator('.summary-tile').first()).toContainText('1 gone but checked out')
