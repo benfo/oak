@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CloudDownload,
+  Database,
   Copy,
   Download,
   ExternalLink,
@@ -18,6 +19,7 @@ import {
   GitCommitHorizontal,
   GitMerge,
   Globe,
+  HeartPulse,
   History,
   Info,
   ListTree,
@@ -79,7 +81,9 @@ const ICONS = {
   merge: GitMerge,
   download: Download,
   warning: TriangleAlert,
-  options: SlidersHorizontal
+  options: SlidersHorizontal,
+  storage: Database,
+  health: HeartPulse
 }
 
 export type IconName = keyof typeof ICONS

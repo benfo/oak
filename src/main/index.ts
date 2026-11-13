@@ -2,11 +2,26 @@ import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron'
 import { loadWindowTheme, titleBarOverlay } from './windowTheme'
 import { fitToDisplays, loadWindowState, trackWindowState } from './windowState'
 import { watch, writeFileSync, type FSWatcher } from 'fs'
-import { join } from 'path'
+import { isAbsolute, join, relative, resolve } from 'path'
 import { folderArg, handlers } from './handlers'
-import { outputSink } from './git'
+import { git, outputSink } from './git'
 import { toggleForcedColours } from './devForcedColours'
-import { classifyRepoChange } from '../shared/watchPaths'
+import { classifyGitDirChange, classifyRepoChange, type RepoChange } from '../shared/watchPaths'
+
+/** The shared git directory when it lives outside the folder (a linked worktree, a submodule), and this folder's part of it. */
+async function outsideGitDir(repo: string) {
+  try {
+    const [gitDir, commonDir] = (await git(repo, ['rev-parse', '--git-dir', '--git-common-dir']))
+      .trim()
+      .split('\n')
+      .map((dir) => resolve(repo, dir.trim()))
+    const fromRepo = relative(repo, gitDir)
+    if (!fromRepo.startsWith('..') && !isAbsolute(fromRepo)) return null
+    return { commonDir, ownDir: relative(commonDir, gitDir).replace(/\\/g, '/') }
+  } catch {
+    return null
+  }
+}
 
 const STREAMING = new Set([
   'commit',
@@ -21,7 +36,8 @@ const STREAMING = new Set([
   'stashPop',
   'stashApply',
   'continueOperation',
-  'checkout'
+  'checkout',
+  'compactRepo'
 ])
 
 function createWindow() {
@@ -168,29 +184,38 @@ function registerIpc() {
   }
 
   // Watches the working tree and tells the renderer when something changed.
-  const watchers = new Map<number, FSWatcher>()
-  ipcMain.handle('watch', (e, repo: string) => {
+  const watchers = new Map<number, FSWatcher[]>()
+  ipcMain.handle('watch', async (e, repo: string) => {
     const sender = e.sender
-    watchers.get(sender.id)?.close()
+    watchers.get(sender.id)?.forEach((w) => w.close())
     let timer: NodeJS.Timeout | undefined
     let gitTouched = false
-    try {
-      const w = watch(repo, { recursive: true }, (_ev, file) => {
-        const change = classifyRepoChange((file ?? '').toString().replace(/\\/g, '/'))
-        if (change === 'ignore') return
-        if (change === 'refs') gitTouched = true
-        clearTimeout(timer)
-        timer = setTimeout(() => {
-          if (!sender.isDestroyed()) sender.send('repo-changed', { git: gitTouched })
-          gitTouched = false
-        }, 300)
-      })
-      w.on('error', () => w.close())
-      watchers.set(sender.id, w)
-      sender.once('destroyed', () => w.close())
-    } catch {
-      // watching is best-effort; the UI still refreshes on focus
+    const open: FSWatcher[] = []
+    const watchDir = (dir: string, classify: (file: string) => RepoChange) => {
+      try {
+        const w = watch(dir, { recursive: true }, (_ev, file) => {
+          const change = classify((file ?? '').toString().replace(/\\/g, '/'))
+          if (change === 'ignore') return
+          if (change === 'refs') gitTouched = true
+          clearTimeout(timer)
+          timer = setTimeout(() => {
+            if (!sender.isDestroyed()) sender.send('repo-changed', { git: gitTouched })
+            gitTouched = false
+          }, 300)
+        })
+        w.on('error', () => w.close())
+        open.push(w)
+      } catch {
+        // watching is best-effort; the UI still refreshes on focus
+      }
     }
+    watchers.set(sender.id, open)
+    sender.once('destroyed', () => open.forEach((w) => w.close()))
+    watchDir(repo, classifyRepoChange)
+    // A linked worktree keeps its refs and state in the main repository's .git, which the folder watch never sees.
+    const outside = await outsideGitDir(repo)
+    if (!outside) return
+    if (watchers.get(sender.id) === open) watchDir(outside.commonDir, (file) => classifyGitDirChange(file, outside.ownDir))
   })
 }
 

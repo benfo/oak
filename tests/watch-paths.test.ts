@@ -1,6 +1,21 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { classifyRepoChange } from '../src/shared/watchPaths.ts'
+import { classifyGitDirChange, classifyRepoChange } from '../src/shared/watchPaths.ts'
+
+test('a linked worktree follows the shared refs and its own state, not the other folders', () => {
+  const own = 'worktrees/parked'
+  for (const f of ['refs/heads/main', 'packed-refs', 'worktrees', 'worktrees/other', 'worktrees/other/HEAD', 'worktrees/parked/HEAD'])
+    assert.equal(classifyGitDirChange(f, own), 'refs', f)
+  for (const f of ['worktrees/parked/index', 'worktrees/parked/MERGE_HEAD']) assert.equal(classifyGitDirChange(f, own), 'files', f)
+  for (const f of ['index', 'MERGE_HEAD', 'worktrees/other/index', 'worktrees/parked/index.lock', 'objects/ab/cdef'])
+    assert.equal(classifyGitDirChange(f, own), 'ignore', f)
+})
+
+test('a git directory kept outside its folder is watched whole, except its worktrees', () => {
+  assert.equal(classifyGitDirChange('index', ''), 'files')
+  assert.equal(classifyGitDirChange('HEAD', ''), 'refs')
+  assert.equal(classifyGitDirChange('worktrees/other/index', ''), 'ignore')
+})
 
 test('only files that can change refs trigger a refs refresh', () => {
   for (const f of [
@@ -10,13 +25,26 @@ test('only files that can change refs trigger a refs refresh', () => {
     '.git/refs/heads/main',
     '.git/refs/stash',
     '.git/refs/remotes/origin/x',
-    '.git/reftable/tables.list'
+    '.git/reftable/tables.list',
+    '.git/worktrees',
+    '.git/worktrees/feature',
+    '.git/worktrees/feature/HEAD',
+    '.git/worktrees/feature/locked'
   ])
     assert.equal(classifyRepoChange(f), 'refs', f)
 })
 
 test('staging and status bookkeeping only refresh file status', () => {
-  for (const f of ['.git/index', '.git/MERGE_HEAD', '.git/rebase-merge/done', '.git/COMMIT_EDITMSG', 'src/app.ts', 'a/b.txt'])
+  for (const f of [
+    '.git/index',
+    '.git/worktrees/feature/index',
+    '.git/worktrees/feature/ORIG_HEAD',
+    '.git/MERGE_HEAD',
+    '.git/rebase-merge/done',
+    '.git/COMMIT_EDITMSG',
+    'src/app.ts',
+    'a/b.txt'
+  ])
     assert.equal(classifyRepoChange(f), 'files', f)
 })
 

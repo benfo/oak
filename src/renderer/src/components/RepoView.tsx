@@ -52,6 +52,7 @@ import { CONTENT_MIN, FILES_MIN, SIDEBAR_MIN } from '../lib/layoutMinimums'
 import { usePreviewToggleCommand } from '../preview/activePreview'
 import { TOGGLE_PREVIEW_KEYS } from '../preview/PreviewModeToggle'
 import { rewriteCommands } from '../rewriteCommands'
+import { repositoryCheckup } from '../checkupActions'
 import { useNavHistory } from '../lib/useNavHistory'
 import { placeExists, samePlace, type NavPlace } from '../../../shared/navPlace.ts'
 
@@ -534,6 +535,15 @@ function buildCommands({
         const p = await pickAndOpen()
         if (p) onSwitch(p)
       }
+    },
+    {
+      id: 'repository-checkup',
+      repositoryAction: true,
+      requiresIdle: true,
+      title: 'Clean up repository…',
+      help: 'Delete merged and gone branches, compact storage',
+      category: 'Repository',
+      run: () => void repositoryCheckup(r)
     },
     { id: 'close-repo', repositoryAction: true, title: 'Close repository', category: 'Repository', run: () => onSwitch(null) },
     {

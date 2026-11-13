@@ -3,6 +3,7 @@ import { api, errorMessage } from './api'
 import type { RepoCtx } from './useRepo'
 import { confirm, prompt } from './ui'
 import { notify } from './notices'
+import { openWorktree } from './repoActions'
 import type { Branch, CheckoutKind, Commit, PullMode, ResetMode } from '../../shared/types'
 import { WIP_MESSAGE, WIP_OPTIONS } from '../../shared/commitOptions'
 
@@ -29,7 +30,10 @@ export async function runOp(r: RepoCtx, label: string, fn: () => Promise<unknown
 
 // ---------- branches ----------
 
+/** A branch another worktree has checked out cannot be checked out here, so its worktree is shown instead. */
 export async function checkout(r: RepoCtx, ref: string, kind: CheckoutKind) {
+  const worktree = kind === 'local' ? r.branches.find((b) => b.type === 'local' && b.name === ref)?.worktree : undefined
+  if (worktree) return openWorktree(worktree)
   await r.run(`Checking out ${ref}`, () => api.checkout(r.path, ref, kind))
 }
 

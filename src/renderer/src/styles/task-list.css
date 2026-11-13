@@ -1,0 +1,60 @@
+/* ---------- task list (steps ticking off while work runs) ---------- */
+
+.task-list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: var(--space-1);
+  overflow-y: auto;
+  list-style: none;
+}
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--row-md);
+  padding: 0 var(--row-pad);
+}
+/* One fixed slot for the dot, spinner or icon, so the label never moves as the state changes. It is as wide as
+   a checkbox with its margins, so labels line up with a tick list these rows replace. */
+.task-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--space-5);
+  height: var(--space-4);
+  color: var(--muted-foreground);
+}
+.task-waiting {
+  width: var(--space-2);
+  height: var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+}
+.task-label {
+  flex: none;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task-note {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--muted-foreground);
+}
+.task-row[data-state='waiting'] .task-label,
+.task-row[data-state='skipped'] .task-label {
+  color: var(--muted-foreground);
+}
+.task-row[data-state='done'] .task-mark {
+  color: var(--diff-add-foreground);
+}
+.task-row[data-state='failed'] .task-mark,
+.task-row[data-state='failed'] .task-note {
+  color: var(--danger);
+}

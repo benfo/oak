@@ -11,7 +11,7 @@ const fmt = (...fields: string[]) => `--format=${fields.join('%1f')}`
 export async function listBranches(repo: string): Promise<Branch[]> {
   const run = (format: string, pattern: string) => git(repo, ['for-each-ref', '--sort=refname', format, pattern])
   const [heads, remotes, tags] = await Promise.all([
-    run(fmt('%(refname)', '%(objectname)', '%(HEAD)', '%(upstream)'), 'refs/heads'),
+    run(fmt('%(refname)', '%(objectname)', '%(HEAD)', '%(upstream)', '%(worktreepath)'), 'refs/heads'),
     run(fmt('%(refname)', '%(objectname)'), 'refs/remotes'),
     run(fmt('%(refname)', '%(objectname)', '%(*objectname)'), 'refs/tags')
   ])
@@ -28,4 +28,9 @@ export async function branchDetails(repo: string): Promise<Record<string, Branch
     'refs/tags'
   ])
   return parseDetailLines(out)
+}
+
+/** The remote's default branch as `branches` names it (for example `origin/main`), or null when origin/HEAD is unset. */
+export async function remoteHead(repo: string): Promise<string | null> {
+  return (await git(repo, ['symbolic-ref', '--short', '-q', 'refs/remotes/origin/HEAD'], { okCodes: [1] })).trim() || null
 }

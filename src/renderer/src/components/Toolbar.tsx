@@ -11,6 +11,7 @@ import { openPreferences } from './Preferences'
 import { branchListsLoading, showBranchPicker, showRepoPicker } from '../pickers'
 import { hasRemotes } from '../lib/remotes'
 import { Tip } from './Tip'
+import { repositoryCheckup } from '../checkupActions'
 import { LayoutMenu, type LayoutControls } from './LayoutMenu'
 
 export function Toolbar({
@@ -93,7 +94,8 @@ function RepositoryOptions({ r }: { r: RepoCtx }) {
   const actions = [
     { id: 'refresh', label: 'Refresh', keys: 'F5', run: () => r.refresh() },
     { id: 'terminal', label: 'Open terminal here', keys: 'Ctrl+`', run: () => api.openTerminal(r.path) },
-    { id: 'explorer', label: 'Open in Explorer', keys: 'Ctrl+Shift+E', run: () => api.openPath(r.path) }
+    { id: 'explorer', label: 'Open in Explorer', keys: 'Ctrl+Shift+E', run: () => api.openPath(r.path) },
+    { id: 'checkup', label: 'Clean up repository…', keys: '', run: () => repositoryCheckup(r) }
   ]
   return (
     <MenuTrigger>

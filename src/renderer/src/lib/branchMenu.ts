@@ -48,7 +48,7 @@ export async function showBranchMenu(
   const unpushed = isBranchNotOnRemote(b)
   const id = await showMenu(
     [
-      { id: 'checkout', label: remote ? 'Checkout as local branch' : 'Checkout', enabled: !isCurrent },
+      { id: 'checkout', label: remote ? 'Checkout as local branch' : b.worktree ? 'Open worktree' : 'Checkout', enabled: !isCurrent },
       { id: 'new', label: 'New branch from here…' },
       {
         label: 'Merge / Rebase',
@@ -75,7 +75,11 @@ export async function showBranchMenu(
         label: 'Manage',
         submenu: [
           ...(remote ? [] : [{ id: 'rename', label: 'Rename…' }]),
-          { id: 'delete', label: remote ? 'Delete on remote…' : 'Delete…', enabled: !isCurrent },
+          isCurrent
+            ? { label: 'Delete: this is the current branch', enabled: false }
+            : b.worktree
+              ? { label: 'Delete: checked out in a worktree', enabled: false }
+              : { id: 'delete', label: remote ? 'Delete on remote…' : 'Delete…' },
           ...(hide
             ? [{ id: 'hide', label: 'Hide this branch' }, ...(hide.folder ? [{ id: 'hide-folder', label: `Hide ${hide.folder}` }] : [])]
             : [])

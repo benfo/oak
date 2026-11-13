@@ -76,6 +76,8 @@ export interface Branch {
   behind: number
   gone: boolean
   current: boolean
+  /** The other worktree that has this local branch checked out. Git will not check it out or delete it here. */
+  worktree?: string
   /** Unix seconds: tagger date for annotated tags, otherwise the commit date. 0 until the details load. */
   date: number
   /** Empty until the details load. */

@@ -1,0 +1,106 @@
+/* ---------- checklist dialog (tick rows, then confirm) ---------- */
+
+.checklist-frame {
+  flex: none;
+  margin-bottom: var(--space-3);
+}
+.checklist {
+  max-height: calc(var(--row-md) * 10);
+  overflow-y: auto;
+  outline: none;
+}
+.checklist-group {
+  display: flex;
+  align-items: center;
+  height: var(--row-md);
+  padding: 0 var(--row-pad);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+/* A steady body keeps one height while loading and after: the list takes what the caution leaves. */
+.checklist-body.steady {
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--row-md) * 9);
+}
+.checklist-body.steady .checklist-frame {
+  flex: 1;
+  min-height: 0;
+}
+.checklist-body.steady .checklist {
+  max-height: none;
+}
+.checklist-group-count {
+  margin-left: auto;
+  font-weight: var(--weight-normal);
+  letter-spacing: normal;
+  text-transform: none;
+}
+.checklist-group-toggle {
+  margin-left: var(--space-3);
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: var(--weight-normal);
+  letter-spacing: normal;
+  color: var(--primary);
+  cursor: pointer;
+}
+.checklist-group-toggle:hover {
+  text-decoration: underline;
+}
+.checklist-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--row-md);
+  padding: 0 var(--row-pad);
+  outline: none;
+  cursor: default;
+}
+.checklist-row[data-hovered] {
+  background: var(--hover);
+}
+.checklist-row[data-focus-visible] {
+  background: var(--selection-strong);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+/* The row is the control; the box only shows its state. */
+.checklist-row input {
+  flex: none;
+  pointer-events: none;
+}
+.checklist-label {
+  flex: none;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.checklist-note {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--muted-foreground);
+}
+.checklist-note.warn {
+  color: var(--warning);
+}
+.checklist-row[data-disabled] .checklist-label {
+  color: var(--muted-foreground);
+}
+.checklist-row input.absent {
+  visibility: hidden;
+}
+.checklist-hint {
+  margin-right: auto;
+  font-size: var(--text-sm);
+  color: var(--subtle-foreground);
+}

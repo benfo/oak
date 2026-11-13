@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './fixtures'
-import { commitAll, write } from './repos'
+import { commitAll, git, write } from './repos'
 
 // Windows high contrast (forced colours) drops tints, shadows and accent bars, so anything shown that way needs a ring.
 
@@ -50,6 +50,21 @@ test('Windows high contrast rings changed words, find matches and picked lines, 
   await page.keyboard.press('Control+f')
   await page.getByRole('textbox', { name: 'Find in file' }).fill('const')
   expect((await style('.find-hit.current')).outline).toBe('solid')
+})
+
+test('Windows high contrast rings the focused row of the clean-up dialog and its tile that needs attention', async ({ open, small }) => {
+  git(small, 'branch', 'done')
+  const page = await open(small)
+  await highContrast(page)
+  await page.keyboard.press('Control+Shift+P')
+  await page.locator('.palette-input').fill('Clean up repository')
+  // The list filters a moment after typing.
+  await expect(page.locator('.command-palette').getByRole('option')).toHaveCount(1)
+  await page.keyboard.press('Enter')
+  await expect(page.locator('.checklist-row').first()).toBeVisible()
+  await page.keyboard.press('ArrowDown')
+  await expect.poll(() => outlineOf(page.locator('.checklist-row[data-focus-visible]'))).toBe('solid')
+  await expect.poll(() => outlineOf(page.locator('.summary-tile.attention'))).toBe('solid')
 })
 
 test('Shift+F12 in dev builds simulates high contrast, where split lines stay drawn, and turns it off again', async ({
