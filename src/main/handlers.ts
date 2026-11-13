@@ -10,7 +10,7 @@ import { pullRequestUrlFromOutput, type RemotePageTarget } from '../shared/remot
 import { defaultRemote, pullRequestPage, remotePage, unpushedCommits } from './remote'
 import { isReachable } from './reachable'
 import { branchDetails, listBranches, remoteHead } from './refs'
-import { deleteBranches } from './branchCleanup'
+import { deleteBranches, removeWorktrees } from './branchCleanup'
 import { compactRepo, runCheckup } from './repoCheckup'
 import type { RepoCheckup, RepoStorage } from '../shared/repoCheckup'
 import { readMessages, restoreBeforeRewrite, runRewrite } from './rewrite'
@@ -643,6 +643,7 @@ epo`), if any. */
   compactRepo: (repo: string): Promise<RepoStorage> => compactRepo(repo),
 
   deleteBranches: (repo: string, names: string[]) => deleteBranches(repo, names),
+  removeWorktrees: (repo: string, paths: string[]) => removeWorktrees(repo, paths),
 
   async deleteRemoteBranch(repo: string, remoteBranch: string) {
     const [remote, ...rest] = remoteBranch.split('/')

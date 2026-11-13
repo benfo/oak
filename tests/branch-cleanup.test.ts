@@ -4,8 +4,8 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { deleteBranches, findBranchCleanup } from '../src/main/branchCleanup.ts'
-import { cleanupNote, keptNote } from '../src/shared/branchCleanup.ts'
+import { deleteBranches, findBranchCleanup, removeWorktrees } from '../src/main/branchCleanup.ts'
+import { cleanupNote, parseWorktrees } from '../src/shared/branchCleanup.ts'
 
 const run = (cwd: string, ...args: string[]) =>
   execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd, encoding: 'utf8' }).trim()
@@ -63,31 +63,76 @@ test('a branch whose upstream was deleted is offered with the commits the defaul
   assert.equal(cleanupNote(candidates[0], target!), 'upstream gone, 1 commit not in origin/main')
 })
 
-test('the default branch, the checked-out branch and branches in other worktrees are never offered', async () => {
-  const { dir, root } = cloned()
-  run(dir, 'branch', 'elsewhere')
-  run(dir, 'worktree', 'add', '-q', join(root, 'other'), 'elsewhere')
+test('the default branch and the checked-out branch are never offered', async () => {
+  const { dir } = cloned()
   run(dir, 'switch', '-q', '-c', 'here')
   assert.deepEqual(await findBranchCleanup(dir), { target: 'origin/main', candidates: [], kept: [] })
 })
 
-test('a gone branch checked out in another worktree is kept and named', async () => {
+test('a finished branch in another worktree is offered with its worktree, unless that has changes or a lock', async () => {
   const { dir, root } = cloned()
-  run(dir, 'switch', '-q', '-c', 'parked')
-  run(dir, 'push', '-q', '-u', 'origin', 'parked')
-  run(dir, 'switch', '-q', 'main')
-  run(dir, 'push', '-q', 'origin', '--delete', 'parked')
-  run(dir, 'fetch', '-q', '--prune')
-  run(dir, 'worktree', 'add', '-q', join(root, 'other'), 'parked')
+  for (const name of ['gone', 'dirty', 'held']) {
+    pushedBranch(dir, name)
+    run(dir, 'worktree', 'add', '-q', join(root, name), name)
+  }
+  goneUpstream(dir, 'gone')
+  run(dir, 'branch', 'merged')
+  run(dir, 'worktree', 'add', '-q', join(root, 'merged'), 'merged')
+  goneUpstream(dir, 'dirty')
+  writeFileSync(join(root, 'dirty', 'note.txt'), 'unsaved')
+  goneUpstream(dir, 'held')
+  run(dir, 'worktree', 'lock', join(root, 'held'))
+
   const found = await findBranchCleanup(dir)
+  assert.deepEqual(
+    found.candidates.map((c) => [c.name, c.reason, /[\\/](gone|merged)$/.test(c.worktree ?? '')]),
+    [
+      ['gone', 'gone', true],
+      ['merged', 'merged', true]
+    ]
+  )
+  assert.deepEqual(
+    found.kept.map((kept) => [kept.name, kept.why]),
+    [
+      ['dirty', 'changes'],
+      ['held', 'locked']
+    ]
+  )
+
+  await removeWorktrees(
+    dir,
+    found.candidates.map((c) => c.worktree!)
+  )
+  await deleteBranches(
+    dir,
+    found.candidates.map((c) => c.name)
+  )
+  assert.equal(run(dir, 'branch', '--format=%(refname:short)'), 'dirty\nheld\nmain')
+  await assert.rejects(removeWorktrees(dir, [join(root, 'dirty')]), /modified or untracked/)
+})
+
+test('seen from a linked worktree, a finished branch in the main worktree is kept', async () => {
+  const { dir, root } = cloned()
+  pushedBranch(dir, 'old')
+  goneUpstream(dir, 'old')
+  run(dir, 'switch', '-q', 'old')
+  run(dir, 'worktree', 'add', '-q', join(root, 'linked'), '-b', 'work')
+  const found = await findBranchCleanup(join(root, 'linked'))
   assert.deepEqual(found.candidates, [])
   assert.deepEqual(
-    found.kept.map((kept) => kept.name),
-    ['parked']
+    found.kept.map((kept) => [kept.name, kept.why]),
+    [['old', 'main']]
   )
-  assert.match(found.kept[0].worktree!, /other$/)
-  assert.equal(keptNote(found.kept[0]), `checked out in ${found.kept[0].worktree}`)
-  assert.equal(keptNote({ name: 'here', worktree: null }), 'checked out here')
+})
+
+test('the worktree list is read with its locks and missing folders', () => {
+  const out =
+    'worktree C:/r\nHEAD 1\nbranch refs/heads/main\n\nworktree C:/a\nHEAD 1\nbranch refs/heads/feature/a\nlocked\n\nworktree C:/b\nHEAD 1\ndetached\nprunable gone\n\n'
+  assert.deepEqual(parseWorktrees(out), [
+    { path: 'C:/r', branch: 'main', main: true, locked: false, prunable: false },
+    { path: 'C:/a', branch: 'feature/a', main: false, locked: true, prunable: false },
+    { path: 'C:/b', branch: null, main: false, locked: false, prunable: true }
+  ])
 })
 
 test('without a remote the conventional local branch is the target', async () => {

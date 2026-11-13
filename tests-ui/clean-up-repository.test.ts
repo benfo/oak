@@ -1,4 +1,4 @@
-import { rmSync, writeFileSync } from 'node:fs'
+import { existsSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
@@ -182,7 +182,7 @@ test('a clean-up task that fails is marked, the rest are skipped and the dialog 
   await expect(dialog).toHaveCount(0)
 })
 
-test('a gone branch checked out in another worktree is not offered, and the clean-up says why', async ({ open, small }) => {
+test('a finished branch in another worktree is offered unticked, or kept when the worktree has changes', async ({ open, small }) => {
   const remote = tempDir('remote')
   const worktree = tempDir('worktree')
   git(remote, 'init', '-q', '--bare')
@@ -194,27 +194,45 @@ test('a gone branch checked out in another worktree is not offered, and the clea
   git(small, 'push', '-q', 'origin', '--delete', 'parked')
   git(small, 'fetch', '-q', '--prune')
   git(small, 'worktree', 'add', '-q', join(worktree, 'parked'), 'parked')
+  git(small, 'worktree', 'add', '-q', '-b', 'busy', join(worktree, 'busy'))
+  writeFileSync(join(worktree, 'busy', 'note.txt'), 'unsaved')
 
   const page = await open(small)
   await runCheckUp(page)
   const dialog = page.getByRole('dialog', { name: 'Clean up repository' })
   const rows = dialog.locator('.checklist-row')
-  await expect(rows).toHaveCount(2)
-  await expect(dialog.locator('.summary-tile').first()).toContainText('1 gone but checked out')
-  await expect(rows.nth(1)).toContainText('parked')
-  await expect(rows.nth(1)).toContainText('checked out in')
-  await expect(rows.nth(1)).toHaveAttribute('aria-disabled', 'true')
+  await expect(rows).toHaveCount(3)
+  await expect(dialog.locator('.summary-tile').first()).toContainText('1 to clean up')
+  // The worktree's folder goes with the branch, so it is offered but left unticked.
+  await expect(rows.nth(0)).toContainText('parked')
+  await expect(rows.nth(0)).toContainText('upstream gone')
+  await expect(rows.nth(0)).toHaveAttribute('aria-selected', 'false')
+  await expect(dialog).toContainText('Removing a worktree deletes its folder')
+  await expect(rows.nth(2)).toContainText('busy')
+  await expect(rows.nth(2)).toContainText('uncommitted changes in')
+  await expect(rows.nth(2)).toHaveAttribute('aria-disabled', 'true')
   // Ctrl+A ticks only what can be cleaned, and a click on the kept row ticks nothing.
   await expect(rows.nth(0)).toBeFocused()
   await page.keyboard.press('Control+A')
-  const confirm = dialog.getByRole('button', { name: 'Clean up 1 item' })
+  const confirm = dialog.getByRole('button', { name: 'Clean up 2 items' })
   await expect(confirm).toBeEnabled()
-  await rows.nth(1).click({ force: true })
+  await rows.nth(2).click({ force: true })
   await expect(confirm).toBeEnabled()
   await expectSteadyBody(page)
-  await page.keyboard.press('Escape')
+  await page.keyboard.press('Control+A')
+  await page.keyboard.press('Space')
+  await page.keyboard.press('Control+Enter')
+  const tasks = dialog.locator('.task-row')
+  await expect(tasks).toHaveCount(2)
+  await expect(tasks.nth(0)).toContainText('Remove the worktree of parked')
+  await expect(tasks.nth(1)).toHaveAttribute('data-state', 'done')
+  await expect(dialog.locator('.modal-msg')).toHaveText('Removed 1 worktree, deleted parked.')
+  expect(existsSync(join(worktree, 'parked'))).toBe(false)
+  expect(existsSync(join(worktree, 'busy', 'note.txt'))).toBe(true)
+  expect(localBranches(small)).toEqual(['busy', 'main'])
+  await dialog.getByRole('button', { name: 'Close' }).click()
   await expect(dialog).toHaveCount(0)
-  git(small, 'worktree', 'remove', '--force', join(worktree, 'parked'))
+  git(small, 'worktree', 'remove', '--force', join(worktree, 'busy'))
   removeDir(worktree)
   removeDir(remote)
 })

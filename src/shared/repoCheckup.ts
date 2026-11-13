@@ -31,6 +31,7 @@ export interface CheckupRow {
 
 export const COMPACT_ID = 'compact'
 const BRANCH_ID = 'branch:'
+const WORKTREE_ID = 'worktree:'
 const KEPT_ID = 'kept:'
 
 /** Loose objects or packs beyond which compacting is worth suggesting; below it git is already tidy. */
@@ -85,7 +86,7 @@ function branchTile({ target, candidates, kept }: BranchCleanup): CheckupTile {
     value: candidates.length ? `${candidates.length} to clean up` : 'Tidy',
     detail: !target
       ? 'No default branch to measure against'
-      : found || (kept.length ? `${kept.length} gone but checked out` : `Nothing merged into ${target} or gone`),
+      : found || (kept.length ? `${kept.length} checked out, kept` : `Nothing merged into ${target} or gone`),
     attention: candidates.length > 0
   }
 }
@@ -126,27 +127,35 @@ export const CHECKUP_PENDING = 'Checking the repository…'
 export const checkupVerdict = (rows: CheckupRow[]) =>
   rows.some((row) => row.checked) ? 'Tick what to clean up, then confirm.' : 'Everything looks tidy. You can still compact if you like.'
 
-/** Shown under the list when a listed branch has commits found nowhere else. */
-export const checkupCaution = (checkup: RepoCheckup) =>
-  checkup.cleanup.candidates.some((c) => c.reason === 'gone') ? 'Commits that are only on a deleted branch are lost with it.' : undefined
+/** Shown under the list: what ticking a listed row can cost. */
+export function checkupCaution({ cleanup }: RepoCheckup) {
+  const cautions = [
+    cleanup.candidates.some((c) => c.reason === 'gone') && 'Commits that are only on a deleted branch are lost with it.',
+    cleanup.candidates.some((c) => c.worktree) && 'Removing a worktree deletes its folder, ignored files included.'
+  ].filter(Boolean)
+  return cautions.length ? cautions.join(' ') : undefined
+}
 
 /**
  * What the check-up can do, branches first. Compacting is always offered and ticked only when it is worth it.
- * Gone branches git cannot delete come last, listed so they are not mistaken for overlooked.
+ * A branch that takes a worktree's folder with it is offered unticked. Branches git cannot delete come last, listed
+ * so they are not mistaken for overlooked.
  */
 export function checkupRows(checkup: RepoCheckup): CheckupRow[] {
   const { cleanup, storage } = checkup
   const target = cleanup.target
   const branches = target
     ? cleanup.candidates.map((c) => ({
-        id: BRANCH_ID + c.name,
-        group: 'Delete branches',
+        id: (c.worktree ? WORKTREE_ID : BRANCH_ID) + c.name,
+        group: c.worktree ? 'Remove worktrees and delete their branches' : 'Delete branches',
         label: c.name,
         note: cleanupNote(c, target),
         warn: c.reason === 'gone',
-        checked: true
+        checked: !c.worktree
       }))
     : []
+  // Stable: plain branches keep their order ahead of the ones that take a worktree with them.
+  branches.sort((a, b) => Number(a.id.startsWith(WORKTREE_ID)) - Number(b.id.startsWith(WORKTREE_ID)))
   const compact = worthCompacting(storage)
   return [
     ...branches,
@@ -160,7 +169,7 @@ export function checkupRows(checkup: RepoCheckup): CheckupRow[] {
     },
     ...cleanup.kept.map((kept) => ({
       id: KEPT_ID + kept.name,
-      group: 'Kept: upstream gone, but checked out',
+      group: 'Kept: checked out, cannot be cleaned',
       label: kept.name,
       note: keptNote(kept),
       warn: false,
@@ -170,15 +179,30 @@ export function checkupRows(checkup: RepoCheckup): CheckupRow[] {
   ]
 }
 
-/** The branch names among ticked row ids. */
-export const tickedBranches = (ids: string[]) => ids.filter((id) => id.startsWith(BRANCH_ID)).map((id) => id.slice(BRANCH_ID.length))
+const named = (ids: string[], prefix: string) => ids.filter((id) => id.startsWith(prefix)).map((id) => id.slice(prefix.length))
 
+/** The branches whose worktree goes first, among ticked row ids. */
+export const tickedWorktrees = (ids: string[]) => named(ids, WORKTREE_ID)
+
+/** Every branch the ticked row ids delete, those in a worktree included. */
+export const tickedBranches = (ids: string[]) => [...named(ids, BRANCH_ID), ...tickedWorktrees(ids)]
+
+export const WORKTREES_TASK = 'worktrees'
 export const BRANCHES_TASK = 'branches'
 
-/** The steps the ticked rows amount to, in the order they run: all branches go in one step. */
+/** The steps the ticked rows amount to, in the order they run: worktrees, then all branches in one step. */
 export function checkupTasks(ids: string[]): Task[] {
   const branches = tickedBranches(ids)
+  const worktrees = tickedWorktrees(ids)
   return [
+    ...(worktrees.length
+      ? [
+          {
+            id: WORKTREES_TASK,
+            label: worktrees.length === 1 ? `Remove the worktree of ${worktrees[0]}` : `Remove ${worktrees.length} worktrees`
+          }
+        ]
+      : []),
     ...(branches.length
       ? [{ id: BRANCHES_TASK, label: branches.length === 1 ? `Delete ${branches[0]}` : `Delete ${branches.length} branches` }]
       : []),
@@ -193,8 +217,9 @@ export const compactNote = (freed: number) => (freed > 0 ? `freed ${formatSize(f
 export const checkupStopped = (label: string) => `Stopped at "${label}". Nothing after it ran.`
 
 /** The status line after a check-up ran; `freed` is null when it did not compact. */
-export function checkupDone(deleted: string[], freed: number | null): string {
+export function checkupDone(deleted: string[], freed: number | null, worktrees = 0): string {
   const parts = [
+    worktrees > 0 && `removed ${count(worktrees, 'worktree')}`,
     deleted.length === 1 ? `deleted ${deleted[0]}` : deleted.length > 1 && `deleted ${deleted.length} branches`,
     freed !== null && `compacted, ${compactNote(freed)}`
   ].filter((part): part is string => !!part)

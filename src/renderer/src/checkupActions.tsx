@@ -21,6 +21,8 @@ import {
   pendingTiles,
   storageBytes,
   tickedBranches,
+  tickedWorktrees,
+  WORKTREES_TASK,
   type CheckupTile,
   type RepoCheckup
 } from '../../shared/repoCheckup'
@@ -40,7 +42,11 @@ export async function repositoryCheckup(r: RepoCtx) {
   const cleanUp = async (ticked: string[], report: (taskId: string, update: TaskUpdate) => void) => {
     const tasks = checkupTasks(ticked)
     const branches = tickedBranches(ticked)
-    const before = storageBytes((await reading).storage)
+    const found = await reading
+    const before = storageBytes(found.storage)
+    const held = tickedWorktrees(ticked)
+    const worktrees = found.cleanup.candidates.flatMap((c) => (c.worktree && held.includes(c.name) ? [c.worktree] : []))
+    const done = () => checkupDone(branches, progress.freed, worktrees.length)
     const progress = { current: '', freed: null as number | null, stopped: false }
     const step = async (id: string, work: () => Promise<string>) => {
       if (!tasks.some((task) => task.id === id)) return
@@ -52,6 +58,10 @@ export async function repositoryCheckup(r: RepoCtx) {
       await r.withBusy(
         'Cleaning up',
         async () => {
+          await step(WORKTREES_TASK, async () => {
+            await api.removeWorktrees(r.path, worktrees)
+            return 'done'
+          })
           await step(BRANCHES_TASK, async () => {
             await api.deleteBranches(r.path, branches)
             return 'done'
@@ -61,7 +71,7 @@ export async function repositoryCheckup(r: RepoCtx) {
             return compactNote(progress.freed)
           })
         },
-        { done: () => checkupDone(branches, progress.freed) }
+        { done }
       )
     } catch (e) {
       progress.stopped = true
@@ -71,7 +81,7 @@ export async function repositoryCheckup(r: RepoCtx) {
     const after = await api.repoCheckup(r.path).catch(() => null)
     const stoppedAt = tasks.find((task) => task.id === progress.current)?.label ?? ''
     return {
-      message: progress.stopped ? checkupStopped(stoppedAt) : `${checkupDone(branches, progress.freed)}.`,
+      message: progress.stopped ? checkupStopped(stoppedAt) : `${done()}.`,
       summary: after ? tilesFor(after) : undefined
     }
   }

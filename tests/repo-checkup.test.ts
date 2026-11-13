@@ -92,20 +92,49 @@ test('tiles cover every area, also with nothing to do', () => {
 
 test('gone branches that are checked out are listed last and cannot be ticked', () => {
   const kept = [
-    { name: 'a', worktree: 'C:/work/a' },
-    { name: 'b', worktree: null }
+    { name: 'a', worktree: 'C:/work/a', why: 'changes' as const },
+    { name: 'b', worktree: null, why: 'here' as const },
+    { name: 'c', worktree: 'C:/work/c', why: 'locked' as const },
+    { name: 'd', worktree: 'C:/work', why: 'main' as const }
   ]
   const held = { ...tidy, cleanup: { ...tidy.cleanup, kept } }
   assert.deepEqual(
     checkupRows(held).map((row) => [row.id, row.note, !!row.disabled, row.checked]),
     [
       ['compact', 'already compact', false, false],
-      ['kept:a', 'checked out in C:/work/a', true, false],
-      ['kept:b', 'checked out here', true, false]
+      ['kept:a', 'uncommitted changes in C:/work/a', true, false],
+      ['kept:b', 'checked out here', true, false],
+      ['kept:c', 'locked worktree C:/work/c', true, false],
+      ['kept:d', 'checked out in the main worktree C:/work', true, false]
     ]
   )
   assert.deepEqual(tickedBranches(checkupRows(held).map((row) => row.id)), [])
-  assert.equal(checkupTiles(held, 'clean')[0].detail, '2 gone but checked out')
+  assert.equal(checkupTiles(held, 'clean')[0].detail, '4 checked out, kept')
+})
+
+test('a branch in a worktree that can be removed is offered unticked, after the plain branches', () => {
+  const parked = { name: 'parked', reason: 'merged' as const, unmerged: 0, worktree: 'C:/work/parked' }
+  const withWorktree = { ...checkup, cleanup: { ...checkup.cleanup, candidates: [parked, ...checkup.cleanup.candidates] } }
+  const rows = checkupRows(withWorktree)
+  assert.deepEqual(
+    rows.map((row) => [row.id, row.checked]),
+    [
+      ['branch:done', true],
+      ['branch:squashed', true],
+      ['worktree:parked', false],
+      ['compact', true]
+    ]
+  )
+  assert.equal(rows[2].note, 'merged into origin/main, in C:/work/parked')
+  const ids = rows.map((row) => row.id)
+  assert.deepEqual(tickedBranches(ids), ['done', 'squashed', 'parked'])
+  assert.deepEqual(checkupTasks(ids), [
+    { id: 'worktrees', label: 'Remove the worktree of parked' },
+    { id: 'branches', label: 'Delete 3 branches' },
+    { id: 'compact', label: 'Compact repository' }
+  ])
+  assert.match(checkupCaution(withWorktree) ?? '', /lost with it\. Removing a worktree deletes its folder/)
+  assert.equal(checkupDone(['parked'], null, 1), 'Removed 1 worktree, deleted parked')
 })
 
 test('the verdict and caution follow what is listed', () => {
