@@ -6,43 +6,52 @@ import { chooseFromList } from './components/ChecklistDialog'
 import type { IconName } from './components/Icon'
 import { SummaryTiles } from './components/SummaryTiles'
 import {
+  CHECKUP_PENDING,
   checkupCaution,
   checkupDone,
   checkupRows,
   checkupTiles,
   checkupVerdict,
   COMPACT_ID,
+  pendingTiles,
   storageBytes,
   tickedBranches,
-  type CheckupTile,
-  type RepoCheckup
+  type CheckupTile
 } from '../../shared/repoCheckup'
 
 const TILE_ICONS: Record<CheckupTile['id'], IconName> = { branches: 'branch', storage: 'storage', state: 'health' }
 
 /** Check the repository's health in one go, review what can be cleaned, then run the ticked steps. */
 export async function repositoryCheckup(r: RepoCtx) {
-  let checkup: RepoCheckup
+  const withIcons = (tiles: CheckupTile[]) => tiles.map((tile) => ({ ...tile, icon: TILE_ICONS[tile.id] }))
+  // The dialog opens at once; git's findings fill it in when they arrive.
+  const reading = api.repoCheckup(r.path)
+  let ticked: string[] | null
   try {
-    checkup = await api.repoCheckup(r.path)
+    ticked = await chooseFromList({
+      title: 'Repository check-up',
+      message: CHECKUP_PENDING,
+      summary: <SummaryTiles tiles={withIcons(pendingTiles())} />,
+      items: [],
+      loading: reading.then((checkup) => {
+        const rows = checkupRows(checkup)
+        return {
+          message: checkupVerdict(rows),
+          summary: <SummaryTiles tiles={withIcons(checkupTiles(checkup, r.status?.state ?? 'clean'))} />,
+          caution: checkupCaution(checkup),
+          items: rows
+        }
+      }),
+      ok: (count) => (count === 1 ? 'Clean up 1 item' : `Clean up ${count} items`),
+      danger: (ids) => tickedBranches(ids).length > 0
+    })
   } catch (e) {
     return notify.error(errorMessage(e))
   }
-  const rows = checkupRows(checkup)
-  const tiles = checkupTiles(checkup, r.status?.state ?? 'clean').map((tile) => ({ ...tile, icon: TILE_ICONS[tile.id] }))
-  const ticked = await chooseFromList({
-    title: 'Repository check-up',
-    message: checkupVerdict(rows),
-    summary: <SummaryTiles tiles={tiles} />,
-    caution: checkupCaution(checkup),
-    items: rows,
-    ok: (count) => (count === 1 ? 'Clean up 1 item' : `Clean up ${count} items`),
-    danger: (ids) => tickedBranches(ids).length > 0
-  })
   if (!ticked?.length) return
 
   const branches = tickedBranches(ticked)
-  const before = storageBytes(checkup.storage)
+  const before = storageBytes((await reading).storage)
   try {
     await r.withBusy(
       'Cleaning up',

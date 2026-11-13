@@ -107,6 +107,15 @@ export function checkupTiles(checkup: RepoCheckup, state: RepoState): CheckupTil
   ]
 }
 
+/** The same tiles while the check-up is still reading, so the dialog opens at once and at its final size. */
+export const pendingTiles = (): CheckupTile[] => [
+  { id: 'branches', label: 'Branches', value: 'Checking…', detail: 'Looking for merged and gone branches', attention: false },
+  { id: 'storage', label: 'Storage', value: 'Checking…', detail: 'Counting objects and packs', attention: false },
+  { id: 'state', label: 'State', value: 'Checking…', detail: 'Looking for unfinished operations', attention: false }
+]
+
+export const CHECKUP_PENDING = 'Checking the repository…'
+
 /** The one line under the title: whether anything is worth doing. */
 export const checkupVerdict = (rows: CheckupRow[]) =>
   rows.some((row) => row.checked) ? 'Tick what to clean up, then confirm.' : 'Everything looks tidy. You can still compact if you like.'

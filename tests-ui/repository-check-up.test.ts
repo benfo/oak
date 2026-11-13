@@ -41,6 +41,16 @@ test('the check-up lists merged and gone branches and deletes only the ticked on
   await expect(rows.nth(0)).toBeFocused()
   await expect(dialog.getByRole('button', { name: 'Clean up 2 items' })).toBeEnabled()
 
+  // A group unticks in one go; Ctrl+A ticks every row, then none.
+  const confirm = dialog.getByRole('button', { name: /^Clean up/ })
+  await dialog.getByRole('button', { name: 'Untick all' }).click()
+  await expect(confirm).toBeDisabled()
+  await expect(dialog.getByRole('button', { name: 'Tick all' })).toBeVisible()
+  await page.keyboard.press('Control+A')
+  await expect(confirm).toHaveText('Clean up 3 items')
+  await page.keyboard.press('Control+A')
+  await expect(confirm).toBeDisabled()
+
   // Escape leaves every branch alone.
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)

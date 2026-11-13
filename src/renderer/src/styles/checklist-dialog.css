@@ -20,6 +20,35 @@
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
+.checklist-group-count {
+  margin-left: auto;
+  font-weight: var(--weight-normal);
+  letter-spacing: normal;
+  text-transform: none;
+}
+.checklist-group-toggle {
+  margin-left: var(--space-3);
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: var(--weight-normal);
+  letter-spacing: normal;
+  color: var(--primary);
+  cursor: pointer;
+}
+.checklist-group-toggle:hover {
+  text-decoration: underline;
+}
+/* Holds the height of the shortest list (a heading and a row) so a tidy repository's dialog does not grow. */
+.checklist-pending {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: calc(var(--row-md) * 2);
+  padding: 0 var(--row-pad);
+  color: var(--muted-foreground);
+}
 .checklist-row {
   display: flex;
   align-items: center;
