@@ -2,6 +2,24 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.30
+
+### Added
+
+- Clean up repository. In the command palette or the toolbar's More actions menu, it reports branches, storage and leftover state in one dialog, then deletes the merged or gone branches you tick and compacts the repository with `git gc`.
+- Worktree support. A branch checked out in another worktree is marked "worktree" in the sidebar and branch switcher. Checking it out opens that worktree instead, and its Delete is disabled with the reason. Clean up repository also offers, unticked, a finished branch held by a worktree with nothing uncommitted, and removes the worktree and then the branch.
+
+### Changed
+
+- Oak now runs on Electron 45.
+
+### Fixed
+
+- Staging, unstaging and discarding thousands of files at once works on Windows.
+- Moving the selection in Changes is much faster with thousands of changed files.
+- Branches refresh when a worktree is added, removed or switches branch, and a linked worktree shows branch changes made elsewhere without a focus refresh.
+- A recent repository that is now a plain folder inside another repository is explained and removed from the recent list.
+
 ## 0.1.29
 
 ### Added
