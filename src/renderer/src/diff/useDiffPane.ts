@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState, type FocusEvent, type KeyboardEvent, type MouseEvent, type RefObject } from 'react'
+import type { usePane } from '../lib/usePane'
 
 /**
  * The pane elements and their sizes. The pane element is replaced when the diff changes shape (loading, empty, a
@@ -46,4 +47,41 @@ export function useDiffPane() {
     }
   }, [])
   return { ref, hadFocus, paneWidth, setPane, setSideColumn }
+}
+
+interface PaneElementOptions {
+  setPane: (el: HTMLDivElement | null) => void
+  hadFocus: RefObject<boolean>
+  pane: ReturnType<typeof usePane>
+  onKeyDown: (e: KeyboardEvent) => void
+  /** Called on focus, so copy commands act on this diff. */
+  onFocus: () => void
+  /** The right-click menu; null when there are no lines to act on. */
+  showMenu: (() => void) | null
+}
+
+/** Props for the focusable diff element, the same whether it shows code, a message or a preview. */
+export function diffPaneElementProps({ setPane, hadFocus, pane, onKeyDown, onFocus, showMenu }: PaneElementOptions) {
+  return {
+    ref: setPane,
+    tabIndex: 0,
+    ...pane.targetProps,
+    ...pane.resetProps,
+    onKeyDown,
+    onKeyDownCapture: (e: KeyboardEvent) => pane.navigate(e),
+    onFocus: () => {
+      hadFocus.current = true
+      onFocus()
+    },
+    onContextMenu: (e: MouseEvent) => {
+      if (!showMenu) return
+      e.preventDefault()
+      showMenu()
+    },
+    onBlur: (e: FocusEvent<HTMLDivElement>) => {
+      // Removal can blur too; only a real move elsewhere (element still in the page) counts.
+      const el = e.currentTarget
+      setTimeout(() => el.isConnected && (hadFocus.current = false))
+    }
+  }
 }

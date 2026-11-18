@@ -17,7 +17,7 @@ export const tempDir = (prefix: string) => mkdtempSync(join(tmpdir(), `oak-ui-${
 
 export const removeDir = (dir: string) => rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
 
-export function write(repo: string, file: string, content: string) {
+export function write(repo: string, file: string, content: string | Uint8Array) {
   const path = join(repo, file)
   mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, content)

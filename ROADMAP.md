@@ -122,7 +122,7 @@ Ideas only, none agreed; each needs a concrete workflow and a discussion first.
 
 **Diff and files**
 
-- More previewers instead of "binary file differs": PNG and other images, PDF, other safe formats. One file under `preview/` plus a line in `previewers.ts`; never run scripts. SVG follow-ups: zoom and pan (`react-zoom-pan-pinch`), swipe and onion-skin comparison, fit and actual size, a minimum size for tiny icons, a persisted default mode (Preview or Diff).
+- More previewers instead of "binary file differs": PDF (pdf.js), TIFF, HEIC, PSD (each needs a decoder library). Images Chromium draws (PNG, JPEG, GIF, WebP, AVIF, BMP, ICO) already preview. One file under `preview/` plus a line in `previewers.ts`; never run scripts. Image follow-ups: zoom and pan (`react-zoom-pan-pinch`), swipe and onion-skin comparison, fit and actual size, a minimum size for tiny icons, a persisted default mode (Preview or Diff).
 - "Blame this line" from the diff line menu (deleted lines blame the old side at the parent; History diffs blame as of that commit).
 - Commit details for a line while reading, without opening Blame; try a hover or key-triggered popover first (always-on annotation risks the GitLens distraction).
 - Whole-file syntax tokenizing (a hunk starting mid-construct can be mis-coloured).

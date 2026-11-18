@@ -168,3 +168,26 @@ test('Ctrl+Shift+V and the palette toggle the preview, and only offer it for a f
   await page.keyboard.press('Control+Shift+V')
   await expect(pane.getByRole('group', { name: 'View' })).toHaveCount(0)
 })
+
+/** A 1x1 PNG of one colour (all three are valid files Chromium decodes). */
+const PNG = {
+  red: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==',
+  blue: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPj/HwADBwIAMCbHYQAAAABJRU5ErkJggg=='
+}
+const png = (colour: keyof typeof PNG) => Buffer.from(PNG[colour], 'base64')
+
+test('a changed PNG opens as a before and after preview, and its diff says it is binary', async ({ open, small }) => {
+  write(small, 'art/dot.png', png('red'))
+  commitAll(small, 'Add dot')
+  write(small, 'art/dot.png', png('blue'))
+  const page = await open(small)
+  const pane = page.locator('.changes-diff')
+  await page.getByRole('row', { name: /dot\.png/ }).click()
+  await expect(pane.locator('.preview-side[aria-label="Before"] img')).toHaveAttribute('src', /^data:image\/png;base64,/)
+  await expect(pane.locator('.preview-side[aria-label="After"] img')).toBeVisible()
+  expect(await pane.locator('.preview-side img').evaluateAll((imgs) => imgs.map((i) => (i as HTMLImageElement).naturalWidth))).toEqual([
+    1, 1
+  ])
+  await pane.getByRole('group', { name: 'View' }).getByRole('button', { name: 'Diff', exact: true }).click()
+  await expect(pane).toContainText('Binary file, no text diff')
+})

@@ -1,12 +1,12 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import type { GapEdge } from './GapControls'
-import { captureDiffViewport } from './diffViewport'
+import { useRef, useState, type ReactNode } from 'react'
 import type { FileDiff } from './diff'
 import { resolveDiffLayout } from './diffLayout'
 import { usePane } from '../lib/usePane'
+import { useDiffJumps } from './useDiffJumps'
+import { useKeepExpand } from './useKeepExpand'
+import { diffEmptyContent, DiffTruncated, ReadOnlyNotice } from './DiffNotices'
 import { DiffLineActions } from './DiffLineActions'
 import { PaneFrame } from '../components/Pane'
-import { Icon } from '../components/Icon'
 import { useSettings } from '../settings'
 import { noteDiffFocus } from './diffCopy'
 import type { DiffActions, DiffSide } from './diffTypes'
@@ -15,14 +15,13 @@ import { useDiffScroll } from './useDiffScroll'
 import { useDiffCode } from './useDiffCode'
 import { useDiffSelection } from './useDiffSelection'
 import { useDiffCopy, type RemoteLineActions } from './useDiffCopy'
-import { useDiffPane } from './useDiffPane'
+import { diffPaneElementProps, useDiffPane } from './useDiffPane'
 import { DiffToolbar } from './DiffToolbar'
 import { renderDiffItems } from './DiffItems'
 import { SideColumns } from './SideColumns'
 import { FindBar } from '../components/FindBar'
 import { useDiffFind } from './useDiffFind'
 import { useDiffNavigation, useDiffFileNavigation } from './useDiffNavigation'
-import { toggleIgnoreWhitespace } from './useIgnoreWhitespace'
 import { useDiffDocument } from './useDiffDocument'
 import { useDiffCursor } from './useDiffCursor'
 import { useFilePreview } from '../preview/useFilePreview'
@@ -133,71 +132,22 @@ export function DiffView({
   })
 
   useDiffCursor(diff, rows, cursor, setCursor, reviewMode, selection.clear, pendingHunk)
-
-  // Reveal after cursor restoration so a diff reset cannot undo the requested source line.
-  useEffect(() => {
-    if (revealLine === undefined || !diff) return
-    const row = rows.find((r) => diff.hunks[r.hunk].lines[r.line].newNo === revealLine)
-    if (!row && truncated && !showAll) return setShowAll(true)
-    if (row) {
-      setCursor(row.index)
-      setSide('new')
-      scroll.revealRow(row.index, 'center')
-      ref.current?.focus({ preventScroll: true })
-    }
-    onRevealed?.()
-  }, [revealLine, diff, rows])
-
-  useEffect(() => {
-    if (pendingHunk.current === null) return
-    const row = rows.find((r) => r.hunk === pendingHunk.current && r.change)
-    if (row) {
-      pendingHunk.current = null
-      setCursor(row.index)
-      scroll.revealRow(row.index, 'center')
-    }
-  }, [rows])
-
-  const jumpHunk = (delta: number) => {
-    if (!diff?.hunks.length) return
-    const target = (cursorHunk + delta + diff.hunks.length) % diff.hunks.length
-    const idx = rows.findIndex((r) => r.hunk === target && r.change)
-    if (idx < 0) {
-      pendingHunk.current = target
-      setShowAll(true)
-      return
-    }
-    setCursor(idx)
-    scroll.revealRow(idx, 'center')
-    // The reveal button becomes disabled once the only change is visible. Move focus to the
-    // revealed code first so disabling the button doesn't drop keyboard focus onto the page.
-    if (diff.hunks.length === 1) ref.current?.focus({ preventScroll: true })
-  }
-
-  // Revealed lines push the cursor line down; keep it where it was on screen. The first expand loads the whole file
-  // before anything is revealed, so the position is restored when the gaps actually change.
-  const gapsKey = JSON.stringify(gaps)
-  const pendingView = useRef<{ restore: () => boolean; gapsKey: string; timer: number } | null>(null)
-  const keepExpand = (key: number, edge: GapEdge) => {
-    if (pendingView.current) window.clearTimeout(pendingView.current.timer)
-    const timer = window.setTimeout(() => (pendingView.current = null), 3000)
-    pendingView.current = { restore: captureDiffViewport(true), gapsKey, timer }
-    expand(key, edge)
-  }
-  useLayoutEffect(() => {
-    const pending = pendingView.current
-    if (!pending || pending.gapsKey === gapsKey || !pending.restore()) return
-    window.clearTimeout(pending.timer)
-    pendingView.current = null
-    requestAnimationFrame(pending.restore)
-  }, [gapsKey, diff])
-
-  const expandAroundCursor = () => {
-    for (const gap of gaps) {
-      if (gap.before === cursorHunk) keepExpand(gap.key, 'up')
-      else if (gap.before === cursorHunk + 1) keepExpand(gap.key, 'down')
-    }
-  }
+  const jumpHunk = useDiffJumps({
+    diff,
+    rows,
+    truncated,
+    showAll,
+    setShowAll,
+    cursorHunk,
+    setCursor,
+    setSide,
+    revealRow: scroll.revealRow,
+    ref,
+    pendingHunk,
+    revealLine,
+    onRevealed
+  })
+  const { keepExpand, expandAroundCursor } = useKeepExpand(diff, gaps, expand, cursorHunk)
 
   const pane = usePane('diff', { kind: 'diff' })
   const { moveFile, onFileKey } = useDiffFileNavigation(files, ref)
@@ -223,28 +173,14 @@ export function DiffView({
     expandAroundCursor
   })
 
-  const paneProps = {
-    ref: setPane,
-    tabIndex: 0,
-    ...pane.targetProps,
-    ...pane.resetProps,
+  const paneProps = diffPaneElementProps({
+    setPane,
+    hadFocus,
+    pane,
     onKeyDown,
-    onKeyDownCapture: (e: React.KeyboardEvent) => pane.navigate(e),
-    onFocus: () => {
-      hadFocus.current = true
-      noteDiffFocus(copySource)
-    },
-    onContextMenu: (e: React.MouseEvent) => {
-      if (!rows.length) return
-      e.preventDefault()
-      void showCopyMenu(false)
-    },
-    onBlur: (e: React.FocusEvent<HTMLDivElement>) => {
-      // Removal can blur too; only a real move elsewhere (element still in the page) counts.
-      const el = e.currentTarget
-      setTimeout(() => el.isConnected && (hadFocus.current = false))
-    }
-  }
+    onFocus: () => noteDiffFocus(copySource),
+    showMenu: rows.length ? () => void showCopyMenu(false) : null
+  })
 
   const header = title ? (
     <DiffToolbar
@@ -302,20 +238,8 @@ export function DiffView({
       </PreviewPane>
     )
   if (diff === null) return empty(loading ? 'Loading…' : emptyText)
-  if (diff.binary) return empty('Binary file, no preview')
-  if (!diff.hunks.length) {
-    if (source?.hunks.length && diff !== source)
-      return empty(
-        <span>
-          Only whitespace changes.{' '}
-          <button className="link" onClick={toggleIgnoreWhitespace}>
-            Show whitespace changes
-          </button>
-        </span>
-      )
-    const info = diff.header.filter((l) => !/^(diff --git|index |--- |\+\+\+ )/.test(l))
-    return empty(info.length ? info.map((l, i) => <div key={i}>{l}</div>) : 'No content changes')
-  }
+  const emptyContent = diffEmptyContent(diff, source, !!filePreview.previewer)
+  if (emptyContent !== null) return empty(emptyContent)
 
   const hint = acts
     ? `Diff. ↑↓ move${split ? ', ←→ switch sides' : ''}, Shift+↑↓ or Space select lines, Enter to ${acts.primary.label.toLowerCase()}${acts.discard ? ', Delete to discard' : ''}, N/P next/previous hunk`
@@ -343,14 +267,7 @@ export function DiffView({
       },
       targetSide
     )
-  const truncation = truncated && (
-    <div className="diff-truncated">
-      Large diff truncated.{' '}
-      <button className="link" onClick={() => setShowAll(true)}>
-        Show everything
-      </button>
-    </div>
-  )
+  const truncation = truncated && <DiffTruncated onShowAll={() => setShowAll(true)} />
   return (
     <div className={`diff-wrap ${plain ? 'plain' : ''}`} {...pane.ownerProps} onKeyDownCapture={onFileKey}>
       {header}
@@ -365,12 +282,7 @@ export function DiffView({
           scopeHint={plain ? undefined : 'Searches loaded diff text. Use Full file for more context.'}
         />
       )}
-      {notice && (
-        <div className="diff-notice" role="note">
-          <Icon name="info" size={14} />
-          {notice}
-        </div>
-      )}
+      {notice && <ReadOnlyNotice reason={notice} />}
       <PaneFrame>
         <div
           className={`diff ${split ? 'side-mode' : ''} ${acts ? 'selectable' : ''} ${find.query !== null ? 'finding' : ''}`}
