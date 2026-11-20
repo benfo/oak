@@ -2,11 +2,10 @@
 id: c6eu
 kind: task
 state: open
-when: start:ui
+when: later
 tags: []
 created: 2026-11-20
 updated: 2026-11-20
-due: 2026-11-20
 ---
 # Finish the theme leftovers from the transit-map redesign
 

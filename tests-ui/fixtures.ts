@@ -10,11 +10,12 @@ export interface Launched {
   page: Page
 }
 
-async function launch(repo: string): Promise<Launched> {
+/** Launches the app on `repo`, or on Welcome without one. */
+async function launch(repo?: string): Promise<Launched> {
   const userData = tempDir('userdata')
   const app = await electron.launch({
     executablePath: electronPath,
-    args: [root, repo, `--user-data-dir=${userData}`]
+    args: [root, ...(repo ? [repo] : []), `--user-data-dir=${userData}`]
   })
   const page = await app.firstWindow()
   const close = app.close.bind(app)
@@ -31,6 +32,8 @@ interface Fixtures {
   open: (repo: string, view?: 'changes' | 'history') => Promise<Page>
   /** Like `open`, but also hands back the Electron app, to reach the main process. */
   openApp: (repo: string, view?: 'changes' | 'history') => Promise<Launched>
+  /** Opens the app on Welcome (no repository); closed after the test. */
+  openWelcome: () => Promise<Page>
   /** A fresh small repo with a modified file (three hunks) and an untracked file. */
   small: string
   /** Folders removed after every app has closed (teardown runs in reverse setup order, and Electron holds the repo open). */
@@ -59,6 +62,16 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
       await l.page.getByRole('toolbar', { name: 'Repository actions' }).waitFor()
       await l.page.keyboard.press(view === 'changes' ? 'Control+1' : 'Control+2')
       return l
+    })
+    for (const l of launched) await l.app.close()
+  },
+  openWelcome: async ({}, use) => {
+    const launched: Launched[] = []
+    await use(async () => {
+      const l = await launch()
+      launched.push(l)
+      await l.page.getByRole('heading', { name: 'Oak' }).first().waitFor()
+      return l.page
     })
     for (const l of launched) await l.app.close()
   },

@@ -1,5 +1,8 @@
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { Overlay } from 'react-aria'
 import { displayKeys } from '../commands'
+import { createStore } from '../lib/createStore'
+import { useShortcutScope } from '../lib/useShortcuts'
 import { stepZoom, useSettings, ZOOM_STEPS } from '../settings'
 import { Icon } from './Icon'
 import { Tip } from './Tip'
@@ -10,7 +13,7 @@ import { Tip } from './Tip'
  * Focus stays where it was (nothing here is a Tab stop): the keys are the keyboard route, shown in each
  * tooltip, so this is the mouse's.
  */
-export function ZoomBubble({ onHold }: { onHold: (held: boolean) => void }) {
+function ZoomBubble({ onHold }: { onHold: (held: boolean) => void }) {
   const { zoom } = useSettings()
   return (
     <Overlay disableFocusManagement>
@@ -52,4 +55,52 @@ export function ZoomBubble({ onHold }: { onHold: (held: boolean) => void }) {
       </div>
     </Overlay>
   )
+}
+
+const CLOSE_AFTER_MS = 3000
+
+/** Open, and held open while the pointer is on the bubble or on the status bar's zoom item. */
+const bubble = createStore({ open: false, held: false })
+const setBubble = (next: Partial<ReturnType<typeof bubble.get>>) => bubble.set({ ...bubble.get(), ...next })
+
+export const toggleZoomBubble = () => setBubble({ open: !bubble.get().open })
+export const holdZoomBubble = (held: boolean) => setBubble({ held })
+
+/**
+ * Shows the bubble on every screen, Welcome included: changing the zoom (a key, the wheel, the bubble
+ * itself) opens it for a few seconds, held open while the pointer is on it. Escape closes it before
+ * anything else reacts.
+ */
+export function ZoomBubbleHost() {
+  const { zoom } = useSettings()
+  const { open, held } = useSyncExternalStore(bubble.subscribe, bubble.get)
+  const previous = useRef(zoom)
+
+  useEffect(() => {
+    if (previous.current === zoom) return
+    previous.current = zoom
+    // Any change opens it, 100% included: stepping through 100% with the bubble must not close it.
+    setBubble({ open: true })
+  }, [zoom])
+
+  // A bubble that closes under the pointer never sees it leave, so the hold must not outlive it.
+  useEffect(() => {
+    if (!open) setBubble({ held: false })
+  }, [open])
+
+  useEffect(() => {
+    if (!open || held) return
+    const timer = setTimeout(() => setBubble({ open: false }), CLOSE_AFTER_MS)
+    return () => clearTimeout(timer)
+  }, [open, held, zoom])
+
+  useShortcutScope({
+    id: 'zoom-bubble',
+    // Above the workspace scope (10), so Escape closes the bubble before it restores an expanded layout.
+    priority: 20,
+    enabled: open,
+    bindings: [{ id: 'zoom-bubble-close', keys: 'Escape', allowInInput: true, run: () => setBubble({ open: false }) }]
+  })
+
+  return open ? <ZoomBubble onHold={holdZoomBubble} /> : null
 }

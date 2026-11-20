@@ -97,3 +97,13 @@ test('stepping down through 100% with the bubble does not close it', async ({ op
   }
   await expect(bubble.getByRole('button', { name: 'Zoom out' })).toBeDisabled()
 })
+
+test('zooming on Welcome, which has no status bar, still shows the bubble', async ({ openWelcome }) => {
+  const page = await openWelcome()
+  await expect(page.locator('.status-bar')).toHaveCount(0)
+  await page.keyboard.press('Control+Equal')
+  const bubble = page.getByRole('group', { name: 'Zoom' })
+  await expect(bubble).toContainText('110%')
+  await page.keyboard.press('Escape')
+  await expect(bubble).toHaveCount(0)
+})

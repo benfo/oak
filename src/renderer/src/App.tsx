@@ -14,6 +14,7 @@ import { useShortcutRoot, useShortcutScope } from './lib/useShortcuts'
 import { APP_COMMANDS, PreferencesHost } from './components/Preferences'
 import { getSettings } from './settings'
 import { UpdateNotice } from './components/UpdateNotice'
+import { ZoomBubbleHost } from './components/ZoomBubble'
 import { WhatsNewHost } from './components/WhatsNew'
 import { useWheelZoom } from './lib/useWheelZoom'
 import { copyFocused, hasTextSelection } from './lib/copy'
@@ -110,6 +111,7 @@ export default function App() {
       )}
       <Toasts />
       <UpdateNotice />
+      <ZoomBubbleHost />
       <WhatsNewHost />
       <PaletteHost />
       <ContextMenuHost />
