@@ -1,1 +1,1 @@
-Committing straight to main now (AGENTS.local.md, wk git.branch none). dqyp (Explorer) and 8qby (AGENTS wk rule) await review on main.
+ppkd done: picker waited on branch details; fixtures deleted repos before apps closed. Next: Show in Explorer in every file list (dqyp).

@@ -33,6 +33,8 @@ interface Fixtures {
   openApp: (repo: string, view?: 'changes' | 'history') => Promise<Launched>
   /** A fresh small repo with a modified file (three hunks) and an untracked file. */
   small: string
+  /** Folders removed after every app has closed (teardown runs in reverse setup order, and Electron holds the repo open). */
+  removeAfterApps: string[]
 }
 interface WorkerFixtures {
   /** Large repos are built once per run and only read by the tests. */
@@ -44,7 +46,12 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
   open: async ({ openApp }, use) => {
     await use(async (repo, view) => (await openApp(repo, view)).page)
   },
-  openApp: async ({}, use) => {
+  removeAfterApps: async ({}, use) => {
+    const dirs: string[] = []
+    await use(dirs)
+    for (const dir of dirs) removeDir(dir)
+  },
+  openApp: async ({ removeAfterApps: _ }, use) => {
     const launched: Launched[] = []
     await use(async (repo, view = 'changes') => {
       const l = await launch(repo)
@@ -55,11 +62,11 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     })
     for (const l of launched) await l.app.close()
   },
-  small: async ({}, use) => {
+  small: async ({ removeAfterApps }, use) => {
     const dir = tempDir('small')
     smallRepo(dir)
+    removeAfterApps.push(dir)
     await use(dir)
-    removeDir(dir)
   },
   commits5k: [
     async ({}, use) => {

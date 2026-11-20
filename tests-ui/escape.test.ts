@@ -3,6 +3,8 @@ import { commitAll, git } from './repos'
 import type { Page } from '@playwright/test'
 
 async function compareCurrentBranchWithTarget(page: Page) {
+  // The branch picker opens only once branch details are in; the toolbar's branch button is enabled at the same moment.
+  await expect(page.locator('.tb-branch')).toBeEnabled()
   await page.keyboard.press('Control+Shift+p')
   await page.locator('.palette-input').fill('Compare current branch with…')
   await page.getByRole('option', { name: /Compare current branch with…/ }).click()
