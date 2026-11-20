@@ -4,7 +4,7 @@ Git GUI: Electron + React 19 + TypeScript (electron-vite). Runs the user's insta
 
 At session start, read `AGENTS.local.md` (repo root, gitignored, per-clone maintainer workflow rules) if it exists. Its rules apply to all work.
 
-Track work with the `wk` CLI. At the start of every session run `wk guide` once (skip it if the wk skill is loaded), then `wk brief`.
+Track work with the `wk` CLI. At the start of every session run `wk guide` once (skip it if the wk skill is loaded), then `wk brief`. Before any work, however small (a one-line request, a screenshot), check what is already planned: `wk brief` for now, next and the inbox, and `wk ls --all` for a task, jot or backlog item that covers the request. Start the matching item (`wk start`), or add one only when none fits; then follow the wk loop through `wk check`.
 
 Principles are in [PRODUCT.md](PRODUCT.md), the visual system in [DESIGN.md](DESIGN.md), status, plans and decisions in the wk plan (`.work/`, below). In short: everyday Git done simply, the same action behaving the same everywhere, Fetch/Pull/Push stay on the toolbar, no new permanent UI or commands without a concrete workflow benefit.
 
