@@ -10,6 +10,14 @@ import type { MenuItem } from '../../../shared/types'
 
 const fileName = (p: string) => p.split('/').pop() ?? p
 
+const revealItem = (enabled: boolean): MenuItem => ({ id: 'reveal', label: 'Show in Explorer', enabled })
+
+/** Shows a working-copy file or folder in Explorer, or says it is no longer there. */
+export const showInExplorer = (repoPath: string, path: string) => api.revealFile(repoPath, path).catch((e) => notify.error(errorMessage(e)))
+
+/** The menu for a folder row in a file tree (its `reveal` id goes to `showInExplorer`). */
+export const folderMenuItems = (): MenuItem[] => [revealItem(true)]
+
 /**
  * Shared file-list menu entries, in menu order: Show file history and blame, the local Open rows (editor, default app for non-text files, Explorer),
  * Open in browser, the Copy submenu, then the caller's destructive `manage` items.
@@ -25,6 +33,8 @@ export function fileMenuItems(
     canRemote?: boolean
     /** The file is new, so the remote has no page for it. */
     notOnRemote?: boolean
+    /** The menu was opened on this folder row, so Show in Explorer shows the folder (the caller runs it). */
+    folder?: string
     manage?: MenuItem[]
   }
 ): MenuItem[] {
@@ -55,7 +65,7 @@ export function fileMenuItems(
       ? [{ id: 'open', label: 'Open with default app', enabled: openLocal }]
       : []),
     // Like Open in editor, this shows the working-copy file, so it is offered for files listed in History too.
-    { id: 'reveal', label: 'Show in Explorer', enabled: openLocal },
+    revealItem(openLocal || !!opts.folder),
     remoteItem('remote', 'Open in browser', !!opts.notOnRemote, remote)
   ]
   return [
@@ -85,7 +95,7 @@ export function runFileMenu(
   else if (id === 'remote' && n === 1) void openOnRemote(repoPath, { kind: 'file', hash: commit, path: paths[0] })
   else if (id === 'copylink' && n === 1) void copyRemoteLink(repoPath, { kind: 'file', hash: commit, path: paths[0] }, 'file link')
   else if (id === 'open' && n === 1) api.openPath(repoPath, paths[0])
-  else if (id === 'reveal' && n === 1) api.revealFile(repoPath, paths[0]).catch((e) => notify.error(errorMessage(e)))
+  else if (id === 'reveal' && n === 1) void showInExplorer(repoPath, paths[0])
   else if (id === 'copyname') copyText(paths.map(fileName).join('\n'), noun('file name'))
   else if (id === 'copy') copyText(paths.join('\n'), noun('relative path'))
   else if (id === 'copyfull') copyText(fullPaths(repoPath, paths).join('\n'), noun('full path'))

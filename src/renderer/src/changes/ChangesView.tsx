@@ -27,7 +27,7 @@ import type { FileDiff } from '../diff/diff'
 import { Tip } from '../components/Tip'
 import { focusFiles, focusPane, handleNavigation, handleToolNavigation } from '../lib/navigation'
 import { usePane } from '../lib/usePane'
-import { fileMenuItems, runFileMenu } from '../lib/fileMenu'
+import { fileMenuItems, runFileMenu, showInExplorer } from '../lib/fileMenu'
 import { openInEditor } from '../lib/openInEditor'
 import { isNewFileNotOnRemote } from '../../../shared/remote'
 import { fileListCopy, registerListCopy } from '../lib/listCopy'
@@ -358,7 +358,8 @@ export function ChangesView({
   const targets = (section: Section, owners: Entry[]) =>
     sel.section === section && owners.every((e) => sel.keys.has(e.path)) && selected.length > 1 ? selected : owners
 
-  const fileMenu = async (section: Section, files: Entry[]) => {
+  /** `folder`: the folder row the menu was opened on, for Show in Explorer. */
+  const fileMenu = async (section: Section, files: Entry[], folder?: string) => {
     const n = files.length
     const one = n === 1 ? files[0] : null
     const many = n > 1 ? ` ${plural(n, 'file')}` : ''
@@ -391,11 +392,13 @@ export function ChangesView({
           canBlame: !!one && !['A', 'D', '?'].includes(one.status),
           canRemote: !!one && !['A', 'D', '?'].includes(one.status),
           notOnRemote: !!one && isNewFileNotOnRemote(one.status, { working: true, commitUnpushed: false }),
+          folder,
           manage
         }
       )
     ])
-    if (id === 'stage') stage(files)
+    if (id === 'reveal' && folder) void showInExplorer(r.path, folder)
+    else if (id === 'stage') stage(files)
     else if (id === 'unstage') unstage(files)
     else if (id === 'discard') discard(files)
     else if (id === 'mergetool') openMergeTool(files)
@@ -427,7 +430,9 @@ export function ChangesView({
         : undefined,
       back: focusCode ? undefined : onBackToSidebar,
       discard: section === 'unstaged' && files.length ? () => discard(files) : undefined,
-      menu: files.length ? () => fileMenu(section, files) : undefined
+      menu: files.length
+        ? () => fileMenu(section, files, key && treeRows?.[section].find((row) => row.id === key)?.folder ? key : undefined)
+        : undefined
     })
   }
 
@@ -536,7 +541,7 @@ export function ChangesView({
         const owners = ownersOf(section, id)
         if (owners.length) primary(section, targets(section, owners))
       }}
-      onMenu={(owners) => {
+      onMenu={(owners, folder) => {
         if (!(sel.section === section && owners.every((e) => sel.keys.has(e.path))))
           setSel({
             section,
@@ -546,7 +551,7 @@ export function ChangesView({
             ),
             lead: owners[0].path
           })
-        fileMenu(section, targets(section, owners))
+        fileMenu(section, targets(section, owners), folder)
       }}
       onKeyDownCapture={onGridKeyCapture(section)}
     />
@@ -735,7 +740,8 @@ interface FileGridProps {
   onSelectionChange: (s: Selection) => void
   onSwitchView: () => void
   onAction: (id: string) => void
-  onMenu: (owners: Entry[]) => void
+  /** `folder` is the folder row's path when the menu was opened on one. */
+  onMenu: (owners: Entry[], folder?: string) => void
   onKeyDownCapture: (e: React.KeyboardEvent) => void
 }
 
@@ -897,7 +903,7 @@ function FileGrid(p: FileGridProps) {
                     style={row ? ({ '--indent': `${row.depth * CHANGE_TREE_INDENT}px` } as React.CSSProperties) : undefined}
                     onContextMenu={(ev) => {
                       ev.preventDefault()
-                      live.current.onMenu(owners)
+                      live.current.onMenu(owners, row?.folder ? id : undefined)
                     }}
                   >
                     {row?.folder ? (

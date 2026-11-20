@@ -1,12 +1,13 @@
 ---
 id: ppkd
 kind: task
-state: review
+state: done
 when: queue
 tags: []
 rank: 1
 created: 2026-11-20
 updated: 2026-11-20
+done_on: 2026-11-20
 checked: [typecheck, lint, format pass, both comparison tests pass 3/3 (failed before)]
 ---
 # Fix focus in the comparison Escape and F6 tests

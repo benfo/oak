@@ -39,7 +39,7 @@ export function FileTree({
   onExpandedChange: (expanded: Set<string>) => void
   onSelect: (path: string) => void
   onOpen: () => void
-  onMenu: (path: string) => void
+  onMenu: (path: string, folder: boolean) => void
   onSwitch: () => void
   /** Focus the selected row (or the first) and scroll it into view, then report it handled. */
   focusRequest: boolean
@@ -183,7 +183,7 @@ export function FileTree({
     if (handleDismissNavigation(e, [query ? () => setQuery('') : undefined])) return
     handleNavigation(e, {
       switchList: onSwitch,
-      menu: key && isFile ? () => onMenu(key) : undefined,
+      menu: key ? () => onMenu(key, !isFile) : undefined,
       activate: key ? (isFile ? onOpen : () => toggle(key)) : undefined
     })
   }
@@ -212,10 +212,8 @@ export function FileTree({
         onAction={() => (entry.folder ? undefined : onOpen())}
         onContextMenu={(e) => {
           e.preventDefault()
-          if (!entry.folder) {
-            onSelect(entry.path)
-            onMenu(entry.path)
-          }
+          if (!entry.folder) onSelect(entry.path)
+          onMenu(entry.path, entry.folder)
         }}
       >
         <TreeItemContent>

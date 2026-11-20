@@ -14,7 +14,7 @@ import { Tip } from '../components/Tip'
 import { Split } from '../components/Split'
 import { focusPane, handleDismissNavigation, handleListNav, handleNavigation, handleToolNavigation } from '../lib/navigation'
 import { usePane } from '../lib/usePane'
-import { fileMenuItems, runFileMenu } from '../lib/fileMenu'
+import { fileMenuItems, folderMenuItems, runFileMenu, showInExplorer } from '../lib/fileMenu'
 import { openInEditor } from '../lib/openInEditor'
 import { copyRemoteLink, openOnRemote } from '../lib/openOnRemote'
 import { isUnpushed } from '../lib/remoteMenu'
@@ -257,6 +257,9 @@ export function CommitDetails({
     )
     runFileMenu(id, repo, [f.path], onFileHistory, (path) => onBlame(path, working ? null : hash), remoteCommit)
   }
+  const folderMenu = async (path: string) => {
+    if ((await showMenu(folderMenuItems())) === 'reveal') void showInExplorer(repo, path)
+  }
 
   const onListKey = (e: React.KeyboardEvent) => {
     const back = focusCode
@@ -288,7 +291,7 @@ export function CommitDetails({
           back: row?.folder && !closed ? toggleRow : parent ? () => selectRow(parent) : back,
           deeper: !row ? undefined : row.folder ? (closed ? toggleRow : firstChild ? () => selectRow(firstChild) : undefined) : open,
           activate: !row ? undefined : row.folder ? toggleRow : open,
-          menu: row?.entry ? () => fileMenu(row.entry!) : undefined
+          menu: row?.entry ? () => fileMenu(row.entry!) : row ? () => folderMenu(row.id) : undefined
         })
       )
         return
@@ -413,7 +416,8 @@ export function CommitDetails({
     }
   }, [showContent, contentKey])
   const currentContent = content?.key === contentKey ? content : null
-  const treeMenu = async (p: string) => {
+  const treeMenu = async (p: string, folder: boolean) => {
+    if (folder) return folderMenu(p)
     const id = await showMenu([
       ...fileMenuItems([p], { workingTree: false, history: true, blame: true }),
       { type: 'separator' },
@@ -698,6 +702,11 @@ export function CommitDetails({
                               onClick={() => {
                                 selectRow(row)
                                 setCollapsed(toggled(collapsed, row.id))
+                              }}
+                              onContextMenu={(e) => {
+                                e.preventDefault()
+                                selectRow(row)
+                                folderMenu(row.id)
                               }}
                             >
                               <FolderLabel row={row} collapsed={closed} />
