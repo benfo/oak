@@ -6,6 +6,7 @@ when: start:core
 tags: []
 created: 2026-11-20
 updated: 2026-11-20
+due: 2026-11-20
 ---
 # Decide how to check agent-written PRs follow the rules
 

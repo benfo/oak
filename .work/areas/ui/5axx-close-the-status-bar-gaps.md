@@ -6,6 +6,7 @@ when: start:ui
 tags: []
 created: 2026-11-20
 updated: 2026-11-20
+due: 2026-11-20
 ---
 # Close the status bar gaps
 

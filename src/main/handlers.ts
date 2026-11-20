@@ -822,7 +822,9 @@ epo`), if any. */
   },
 
   async revealFile(repo: string, file: string) {
-    shell.showItemInFolder(path.join(repo, file))
+    const target = path.join(repo, file)
+    if (!existsSync(target)) throw new Error(`${file} is not in the working copy`)
+    shell.showItemInFolder(target)
   },
 
   /** Opens a file at a line, or the repository folder when `file` is null, in the editor chosen in Preferences. */

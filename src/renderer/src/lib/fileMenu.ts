@@ -1,4 +1,5 @@
-import { api } from '../api'
+import { api, errorMessage } from '../api'
+import { notify } from '../notices'
 import { copyText } from './copy'
 import { opensBetterInDefaultApp } from '../../../shared/fileKinds'
 import { openInEditor } from './openInEditor'
@@ -53,7 +54,8 @@ export function fileMenuItems(
     ...(opts.workingTree && n === 1 && opensBetterInDefaultApp(paths[0])
       ? [{ id: 'open', label: 'Open with default app', enabled: openLocal }]
       : []),
-    ...(opts.workingTree ? [{ id: 'reveal', label: 'Show in Explorer', enabled: n === 1 }] : []),
+    // Like Open in editor, this shows the working-copy file, so it is offered for files listed in History too.
+    { id: 'reveal', label: 'Show in Explorer', enabled: openLocal },
     remoteItem('remote', 'Open in browser', !!opts.notOnRemote, remote)
   ]
   return [
@@ -83,7 +85,7 @@ export function runFileMenu(
   else if (id === 'remote' && n === 1) void openOnRemote(repoPath, { kind: 'file', hash: commit, path: paths[0] })
   else if (id === 'copylink' && n === 1) void copyRemoteLink(repoPath, { kind: 'file', hash: commit, path: paths[0] }, 'file link')
   else if (id === 'open' && n === 1) api.openPath(repoPath, paths[0])
-  else if (id === 'reveal' && n === 1) api.revealFile(repoPath, paths[0])
+  else if (id === 'reveal' && n === 1) api.revealFile(repoPath, paths[0]).catch((e) => notify.error(errorMessage(e)))
   else if (id === 'copyname') copyText(paths.map(fileName).join('\n'), noun('file name'))
   else if (id === 'copy') copyText(paths.join('\n'), noun('relative path'))
   else if (id === 'copyfull') copyText(fullPaths(repoPath, paths).join('\n'), noun('full path'))

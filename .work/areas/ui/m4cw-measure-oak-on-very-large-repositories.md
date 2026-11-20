@@ -6,6 +6,7 @@ when: start:ui
 tags: [perf]
 created: 2026-11-20
 updated: 2026-11-20
+due: 2026-11-20
 ---
 # Measure Oak on very large repositories
 
