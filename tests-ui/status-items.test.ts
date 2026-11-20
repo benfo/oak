@@ -10,8 +10,6 @@ test('"Fetched" is an action: it explains itself on hover and fetches on click',
     const page = await open(small)
     const item = page.locator('.status-bar').getByRole('button', { name: /Not fetched yet/ })
     await expect(item).toBeVisible()
-    // The bar fills in as facts arrive and shifts the items beside them; wait for it to settle before pointing.
-    await expect(page.locator('.status-bar').getByRole('button', { name: /just now$/ })).toBeVisible()
     // Status items are never Tab stops; Fetch has its own key.
     await expect(item).toHaveAttribute('tabindex', '-1')
 
@@ -53,6 +51,31 @@ test('a remote that was never fetched still counts: the bar and the toolbar offe
   } finally {
     removeDir(remote)
   }
+})
+
+test('the repository facts appear together and never move once shown', async ({ open, small }) => {
+  const page = await open(small)
+  // Watch the bar from the very start of a reload, recording each item's place whenever anything changes.
+  await page.addInitScript(() => {
+    const w = window as unknown as { barSamples: string[][] }
+    w.barSamples = []
+    const t0 = performance.now()
+    const tick = () => {
+      const items = [...document.querySelectorAll('.status-bar .status-item')].map(
+        (el) => `${el.textContent}@${Math.round(el.getBoundingClientRect().left)}`
+      )
+      const last = w.barSamples.at(-1)
+      if (items.length && items.join() !== last?.join()) w.barSamples.push(items)
+      if (performance.now() - t0 < 15_000) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  })
+  await page.reload()
+  await expect(page.locator('.status-bar')).toContainText('just now', { timeout: 12_000 })
+  await page.waitForTimeout(500)
+  const samples = await page.evaluate(() => (window as unknown as { barSamples: string[][] }).barSamples)
+  expect(samples).toHaveLength(1)
+  expect(samples[0].join(' | ')).toMatch(/No remotes@\d+ \| .*just now@\d+/)
 })
 
 test('an unfinished merge shows in the bar, and a click goes to Changes', async ({ open }) => {

@@ -4,7 +4,7 @@ import { barMounted, dismissNotice, noticeStore, type Notice } from '../notices'
 import type { RepoCtx } from '../useRepo'
 import { Elapsed, showOutput } from './OpStatus'
 import { Tip } from './Tip'
-import { useIdentity } from '../lib/useIdentity'
+import { useBarFacts } from '../lib/useBarFacts'
 import { FetchStatusItem } from './FetchStatus'
 import { HeadCommitStatusItem } from './HeadCommitStatus'
 import { IdentityStatusItem } from './IdentityStatus'
@@ -75,7 +75,10 @@ function StatusMessage({ r }: { r: RepoCtx }) {
   )
 }
 
-/** A fixed-height strip: progress and results on the left, repository facts on the right. */
+/**
+ * A fixed-height strip: progress and results on the left, repository facts on the right. The facts appear
+ * together once all are known, so one arriving late never moves another under the pointer.
+ */
 export function StatusBar({
   r,
   onOpenChanges,
@@ -85,8 +88,7 @@ export function StatusBar({
   onOpenChanges: () => void
   onOpenCommit: (hash: string) => void
 }) {
-  // Read once here: two items show it.
-  const identity = useIdentity(r.path)
+  const facts = useBarFacts(r)
   useEffect(() => {
     barMounted.set(true)
     return () => barMounted.set(false)
@@ -94,10 +96,14 @@ export function StatusBar({
   return (
     <footer className="status-bar" aria-label="Status">
       <StatusMessage r={r} />
-      <RepoStateItem r={r} onOpenChanges={onOpenChanges} />
-      <IdentityStatusItem id={identity} />
-      <FetchStatusItem r={r} />
-      <HeadCommitStatusItem r={r} identity={identity} onOpenCommit={onOpenCommit} />
+      {facts.ready && (
+        <>
+          <RepoStateItem r={r} onOpenChanges={onOpenChanges} />
+          <IdentityStatusItem id={facts.identity} />
+          <FetchStatusItem r={r} fetched={facts.fetched} />
+          <HeadCommitStatusItem r={r} commit={facts.commit} identity={facts.identity} onOpenCommit={onOpenCommit} />
+        </>
+      )}
       <UpdateStatusItem />
       <ZoomItem />
     </footer>

@@ -1,16 +1,15 @@
 import * as act from '../actions'
 import { fullDate } from '../lib/format'
 import { hasRemotes } from '../lib/remotes'
-import { useLastFetched } from '../lib/useLastFetched'
+import type { BarFacts } from '../lib/useBarFacts'
 import { useSettings } from '../settings'
 import { autoFetchText } from '../../../shared/status'
 import type { RepoCtx } from '../useRepo'
 import { StatusCard, StatusItem } from './StatusItem'
 
 /** "Fetched 3 minutes ago": a click fetches every remote, exactly like the toolbar's Fetch. */
-export function FetchStatusItem({ r }: { r: RepoCtx }) {
+export function FetchStatusItem({ r, fetched }: { r: RepoCtx; fetched: BarFacts['fetched'] }) {
   const { autoFetchMinutes } = useSettings()
-  const fetched = useLastFetched(r.path, r.busy)
   if (!fetched) return null
   if (!hasRemotes(r))
     return <StatusItem card={<StatusCard title="No remotes">Add a remote to fetch and push.</StatusCard>}>No remotes</StatusItem>
