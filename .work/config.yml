@@ -5,7 +5,7 @@ store: repo
 preset: software
 workflow:
   git:
-    branch: project
+    branch: none
     commit: task
   commit_style: One short line, no body, no Co-Authored-By or other trailer; fold fixes into the earlier local commit
   checks:

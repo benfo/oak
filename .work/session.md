@@ -1,1 +1,1 @@
-Show in Explorer added to History file menus on feature/show-file-in-explorer-from-history (66e44b9); awaiting user test.
+Committing straight to main now (AGENTS.local.md, wk git.branch none). dqyp (Explorer) and 8qby (AGENTS wk rule) await review on main.
