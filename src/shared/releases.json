@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.1.31",
+    "highlights": [
+      { "title": "Image previews", "text": "PNG, JPEG, GIF, WebP, AVIF, BMP and ICO files show as images, before and after side by side, instead of a binary diff, as SVG files already did." },
+      { "title": "Show in Explorer from History", "text": "Files listed in History and folders in file trees have Show in Explorer in their menu. A file that is no longer in the working copy says so." }
+    ],
+    "fixes": [
+      "A remote that was added but never fetched counts as a remote: Fetch and Pull work, and the status bar says Not fetched yet instead of No remotes.",
+      "The status bar's repository facts appear together when a repository opens, instead of shifting as each one arrives.",
+      "Zooming on the Welcome screen shows the zoom controls."
+    ]
+  },
+  {
     "version": "0.1.30",
     "highlights": [
       { "title": "Clean up repository", "text": "In the command palette or the toolbar's More actions menu, it reports branches, storage and leftover state in one dialog, then deletes the merged or gone branches you tick and compacts the repository with git gc." },

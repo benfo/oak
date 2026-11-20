@@ -2,6 +2,19 @@
 
 Notable changes to Oak, newest first. Each release also has notes on its [GitHub release page](https://github.com/benfo/oak/releases).
 
+## 0.1.31
+
+### Added
+
+- Image previews. PNG, JPEG, GIF, WebP, AVIF, BMP and ICO files show as images, before and after side by side, instead of a binary diff, as SVG files already did.
+- Show in Explorer from History. Files listed in History and folders in file trees have Show in Explorer in their menu. A file that is no longer in the working copy says so.
+
+### Fixed
+
+- A remote that was added but never fetched counts as a remote: Fetch and Pull work, and the status bar says Not fetched yet instead of No remotes.
+- The status bar's repository facts appear together when a repository opens, instead of shifting as each one arrives.
+- Zooming on the Welcome screen shows the zoom controls.
+
 ## 0.1.30
 
 ### Added
