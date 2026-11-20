@@ -1,0 +1,20 @@
+# wk plan settings. Change them with: wk config set <key> <value>
+# workflow.git: branch none|task|project, commit ask|task|check; empty means not chosen yet.
+version: 2
+store: repo
+preset: software
+workflow:
+  git:
+    branch: project
+    commit: task
+  commit_style: One short line, no body, no Co-Authored-By or other trailer; fold fixes into the earlier local commit
+  checks:
+    quick: npm run typecheck && npm run lint && npm run format:check
+    full:
+  tracker:
+tags: [bug, quick, perf, ux]
+reviewed: '2026-11-20'
+setup:
+  AGENTS.md: 4cd69ed74889
+  CLAUDE.md: 99c76ca8768d
+  CLAUDE.local.md: 7390e8fc3996

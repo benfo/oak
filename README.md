@@ -27,7 +27,7 @@ Get the Windows installer or the Linux x64 packages (Debian and AppImage) from [
 
 ## Contributing
 
-Issues and pull requests are welcome, and the maintainer reviews every change. Setup, checks and the branch workflow are in [CONTRIBUTING.md](CONTRIBUTING.md), conventions for people and coding agents in [AGENTS.md](AGENTS.md), and planned work in [ROADMAP.md](ROADMAP.md).
+Issues and pull requests are welcome, and the maintainer reviews every change. Setup, checks and the branch workflow are in [CONTRIBUTING.md](CONTRIBUTING.md), conventions for people and coding agents in [AGENTS.md](AGENTS.md), and planned work in [`.work/`](.work/), tracked with [wk](https://github.com/benfo/wk).
 
 ## License
 

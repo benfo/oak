@@ -1,6 +1,6 @@
 # Marketing plan
 
-How Oak reaches developers. Copy rules from `ROADMAP.md` apply: factual, no sales language, no unsupported "only" or "unique" claims, the command palette featured, no live demo. Nothing here is agreed until the maintainer says so; the roadmap links here and holds status.
+How Oak reaches developers. The website copy rules apply: factual, no sales language, no unsupported "only" or "unique" claims, the command palette featured, no live demo. Nothing here is agreed until the maintainer says so; the wk plan (`.work/`) links here and holds status.
 
 ## Positioning
 
@@ -16,7 +16,7 @@ Be upfront about the tradeoffs: Electron, Windows first, Linux experimental, mac
 
 ## Phase 0: before any launch (1 to 2 weeks)
 
-- Get code signing underway (see `ROADMAP.md`). An unsigned installer costs the most first-time installs.
+- Get code signing underway (the "Signed Windows installer" project in `.work/`). An unsigned installer costs the most first-time installs.
 - Package for `winget`, then Scoop and Chocolatey if cheap. "winget install" is the easiest way to try a Windows app.
 - Rewrite the README top: a 20 to 30 second capture of the palette and keyboard staging, one install line, honest platform status.
 - Label 5 to 10 real issues "good first issue".
