@@ -13,12 +13,17 @@ import {
 /** More unpushed commits than this are not listed (opening or copying a page still checks the commit itself). */
 const UNPUSHED_LIMIT = 5000
 
-/** The remote to use when none is named: origin, else the first one. */
-export async function defaultRemote(repo: string) {
-  const remotes = (await git(repo, ['remote']))
+/** The configured remotes, fetched or not. */
+export async function listRemotes(repo: string) {
+  return (await git(repo, ['remote']))
     .split('\n')
     .map((s) => s.trim())
     .filter(Boolean)
+}
+
+/** The remote to use when none is named: origin, else the first one. */
+export async function defaultRemote(repo: string) {
+  const remotes = await listRemotes(repo)
   if (!remotes.length) throw new Error('This repository has no remotes configured.')
   return remotes.includes('origin') ? 'origin' : remotes[0]
 }
@@ -112,7 +117,7 @@ export async function remotePage(repo: string, target: RemotePageTarget, remoteN
  */
 export async function unpushedCommits(repo: string) {
   const head = (await git(repo, ['rev-parse', '--verify', '-q', 'HEAD'], { okCodes: [1] })).trim() || null
-  if (!head || !(await git(repo, ['remote'])).trim()) return { head, unpushed: [] as string[] }
+  if (!head || !(await listRemotes(repo)).length) return { head, unpushed: [] as string[] }
   const out = await git(repo, ['rev-list', '-n', String(UNPUSHED_LIMIT), 'HEAD', '--branches', '--not', '--remotes'])
   return { head, unpushed: out.split('\n').filter(Boolean) }
 }

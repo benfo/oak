@@ -7,7 +7,7 @@ import { readBlob } from './blob'
 import { fileVersions as readFileVersions } from './fileVersions'
 import type { FileVersions, PreviewSource } from '../shared/filePreview'
 import { pullRequestUrlFromOutput, type RemotePageTarget } from '../shared/remote'
-import { defaultRemote, pullRequestPage, remotePage, unpushedCommits } from './remote'
+import { defaultRemote, listRemotes, pullRequestPage, remotePage, unpushedCommits } from './remote'
 import { isReachable } from './reachable'
 import { branchDetails, listBranches, remoteHead } from './refs'
 import { deleteBranches, removeWorktrees } from './branchCleanup'
@@ -318,6 +318,9 @@ epo`), if any. */
   branches: (repo: string): Promise<Branch[]> => listBranches(repo),
 
   branchDetails: (repo: string): Promise<Record<string, BranchDetail>> => branchDetails(repo),
+
+  /** Configured remotes, including ones never fetched (which have no remote branches yet). */
+  remotes: (repo: string): Promise<string[]> => listRemotes(repo),
 
   async stashes(repo: string): Promise<Stash[]> {
     try {

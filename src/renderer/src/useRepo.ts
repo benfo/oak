@@ -66,6 +66,8 @@ export interface RepoCtx {
   branches: Branch[]
   recentBranches: string[]
   stashes: Stash[]
+  /** Configured remote names, fetched or not (a fresh remote has no remote branches yet); null until read. */
+  remotes: string[] | null
   commits: Commit[]
   /** The file `commits` is the history of, or null for the scope's ordinary list. Lags `historyFile` while the new list loads. */
   commitsFile: string | null
@@ -114,6 +116,7 @@ export function useRepo(path: string): RepoCtx {
   const [branches, setBranches] = useState<Branch[]>([])
   const [recentBranches, setRecentBranches] = useState<string[]>([])
   const [stashes, setStashes] = useState<Stash[]>([])
+  const [remotes, setRemotes] = useState<string[] | null>(null)
   const [commits, setCommits] = useState<Commit[]>([])
   // The file `commits` was listed for. It lags `historyFile` until the filtered log arrives.
   const [commitsFile, setCommitsFile] = useState<string | null>(null)
@@ -235,6 +238,9 @@ export function useRepo(path: string): RepoCtx {
         const stashesShown = api.stashes(path).then((s) => {
           if (changed('stashes', s)) setStashes(s)
         })
+        const remotesShown = api.remotes(path).then((names) => {
+          if (changed('remotes', names)) setRemotes(names)
+        })
         const recentShown = api.recentBranches(path).then((recent) => {
           if (changed('recentBranches', recent)) setRecentBranches(recent)
         })
@@ -278,7 +284,9 @@ export function useRepo(path: string): RepoCtx {
           }
         })()
         await Promise.all(
-          [Promise.all([branchesShown, stashesShown]).then(() => setRefsLoaded(true)), recentShown, historyShown].map((p) => p.catch(fail))
+          [Promise.all([branchesShown, stashesShown]).then(() => setRefsLoaded(true)), recentShown, remotesShown, historyShown].map((p) =>
+            p.catch(fail)
+          )
         )
       } finally {
         loadingRefs.current = false
@@ -470,6 +478,7 @@ export function useRepo(path: string): RepoCtx {
     branches,
     recentBranches,
     stashes,
+    remotes,
     commits,
     commitsFile,
     hasMore,

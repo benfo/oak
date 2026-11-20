@@ -37,6 +37,24 @@ test('without remotes the item is a plain fact, not an action', async ({ open, s
   await expect(bar.getByRole('button', { name: /No remotes/ })).toHaveCount(0)
 })
 
+test('a remote that was never fetched still counts: the bar and the toolbar offer Fetch', async ({ open, small }) => {
+  const remote = tempDir('remote')
+  try {
+    git(remote, 'init', '-q', '--bare')
+    // No push and no fetch, so there is no remote branch yet.
+    git(small, 'remote', 'add', 'origin', remote)
+    const page = await open(small)
+    // Wait for the ref lists (section counts stop reading "…"): until then remotes are assumed, so the checks would pass anyway.
+    await expect(page.locator('[data-pane="sidebar"] [role="row"][data-key="refs/heads/main"]')).toBeVisible()
+    await expect(page.locator('[data-pane="sidebar"]')).not.toContainText('…')
+    await expect(page.locator('.status-bar').getByRole('button', { name: /Not fetched yet/ })).toBeVisible()
+    await expect(page.locator('.status-bar')).not.toContainText('No remotes')
+    await expect(page.getByRole('toolbar', { name: 'Repository actions' }).getByRole('button', { name: /^Fetch/ })).toBeEnabled()
+  } finally {
+    removeDir(remote)
+  }
+})
+
 test('an unfinished merge shows in the bar, and a click goes to Changes', async ({ open }) => {
   const repo = tempDir('merge')
   try {
