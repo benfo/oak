@@ -14,9 +14,9 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
-    "@tailwindcss/vite": "^4.3.4",
-    "astro": "7.4.5",
-    "daisyui": "^5.7.50",
+    "@tailwindcss/vite": "^4.3.5",
+    "astro": "7.4.13",
+    "daisyui": "^5.8.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"
   },
